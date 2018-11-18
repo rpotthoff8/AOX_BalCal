@@ -1,0 +1,10 @@
+# Data files #
+##############
+*.csv
+
+# GUI config files #
+####################
+*.ini
+*.cal
+*.val
+*.app
