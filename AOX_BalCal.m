@@ -1,4 +1,3 @@
-%Branch: bootstrap Coeff
 % 10/02/18
 %
 % Copyright 2017 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.
