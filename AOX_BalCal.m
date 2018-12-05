@@ -46,6 +46,9 @@ print_FLAG = out.tables;
 %TO OUTPUT DATA TO EXCEL                           set excel_FLAG = 1;
 excel_FLAG = 1;
 %
+%TO OUTPUT CORRELATION PLOTS                       set corr_FLAG = 1;
+corr_FLAG = out.corr;
+%
 %TO OUTPUT RESIDUALS                               set rest_FLAG = 1;
 res_FLAG = out.res;
 %
@@ -128,6 +131,10 @@ loadlist = {'N1','N2','S1','S2','RM','AF','PLM', 'PCM', 'MLM', 'MCM'};
 voltagelist = {'R1','R2','R3','R4','R5','R6','rPLM','rPCM','rMLM','rMCM'};
 %%%%
 
+if corr_FLAG == 1
+    figure('Name','Correlation plot','NumberTitle','off');
+    correlationPlot(excessVec0, targetMatrix0, voltagelist, loadlist);
+end
 
 if LHS_Flag == 0
     numLHS = 1;
