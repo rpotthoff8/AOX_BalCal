@@ -8,3 +8,7 @@
 *.cal
 *.val
 *.app
+
+# MATLAB autosave files #
+#########################
+*.asv
