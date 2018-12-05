@@ -1,0 +1,11 @@
+for i=1:size(taresALGB,1)
+    for j=1:size(taresALGB,2)
+        if alg_t(i,j)>=zap_ci(2*i-1,j) && artificial_tares(i,j)<=zap_ci(2*i,j)
+            in_range(i,j)=1;
+        else
+            in_range(i,j)=0;
+            disp(strcat('Series: ',string(i),'; Channel: ',string(j), '; actual tare: ',string(artificial_tares(i,j)),'; tare: ',string(taresALGB(i,j)), '; bound: ', string(zap_ci(2*i-1,j)), ":",string(zap_ci(2*i,j))))
+            
+        end
+    end
+end

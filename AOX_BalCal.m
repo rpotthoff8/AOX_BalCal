@@ -340,6 +340,24 @@ for lhs = 1:numLHS
     
     %SOLUTION
     xcalib = comINminLZ'\targetMatrix;                    % '\' solution of Ax=b
+    
+    %BOOTSTRAP COEFFICIENTS
+    coeff_solve=@(comIN,target)comIN\target;
+    xcalib_ci=bootci(2000,coeff_solve,comINminLZ',targetMatrix);
+
+%     jackstat_xcalib=jackknife(coeff_solve,comINminLZ',targetMatrix);
+%     xbar=mean(jackstat_xcalib);
+% %     V=(1/(size(jackstat_xcalib,2)-1))*(sum((jackstat_xcalib-xbar).^2));
+%     sum=0;
+%     for i=1:size(jackstat_xcalib,2)
+%         sum=sum+(jackstat_xcalib(i,:)-xbar).^2;
+%     end
+%     V2=(1/(size(jackstat_xcalib,2)-1))*sum;
+%     jackstat_lower=xbar-1.960*sqrt((1/size(jackstat_xcalib,2))*V2);
+    
+    
+    %END Bootstrap
+    
     %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
     %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
     %    xcalib = pinv(comINminLZ',1e-2)*targetMatrix;             % alternate solution method
@@ -472,6 +490,11 @@ for i=1:nseries
     end
     
     zap(i,:) = mean(zoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
+    %Bootstrap residuals
+    meanResidual=@(z)mean(z)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
+    zap_ci(2*i-1:2*i,:)=bootci(10000,{meanResidual,zoop},'alpha',.01);
+    %end bootstrap
+   
 end
 
 %%
@@ -663,7 +686,7 @@ if balOut_FLAG == 1 % !!!
         
         %SOLUTION
         xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
-        
+ 
         
         %APPROXIMATION
         %define the approximation for inputs minus local zeros
@@ -1344,7 +1367,9 @@ if balVal_FLAG == 1
         end
         
         zapvalid(i,:) = mean(zoop)*numptsvalid/(indexLocalZerovalid(i+1)-indexLocalZerovalid(i));
-        
+        %Bootstrap residuals
+        zapvalid_ci(2*i-1:2*i,:)=bootci(5000,{meanResidual,zoop},'alpha',.01);
+        %end bootstrap
     end
     %%
     %%

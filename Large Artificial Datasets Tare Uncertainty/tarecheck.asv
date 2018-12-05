@@ -1,0 +1,12 @@
+load('artificial_tares.mat')
+for i=1:size(artificial_tares,1)
+    for j=1:size(artificial_tares,2)
+        if artificial_tares(i,j)>=zap_ci(2*i-1,j) && artificial_tares(i,j)<=zap_ci(2*i,j)
+            in_range(i,j)=1;
+        else
+            in_range(i,j)=0;
+            disp('
+            
+        end
+    end
+end
