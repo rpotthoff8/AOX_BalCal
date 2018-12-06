@@ -344,7 +344,8 @@ for lhs = 1:numLHS
     %BOOTSTRAP COEFFICIENTS
     coeff_solve=@(comIN,target)comIN\target;
     xcalib_ci=bootci(2000,coeff_solve,comINminLZ',targetMatrix);
-
+    % END Bootstrap
+    
 %     jackstat_xcalib=jackknife(coeff_solve,comINminLZ',targetMatrix);
 %     xbar=mean(jackstat_xcalib);
 % %     V=(1/(size(jackstat_xcalib,2)-1))*(sum((jackstat_xcalib-xbar).^2));
@@ -356,7 +357,7 @@ for lhs = 1:numLHS
 %     jackstat_lower=xbar-1.960*sqrt((1/size(jackstat_xcalib,2))*V2);
     
     
-    %END Bootstrap
+
     
     %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
     %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
@@ -491,10 +492,18 @@ for i=1:nseries
     
     zap(i,:) = mean(zoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
     %Bootstrap residuals
-    meanResidual=@(z)mean(z)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
-    zap_ci(2*i-1:2*i,:)=bootci(10000,{meanResidual,zoop},'alpha',.01);
+    meanResidual=@(z)mean(z);
+    zap_ci(2*i-1:2*i,:)=bootci(10000,{meanResidual,zoop(1:indexLocalZero(i+1)-indexLocalZero(i),:)},'alpha',.05);
     %end bootstrap
-   
+    
+    jackstat_zap=jackknife('mean',zoop(1:indexLocalZero(i+1)-indexLocalZero(i),:));
+    jack_zap=mean(jackstat_zap);
+    sum=0;
+    for j=1:size(jackstat_zap,2)
+        sum=sum+(jackstat_zap(j,:)-jack_zap).^2;
+    end
+    V2=(1/(size(jackstat_zap,2)-1))*sum;
+    jackstat_lower(i,:)=jack_zap-1.960*sqrt((1/size(jackstat_zap,2))*V2);
 end
 
 %%
