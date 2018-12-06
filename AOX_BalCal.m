@@ -104,21 +104,18 @@ excessVec0_complete = excessVec0;
 targetMatrix0_complete = targetMatrix0;
 series_complete = series;
 
-iloadCapacities = max(abs(excessVec0_complete));
+%iloadCapacities = max(abs(excessVec0_complete));
 
 %%%%%%%% 6_14_18 ajm
 warning('off','all');
 warning;
 %%%%%%%%
 
-disp('  ')
 disp('Starting Calculations')
-
 if approach_FLAG == 1
     disp(' ');
     disp('Using the Indirect Approach for Calibration');
-    
-elseif approach_FLAG == 0
+else
     disp(' ');
     disp('Using the Direct Approach for Calibration');
 end
@@ -142,7 +139,6 @@ end
 lhs_check = zeros(length(excessVec0_complete),1);
 ind = 1:length(excessVec0_complete(:,1));
 
-
 if LHS_Flag == 1
     disp('  ')
     disp('Number of LHS Iterations Selected =')
@@ -158,48 +154,25 @@ for lhs = 1:numLHS
         pct_sampled = sum(lhs_check)/length(lhs_check); % This line outputs what percentage of points have been sampled
     end
     
-    %% Keep the excessVec0 in reserve for the other subroutines
-    % excessVec = excessVec0;
-    %%
-    
-    dimFlag = length(excessVec0(1,:));
-    
-    % num of data points
-    numpts = length(excessVec0(:,1));
-    
+    [numpts, dimFlag] = size(excessVec0);    
     
     %find the average natural zeros (also called global zeros)
-    globalZeros = mean(natzeros);
-    %globalZeros = natzeros;
-    
+    globalZeros = mean(natzeros);    
     
     %load capacities
     loadCapacities(loadCapacities == 0) = realmin;
     
+    [~,s_1st,s_id] = unique(series);
+    
     %find number of series; this will tell us the number of tares
-    nseries = max(series);
-    
-    
+    nseries = length(s_1st);  
     
     %find zero points of each series and number of points in a series
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
-    %section - see if this can be cleaned up! is if/else necessary?  AAM042016
-    prevVal = 1;
-    for i=1:length(series)
-        if series(i)==prevVal
-            localZeros0(prevVal,:) = excessVec0(i,:);
-            localZerosAllPoints0(i,:) = localZeros0(prevVal,:);
-            prevVal = prevVal+1;
-        else
-            counter(prevVal) = i;
-            localZerosAllPoints0(i,:) = localZeros0(prevVal-1,:);
-        end
-        globalZerosAllPoints0(i,:) = globalZeros;
-    end
-    
-    %add '1' to every value of counter to find the indices of the local zeros
-    indexLocalZero = counter(:)+1;
-    
+    %section
+    prevVal = 1; %TEMPORARY FOR FINDING OTHERS
+    [localZeros0,localZerosAllPoints0] = localzeros(series,excessVec0);    
+    globalZerosAllPoints0 = ones(numpts,1)*globalZeros;
     
     %%% 5/16/18
     excessVec = excessVec0 - globalZerosAllPoints0;
@@ -256,22 +229,7 @@ for lhs = 1:numLHS
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
     %section - see if this can be cleaned up! is if/else necessary?  AAM042016
     %
-    prevVal = 1;
-    for i=1:length(series)
-        if series(i)==prevVal
-            localZeros(prevVal,:) = excessVec0(i,:);
-            localZerosAllPoints(i,:) = localZeros(prevVal,:);
-            prevVal = prevVal+1;
-        else
-            counter(prevVal) = i;
-            localZerosAllPoints(i,:) = localZeros(prevVal-1,:);
-        end
-        %        globalZerosAllPoints(i,:) = globalZeros;
-    end
-    
-    %add '1' to every value of counter to find the indices of the local zeros
-    indexLocalZero = counter(:)+1;
-    
+    [localZeros,localZerosAllPoints] = localzeros(series,excessVec0);    
     
     %% Subtract the Global Zeros from the Inputs and Local Zeros %%%%%%%%%%
     
@@ -283,16 +241,7 @@ for lhs = 1:numLHS
         biggee(:,i) = 0;
         %
     end
-    %%%%%%%%%%%%
-    
-    
-    %find the number of points in each series and the number of series
-    for j = 1:length(counter)-1
-        numPoints(j) = counter(j+1)-counter(j);
-        numSeries(j,:) = j;
-    end
-    
-    
+    %%%%%%%%%%%%    
     %%
     %% Build the Algebraic Model
     %%
@@ -388,21 +337,7 @@ excessVec = excessVec0;
 targetMatrix = targetMatrix0_complete;
 series = series_complete;
 
-prevVal = 1;
-for i=1:length(series)
-    if series(i)==prevVal
-        localZeros(prevVal,:) = excessVec0(i,:);
-        localZerosAllPoints(i,:) = localZeros(prevVal,:);
-        prevVal = prevVal+1;
-    else
-        counter(prevVal) = i;
-        localZerosAllPoints(i,:) = localZeros(prevVal-1,:);
-    end
-    %        globalZerosAllPoints(i,:) = globalZeros;
-end
-
-%add '1' to every value of counter to find the indices of the local zeros
-indexLocalZero = counter(:)+1;
+[localZeros,localZerosAllPoints] = localzeros(series,excessVec0);
 
 for i=1:dimFlag
     dainputs2(:,i) = excessVec0(:,i)-globalZeros(i);
@@ -465,32 +400,7 @@ for m=1:length(aprxIN)
     checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
 end
 
-
-
-
-%%
-%% SOLVE FOR TARES BY TAKING THE MEAN
-for i=1:nseries
-    zoop = zeros(length(excessVec(:,1)),dimFlag);
-    kx=indexLocalZero(i)-1;
-    
-    for m=indexLocalZero(i):indexLocalZero(i+1)-1
-        zoop(m-kx,:) = checkit(m,:);
-    end
-    
-    zap(i,:) = mean(zoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
-end
-
-%%
-%%
-for i=1:nseries
-    for m=indexLocalZero(i):indexLocalZero(i+1)-1
-        taretal(m,:) = zap(i,:);
-    end
-end
-%%
-%%
-
+taretal = meantare(series,checkit);
 
 %RESIDUAL
 targetRes = targetMatrix+taretal-aprxINminGZ;      %0=b-Ax
@@ -632,23 +542,8 @@ if balOut_FLAG == 1 % !!!
         rbfINminGZ = zeros(numpts,dimFlag);
         rbfLZminGZ = zeros(numpts,dimFlag);
         
-        
-        
-        prevVal = 1;
-        for i=1:length(series)
-            if series(i)==prevVal
-                localZeros(prevVal,:) = excessVec0(i,:);
-                localZerosAllPoints(i,:) = localZeros(prevVal,:);
-                prevVal = prevVal+1;
-            else
-                counter(prevVal) = i;
-                localZerosAllPoints(i,:) = localZeros(prevVal-1,:);
-            end
-            globalZerosAllPoints(i,:) = globalZeros;
-        end
-        
-        %add '1' to every value of counter to find the indices of the local zeros
-        indexLocalZero = counter(:)+1;
+        [localZeros,localZerosAllPoints] = localzeros(series,excessVec0);
+        globalZerosAllPoints = ones(numpts,1)*globalZeros;
         
         
         %% Subtract the Global Zeros from the Inputs and Local Zeros %%%%%%%%%%
@@ -694,28 +589,7 @@ if balOut_FLAG == 1 % !!!
         end
         
         
-        
-        %%
-        %% SOLVE FOR TARES BY TAKING THE MEAN
-        for i=1:nseries
-            zoop = zeros(numpts,dimFlag);
-            kx=indexLocalZero(i)-1;
-            
-            for m=indexLocalZero(i):indexLocalZero(i+1)-1
-                zoop(m-kx,:) = checkit(m,:);
-            end
-            
-            zap(i,:) = mean(zoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
-            
-        end
-        
-        %%
-        %%
-        for i=1:nseries
-            for m=indexLocalZero(i):indexLocalZero(i+1)-1
-                taretal(m,:) = zap(i,:);
-            end
-        end
+        taretal = meantare(series,checkit);
         
         %%
         %%
@@ -736,9 +610,6 @@ end %!!!
 %
 %---------------------------------------------------------------
 %---------------------------------------------------------------
-
-
-%
 
 %find the sum of squares of the residual using the dot product
 resSquare = dot(targetRes,targetRes)';
@@ -772,14 +643,9 @@ theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
 
 % *****
 
-for n = 1:length(indexLocalZero)-1
-    taresALGB(n,:) = taretal(indexLocalZero(n),:);
-end
 
-% *****
-
-
-%%%%%%%%
+[~,s_1st,~] = unique(series);
+taresALGB = taretal(s_1st,:);
 
 
 %OUTPUT HISTOGRAM PLOTS
@@ -858,8 +724,6 @@ if print_FLAG == 1;
     calib_twoSigmaALGB = standardDev'.*2;
     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
     
-    numSeriesNames = num2str(numSeries);
-    numSeriesNameCell = cellstr(numSeriesNames);
     %Should I use strtrim()  ? -AAM 042116
     calib_algebraic_Tares = array2table(taresALGB,'VariableNames',loadlist(1:dimFlag))
     
@@ -995,27 +859,9 @@ if balCal_FLAG == 2
         %%%%%%%%
         %%
         %% SOLVE FOR TARES BY TAKING THE MEAN
-        for i=1:nseries
-            zoop = zeros(length(excessVec0(:,1)),dimFlag);
-            kx=indexLocalZero(i)-1;
-            
-            for m=indexLocalZero(i):indexLocalZero(i+1)-1
-                zoop(m-kx,:) = aprxINminGZ2(m,:)-targetMatrix(m,:);
-            end
-            
-            zap(i,:) = mean(zoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
-            
-        end
-        %%
-        %%
-        for i=1:nseries
-            for m=indexLocalZero(i):indexLocalZero(i+1)-1
-                taretalGRBF(m,:) = zap(i,:);
-            end
-        end
-        %%
-        %%
-        taresGRBF = zap;
+        taretalGRBF = meantare(series,aprxINminGZ2-targetMatrix);
+
+        taresGRBF = taretalGRBF(s_1st,:);
         
         tareGRBFHist{u} = taresGRBF;
         
@@ -1120,8 +966,6 @@ if balCal_FLAG == 2
         twoSigmaGRBF = standardDev'.*2;
         calib_GRBF_2Sigma = array2table(twoSigmaGRBF,'VariableNames',loadlist(1:dimFlag))
         
-        numSeriesNames = num2str(numSeries);
-        numSeriesNameCell = cellstr(numSeriesNames);
         %Should I use strtrim()  ? -AAM 042116
         calib_GRBF_Tares = array2table(taresGRBF,'VariableNames',loadlist(1:dimFlag))
         
@@ -1230,20 +1074,8 @@ if balVal_FLAG == 1
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
     %section - see if this can be cleaned up! is if/else necessary?  AAM042016
     prevVal = 1;
-    for i=1:length(seriesvalid)
-        if seriesvalid(i)==prevVal
-            localZerosvalid(prevVal,:) = excessVecvalid0(i,:);
-            localZerosAllPointsvalid(i,:) = localZerosvalid(prevVal,:);
-            prevVal = prevVal+1;
-        else
-            counterval(prevVal) = i;
-            localZerosAllPointsvalid(i,:) = localZerosvalid(prevVal-1,:);
-        end
-        globalZerosAllPointsvalid(i,:) = globalZerosvalid;
-    end
-    
-    %add '1' to every value of counterval to find the indices of the local zeros
-    indexLocalZerovalid = counterval(:)+1;
+    [localZerosvalid,localZerosAllPointsvalid] = localzeros(seriesvalid,excessVecvalid0);
+    globalZerosAllPointsvalid = ones(numptsvalid,1)*globalZerosvalid;
     
     %%%%%
     %    diaghistoryexcessVec0 = excessVecvalid0 - excessVec0; % AJM
@@ -1262,22 +1094,11 @@ if balVal_FLAG == 1
         %
     end
     %%%%%%%%%%%%
-    
-    
-    
-    %find the number of points in each series and the number of series
-    for j = 1:length(counterval)-1
-        numPointsval(j) = counterval(j+1)-counterval(j);
-        numSeriesval(j,:) = j;
-    end
-    
-    
-    
-    %
+
     
     %%
     % <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        %%% 5/16/18
+    %%% 5/16/18
     %Remember that  excessVec = excessVec0_complete - globalZerosAllPoints;
     excessVecvalidkeep = excessVecvalid0  - globalZerosAllPointsvalid;
     %%%
@@ -1342,24 +1163,7 @@ if balVal_FLAG == 1
     
     %%
     %% SOLVE FOR TARES BY TAKING THE MEAN
-    for i=1:nseriesvalid
-        zoop = zeros(length(excessVecvalidkeep(:,1)),dimFlag);
-        kx=indexLocalZerovalid(i)-1;
-        
-        for m=indexLocalZerovalid(i):indexLocalZerovalid(i+1)-1
-            zoop(m-kx,:) = checkitvalid(m,:);
-        end
-        
-        zapvalid(i,:) = mean(zoop)*numptsvalid/(indexLocalZerovalid(i+1)-indexLocalZerovalid(i));
-        
-    end
-    %%
-    %%
-    for i=1:nseriesvalid
-        for m=indexLocalZerovalid(i):indexLocalZerovalid(i+1)-1
-            taretalvalid(m,:) = zapvalid(i,:);
-        end
-    end
+    taretalvalid = meantare(seriesvalid,checkitvalid);
     %%
     %%
     
@@ -1544,11 +1348,8 @@ if balVal_FLAG == 1
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
         
-        for bleh=1:length(indexLocalZerovalid)-1
-            for dleh = indexLocalZerovalid(bleh):indexLocalZerovalid(bleh+1)-1
-                localZeroMatrixvalid(dleh,:) = localZerosvalid(bleh,:);
-            end
-        end
+        [~,~,s_id] = unique(seriesvalid);
+        localZeroMatrixvalid = localZerosvalid(s_id,:);
         
         etaLZvalid = dot(localZeroMatrixvalid-dainputsvalid,localZeroMatrixvalid-dainputsvalid);
         etaGZvalid = dot(globalZerosAllPointsvalid-dainputsvalid,globalZerosAllPointsvalid-dainputsvalid);
@@ -1597,30 +1398,10 @@ if balVal_FLAG == 1
             
             % *************
             %% SOLVE FOR TARES BY TAKING THE MEAN
+            [~,s_1st,~] = unique(seriesvalid);
+            taretalvalid2 = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid)
             
-            for i=1:nseriesvalid
-                zoop2 = zeros(length(excessVecvalid(:,1)),dimFlag);
-                kx=indexLocalZerovalid(i)-1;
-                
-                for m=indexLocalZerovalid(i):indexLocalZerovalid(i+1)-1
-                    zoop2(m-kx,:) = aprxINminGZ2valid(m,:)-targetMatrixvalid(m,:);
-                end
-                
-                zapvalid2(i,:)=mean(zoop2)*numptsvalid/(indexLocalZerovalid(i+1)-indexLocalZerovalid(i));
-                
-            end
-            
-            %%
-            %%
-            for i=1:nseriesvalid
-                for m=indexLocalZerovalid(i):indexLocalZerovalid(i+1)-1
-                    taretalvalid2(m,:) = zapvalid2(i,:);
-                end
-            end
-            %%
-            %%
-            
-            taresGRBFvalid = zapvalid2;
+            taresGRBFvalid = taretalvalid2(s_1st,:);
             tareHistvalid{u} = taresGRBFvalid;
             
             
@@ -1637,7 +1418,7 @@ if balVal_FLAG == 1
         % *************
         
         
-        for b=1:length(indexLocalZerovalid)-1
+        for b=1:nseriesvalid
             for c=1:length(excessVecvalid(1,:))
                 for a=1:numBasis
                     tempvalid(a) = tareHistvalid{a}(b,c);
@@ -1726,8 +1507,6 @@ if balVal_FLAG == 1
             twoSigmaGRBFvalid = standardDevvalid'.*2;
             GRBF_2Sigmavalid = array2table(twoSigmaGRBFvalid,'VariableNames',loadlist(1:dimFlag))
             
-            numSeriesNames = num2str(numSeries);
-            numSeriesNameCell = cellstr(numSeriesNames);
             %Should I use strtrim()  ? -AAM 042116
             GRBF_Taresvalid = array2table(taresGRBFvalid,'VariableNames',loadlist(1:dimFlag))
             
