@@ -495,7 +495,7 @@ for i=1:nseries
     meanResidual=@(z)mean(z);
     zap_ci(2*i-1:2*i,:)=bootci(10000,{meanResidual,zoop(1:indexLocalZero(i+1)-indexLocalZero(i),:)},'alpha',.05);
     %end bootstrap
-    
+    %jackknife residuals
     jackstat_zap=jackknife('mean',zoop(1:indexLocalZero(i+1)-indexLocalZero(i),:));
     jack_zap=mean(jackstat_zap);
     sum=0;
@@ -504,6 +504,7 @@ for i=1:nseries
     end
     V2=(1/(size(jackstat_zap,2)-1))*sum;
     jackstat_lower(i,:)=jack_zap-1.960*sqrt((1/size(jackstat_zap,2))*V2);
+    %end jackknife
 end
 
 %%
