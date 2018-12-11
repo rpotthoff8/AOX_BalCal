@@ -337,28 +337,42 @@ for lhs = 1:numLHS
     
     
     comINminLZ = comIN-comLZ;
+ 
+    %START issues with resampling
+    %Moved outside of loop
+    prevVal = 1;
+    for i=1:length(series)
+        if series(i)==prevVal
+            localZeros(prevVal,:) = excessVec0(i,:);
+            localZerosAllPoints(i,:) = localZeros(prevVal,:);
+            prevVal = prevVal+1;
+        else
+            counter(prevVal) = i;
+            localZerosAllPoints(i,:) = localZeros(prevVal-1,:);
+        end
+        %        globalZerosAllPoints(i,:) = globalZeros;
+    end
+
+%add '1' to every value of counter to find the indices of the local zeros
+indexLocalZero = counter(:)+1;
+
+%%start function
+bootalpha=.01;
+f=@zapFinder;
+[fzap,fxcalib]=f(comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
+fzap_ci=bootci(2000,{f,comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries}, 'type', 'cper','alpha',bootalpha);
+%     
     
+    
+    %%
     %SOLUTION
     xcalib = comINminLZ'\targetMatrix;                    % '\' solution of Ax=b
     
     %BOOTSTRAP COEFFICIENTS
     coeff_solve=@(comIN,target)comIN\target;
-    xcalib_ci=bootci(2000,coeff_solve,comINminLZ',targetMatrix);
+    xcalib_ci2=bootci(2000,coeff_solve,comINminLZ',targetMatrix);
     % END Bootstrap
-    
-%     jackstat_xcalib=jackknife(coeff_solve,comINminLZ',targetMatrix);
-%     xbar=mean(jackstat_xcalib);
-% %     V=(1/(size(jackstat_xcalib,2)-1))*(sum((jackstat_xcalib-xbar).^2));
-%     sum=0;
-%     for i=1:size(jackstat_xcalib,2)
-%         sum=sum+(jackstat_xcalib(i,:)-xbar).^2;
-%     end
-%     V2=(1/(size(jackstat_xcalib,2)-1))*sum;
-%     jackstat_lower=xbar-1.960*sqrt((1/size(jackstat_xcalib,2))*V2);
-    
-    
-
-    
+ 
     %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
     %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
     %    xcalib = pinv(comINminLZ',1e-2)*targetMatrix;             % alternate solution method
@@ -491,20 +505,7 @@ for i=1:nseries
     end
     
     zap(i,:) = mean(zoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
-    %Bootstrap residuals
-    meanResidual=@(z)mean(z);
-    zap_ci(2*i-1:2*i,:)=bootci(10000,{meanResidual,zoop(1:indexLocalZero(i+1)-indexLocalZero(i),:)},'alpha',.05);
-    %end bootstrap
-    %jackknife residuals
-    jackstat_zap=jackknife('mean',zoop(1:indexLocalZero(i+1)-indexLocalZero(i),:));
-    jack_zap=mean(jackstat_zap);
-    sum=0;
-    for j=1:size(jackstat_zap,2)
-        sum=sum+(jackstat_zap(j,:)-jack_zap).^2;
-    end
-    V2=(1/(size(jackstat_zap,2)-1))*sum;
-    jackstat_lower(i,:)=jack_zap-1.960*sqrt((1/size(jackstat_zap,2))*V2);
-    %end jackknife
+    
 end
 
 %%
@@ -1377,9 +1378,7 @@ if balVal_FLAG == 1
         end
         
         zapvalid(i,:) = mean(zoop)*numptsvalid/(indexLocalZerovalid(i+1)-indexLocalZerovalid(i));
-        %Bootstrap residuals
-        zapvalid_ci(2*i-1:2*i,:)=bootci(5000,{meanResidual,zoop},'alpha',.01);
-        %end bootstrap
+
     end
     %%
     %%
@@ -2161,4 +2160,121 @@ disp('Calculations Complete.')
 %
 
 %toc
+    function [fzap,xcalib]=zapFinder(comIN,target,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries)
+        xcalib = comIN\target;                    % '\' solution of Ax=b
+    
+    %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
+    %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
+    %    xcalib = pinv(comINminLZ',1e-2)*targetMatrix;             % alternate solution method
+    
+    %%  Creates Matrix for the volts to loads
+    %  ajm for the users to view 5/11/18
+    %      APPROX_AOX_COEFF_MATRIX = xcalib;
+%     
+%     if LHS_Flag == 1
+%         x_all(:,:,lhs) = xcalib;
+%     end
+    
 
+% if LHS_Flag == 1
+%     xcalib = mean(x_all,3);
+%     xcalib_std = std(x_all,[],3);
+% end
+
+excessVec0 = excessVec0_complete;
+excessVec = excessVec0;
+targetMatrix = targetMatrix0_complete;
+series = series_complete;
+
+% %START issues with resampling
+% %Moved outside of loop
+% prevVal = 1;
+% for i=1:length(series)
+%     if series(i)==prevVal
+%         localZeros(prevVal,:) = excessVec0(i,:);
+%         localZerosAllPoints(i,:) = localZeros(prevVal,:);
+%         prevVal = prevVal+1;
+%     else
+%         counter(prevVal) = i;
+%         localZerosAllPoints(i,:) = localZeros(prevVal-1,:);
+%     end
+%     %        globalZerosAllPoints(i,:) = globalZeros;
+% end
+% 
+% %add '1' to every value of counter to find the indices of the local zeros
+% indexLocalZero = counter(:)+1;
+
+for i=1:dimFlag
+%     dainputs2(:,i) = excessVec0(:,i)-globalZeros(i);
+%     %
+%     dalz2(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
+    %
+    biggee(:,i) = 0;
+    %
+end
+dainputs2=excessVec0-globalZerosAllPoints0;
+dalz2=localZerosAllPoints-globalZerosAllPoints0;
+% Call the Algebraic Subroutine
+%
+
+%
+[comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs2,dalz2,biggee);
+%%
+%%
+%%
+
+
+%% Effectively removes the original tare values so we can calculate the averages
+for i=1:lasttare
+    comIN(nterms+i,:) = 0;
+    comLZ(nterms+i,:) = 0;
+    comGZ(nterms+i,:) = 0;
+end
+
+%%
+
+for loopk=1:numpts
+    comLZ(nterms+series(loopk),loopk) = 1.0;
+end
+
+%%
+%%
+
+
+comINminLZ = comIN-comLZ;
+
+%APPROXIMATION
+%define the approximation for inputs minus local zeros
+aprxINminLZ = comINminLZ'*xcalib;
+
+
+%DIFFERENT APPROXIMATION
+%define the approximation for inputs minus global zeros
+intercepts = -(comGZ'*xcalib);
+aprxIN = (xcalib'*comIN)';
+aprxLZ = (xcalib'*comLZ)';       %to find tares AAM042016
+for m=1:length(aprxIN)
+    %    aprxINminGZ(m,:) = aprxIN(m,:)+intercepts;  %ajm zap 3/23/18
+    %    aprxLZminGZ(m,:) = aprxLZ(m,:)+intercepts;  %ajm zap 3/23/18
+    
+    aprxINminGZ(m,:) = aprxIN(m,:);
+    aprxLZminGZ(m,:) = aprxLZ(m,:); %to find tares AAM042016
+    
+    %subtracts the targets from the global approx
+    %This will be averaged over the individual series to give the tares
+    
+    checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
+end
+
+%create new vectors of series and checkit sorted by series in assending
+%order
+[series_sort,seriesI]=sort(series);
+checkit_sort=checkit(seriesI,:);
+
+%count number of entries for each series
+% SOLVE FOR TARES BY TAKING THE MEAN
+for i=1:nseries
+    index_count(i)=sum(series==i);
+    fzap(i,:)=mean(checkit_sort(sum(index_count(1:i-1))+1:sum(index_count),:));
+end
+    end
