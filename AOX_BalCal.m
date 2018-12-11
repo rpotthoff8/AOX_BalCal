@@ -359,8 +359,12 @@ indexLocalZero = counter(:)+1;
 %%start function
 bootalpha=.01;
 f=@zapFinder;
-[fzap,fxcalib]=f(comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
-fzap_ci=bootci(2000,{f,comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries}, 'type', 'cper','alpha',bootalpha);
+[fout]=f(comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
+fzap=fout(1:nseries,:);
+fxcalib=fout(nseries+1:size(fout,1),:);
+f_ci=bootci(2000,{f,comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries}, 'type', 'cper','alpha',bootalpha);
+fzap_ci=f_ci(:,1:nseries,:);
+fxcalib_ci=f_ci(:,nseries+1:size(f_ci,2),:);
 %     
     
     
@@ -368,10 +372,10 @@ fzap_ci=bootci(2000,{f,comINminLZ',targetMatrix,series_complete,excessVec0_compl
     %SOLUTION
     xcalib = comINminLZ'\targetMatrix;                    % '\' solution of Ax=b
     
-    %BOOTSTRAP COEFFICIENTS
-    coeff_solve=@(comIN,target)comIN\target;
-    xcalib_ci2=bootci(2000,coeff_solve,comINminLZ',targetMatrix);
-    % END Bootstrap
+%     %BOOTSTRAP COEFFICIENTS
+%     coeff_solve=@(comIN,target)comIN\target;
+%     xcalib_ci2=bootci(2000,coeff_solve,comINminLZ',targetMatrix);
+%     % END Bootstrap
  
     %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
     %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
@@ -2160,7 +2164,7 @@ disp('Calculations Complete.')
 %
 
 %toc
-    function [fzap,xcalib]=zapFinder(comIN,target,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries)
+    function [out]=zapFinder(comIN,target,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries)
         xcalib = comIN\target;                    % '\' solution of Ax=b
     
     %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
@@ -2277,4 +2281,5 @@ for i=1:nseries
     index_count(i)=sum(series==i);
     fzap(i,:)=mean(checkit_sort(sum(index_count(1:i-1))+1:sum(index_count),:));
 end
+out=[fzap;xcalib];
     end
