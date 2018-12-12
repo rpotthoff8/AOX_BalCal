@@ -2237,7 +2237,7 @@ for i=1:lasttare
     comGZ(nterms+i,:) = 0;
 end
 
-%%
+%
 
 for loopk=1:numpts
     comLZ(nterms+series(loopk),loopk) = 1.0;
