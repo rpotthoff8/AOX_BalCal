@@ -361,14 +361,11 @@ bootalpha=.01;
 f=@zapFinder;
 [fout]=f(comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
 fzap=fout(1:nseries,:);
-faprxLZminGZ_series=fout(size(fzap,1)+1:size(fzap,1)+nseries,:);
-fxcalib=fout(size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
-
+fxcalib=fout(nseries+1:size(fout,1),:);
 f_ci=bootci(2000,{f,comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries}, 'type', 'cper','alpha',bootalpha);
 fzap_ci=f_ci(:,1:nseries,:);
-faprxLZminGZ_ci=f_ci(:,size(fzap,1)+1:size(fzap,1)+nseries,:);
-fxcalib_ci=f_ci(:,size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
-    
+fxcalib_ci=f_ci(:,nseries+1:size(f_ci,2),:);
+%     
     
     
     %%
@@ -464,6 +461,7 @@ for i=1:lasttare
 end
 
 %%
+
 for loopk=1:numpts
     comLZ(nterms+series(loopk),loopk) = 1.0;
 end
@@ -2238,10 +2236,10 @@ for i=1:lasttare
 end
 
 %%
-%UNDO
-% for loopk=1:numpts
-%     comLZ(nterms+series(loopk),loopk) = 1.0;
-% end
+
+for loopk=1:numpts
+    comLZ(nterms+series(loopk),loopk) = 1.0;
+end
 
 %%
 %%
@@ -2285,7 +2283,7 @@ aprxLZminGZ_sort=aprxLZminGZ(seriesI,:);
 for i=1:nseries
     index_count(i)=sum(series==i); %Find number of datapoints in each series
     fzap(i,:)=mean(checkit_sort(sum(index_count(1:i-1))+1:sum(index_count),:)); %Take mean of checkit for each series
-    aprxLZminGZ_series(i,:)=aprxLZminGZ_sort(sum(index_count(1:i-1))+1,:); %Find matrix of Local zero approximations, 1 line for each series
+    aprxLZminGZ_series(i,:)=aprxLZminGZ_sort(sum(index_count(1:i-1))+1,:); %Find matrix of Local zero approximations, 1 line for each serie
 end
-out=[fzap;aprxLZminGZ_series;xcalib];
+out=[fzap;xcalib];
     end
