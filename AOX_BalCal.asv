@@ -356,10 +356,15 @@ for lhs = 1:numLHS
 %add '1' to every value of counter to find the indices of the local zeros
 indexLocalZero = counter(:)+1;
 
-% %     %%start function
-% f=@zapFinder;
-% fzap=f(comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
-% zap_ci=bootci(2000,f,comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
+%%start function
+bootalpha=.01;
+f=@zapFinder;
+[fout]=f(comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
+fzap=fout(1:nseries,:);
+fxcalib=fout(nseries+1:size(fout,1),:);
+f_ci=bootci(2000,{f,comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries}, 'type', 'cper','alpha',bootalpha);
+fzap_ci=f_ci(:,1:nseries,:);
+fxcalib_ci=f_ci(:,nseries+1:size(f_ci,2),:);
 %     
     
     
@@ -367,24 +372,11 @@ indexLocalZero = counter(:)+1;
     %SOLUTION
     xcalib = comINminLZ'\targetMatrix;                    % '\' solution of Ax=b
     
-    %BOOTSTRAP COEFFICIENTS
-    coeff_solve=@(comIN,target)comIN\target;
-    xcalib_ci=bootci(2000,coeff_solve,comINminLZ',targetMatrix);
-    % END Bootstrap
-    
-%     jackstat_xcalib=jackknife(coeff_solve,comINminLZ',targetMatrix);
-%     xbar=mean(jackstat_xcalib);
-% %     V=(1/(size(jackstat_xcalib,2)-1))*(sum((jackstat_xcalib-xbar).^2));
-%     sum=0;
-%     for i=1:size(jackstat_xcalib,2)
-%         sum=sum+(jackstat_xcalib(i,:)-xbar).^2;
-%     end
-%     V2=(1/(size(jackstat_xcalib,2)-1))*sum;
-%     jackstat_lower=xbar-1.960*sqrt((1/size(jackstat_xcalib,2))*V2);
-    
-    
-
-    
+%     %BOOTSTRAP COEFFICIENTS
+%     coeff_solve=@(comIN,target)comIN\target;
+%     xcalib_ci2=bootci(2000,coeff_solve,comINminLZ',targetMatrix);
+%     % END Bootstrap
+ 
     %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
     %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
     %    xcalib = pinv(comINminLZ',1e-2)*targetMatrix;             % alternate solution method
@@ -1390,9 +1382,7 @@ if balVal_FLAG == 1
         end
         
         zapvalid(i,:) = mean(zoop)*numptsvalid/(indexLocalZerovalid(i+1)-indexLocalZerovalid(i));
-        %Bootstrap residuals
-        zapvalid_ci(2*i-1:2*i,:)=bootci(5000,{meanResidual,zoop},'alpha',.01);
-        %end bootstrap
+
     end
     %%
     %%
@@ -2174,8 +2164,8 @@ disp('Calculations Complete.')
 %
 
 %toc
-    function fzap=zapFinder(comIN,target,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries)
-        xcalib = comIN\target;                    % '\' solution of Ax=b
+    function [out]=zapFinder(comINminLZ,target,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries)
+        xcalib = comINminLZ\target;                    % '\' solution of Ax=b
     
     %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
     %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
@@ -2283,26 +2273,17 @@ end
 %create new vectors of series and checkit sorted by series in assending
 %order
 [series_sort,seriesI]=sort(series);
-checkit_sort=checkit(I);
+checkit_sort=checkit(seriesI,:);
+localZerosAllPoints_sort=localZerosAllPoints(seriesI,:);
+aprxLZminGZ_sort=aprxLZminGZ(seriesI,:);
+
 
 %count number of entries for each series
+% SOLVE FOR TARES BY TAKING THE MEAN
 for i=1:nseries
-    index_count(i)=sum(series==i);
-    fzap(i,:)=mean(checkit(sum(index_count(1:i-1))+
+    index_count(i)=sum(series==i); %Find number of datapoints in each series
+    fzap(i,:)=mean(checkit_sort(sum(index_count(1:i-1))+1:sum(index_count),:)); %Take mean of checkit for each series
+    aprxLZminGZ_series(i,:)=aprxLZminGZ_sort(sum(index_count(1:i-1))+1,:); %Find matrix of Local zero approximations, 1 line for each serie
 end
-
-
-%%
-%% SOLVE FOR TARES BY TAKING THE MEAN
-for i=1:nseries
-    zoop = zeros(length(excessVec(:,1)),dimFlag);
-    kx=indexLocalZero(i)-1;
-    
-    for m=indexLocalZero(i):indexLocalZero(i+1)-1
-        zoop(m-kx,:) = checkit(m,:);
-    end
-    
-    fzap(i,:) = mean(zoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
-    
-end
+out=[fzap;xcalib];
     end
