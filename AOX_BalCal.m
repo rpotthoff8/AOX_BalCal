@@ -158,8 +158,7 @@ for lhs = 1:numLHS
     disp('  ')
     disp('Working ...')
 
-    %%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                 VOLTAGE TO LOAD (DIRECT) SECTION      AJM 8/3/17           %
     %Use the measured to best voltages mapping to find the calibration coefficients
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -182,9 +181,6 @@ for lhs = 1:numLHS
     
     %load capacities
     loadCapacities(loadCapacities == 0) = realmin;
-    
-    %find number of series; this will tell us the number of tares
-    nseries = max(series);
     
     %find zero points of each series and number of points in a series
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
