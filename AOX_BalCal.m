@@ -49,6 +49,9 @@ excel_FLAG = 1;
 %TO OUTPUT CORRELATION PLOTS                       set corr_FLAG = 1;
 corr_FLAG = out.corr;
 %
+%TO OUTPUT CORRELATION PLOTS                       set rescorr_FLAG = 1;
+rescorr_FLAG = out.rescorr;
+%
 %TO OUTPUT RESIDUALS                               set rest_FLAG = 1;
 res_FLAG = out.res;
 %
@@ -494,6 +497,13 @@ end
 
 %RESIDUAL
 targetRes = targetMatrix+taretal-aprxINminGZ;      %0=b-Ax
+
+reslist = {'resN1','resN2','resS1','resS2','resRM','resAF','resPLM',...
+    'resPCM', 'resMLM', 'resMCM'};
+if rescorr_FLAG == 1
+    figure('Name','Residual correlation plot','NumberTitle','off');
+    correlationPlot(excessVec0, targetRes, voltagelist, reslist);
+end
 
 %find the sum of squares of the residual using the dot product
 resSquare = dot(targetRes,targetRes)';
