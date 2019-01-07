@@ -2239,10 +2239,10 @@ end
 
 
 %%
-
-for loopk=1:numpts
-    comLZ(nterms+series(loopk),loopk) = 1.0;
-end
+%QUESTION
+% for loopk=1:numpts
+%     comLZ(nterms+series(loopk),loopk) = 1.0;
+% end
 
 %%
 %%
