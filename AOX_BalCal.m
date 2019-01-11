@@ -342,7 +342,7 @@ for lhs = 1:numLHS
         comLZ(nterms+series(loopk),loopk) = 1.0;
     end
     
-    %%
+    %
     %%
     
     
@@ -434,14 +434,42 @@ for i=1:lasttare
 end
 
 %%
+%CHANGED 9 JAN 19 JRP
+% for loopk=1:numpts
+%     comLZ(nterms+series(loopk),loopk) = 1.0;
+% end
 
-for loopk=1:numpts
-    comLZ(nterms+series(loopk),loopk) = 1.0;
+%%
+%%
+%ADDED 9 Jan 19 JRP
+nCarlo=200000;
+for i=1:nseries
+    localZeros_da(i,:)=localZeros(i,:)-globalZeros(:)';
 end
+%Define magnitude of noise:
+percentVoltage=0.01; %percent of max recorded voltage that is noise
+Maxnoise=percentVoltage*max(abs(dainputs2));
+noise=-Maxnoise+(2*Maxnoise).*rand(nCarlo,size(localZeros_da,2));
 
-%%
-%%
+for i=1:1
+series_tare=zeros(nCarlo,1);
+series_tare(:,1)=i;
+dalz2_tare=zeros(nCarlo,size(localZeros_da,2));
 
+for j=1:nCarlo
+dalz2_tare(j,:)=localZeros_da(i,:);
+end
+dainputs2_tare=dalz2_tare+noise;
+
+[comIN_tare,comLZ_tare,comGZ_tare]=balCal_algEquations3(model_FLAG,nterms,dimFlag,nCarlo,series_tare,i,dainputs2_tare,dalz2_tare,biggee);
+for j=1:lasttare
+    comIN_tare(nterms+j,:) = 0;
+    comLZ_tare(nterms+j,:) = 0;
+    comGZ_tare(nterms+j,:) = 0;
+end
+aprxIN_tare = (xcalib'*comIN_tare)';
+aprxLZ_tare = (xcalib'*comLZ_tare)';       %to find tares AAM042016
+end
 
 comINminLZ = comIN-comLZ;
 
