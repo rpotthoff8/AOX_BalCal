@@ -447,11 +447,18 @@ for i=1:nseries
     localZeros_da(i,:)=localZeros(i,:)-globalZeros(:)';
 end
 %Define magnitude of noise:
-percentVoltage=0.01; %percent of max recorded voltage that is noise
+percentVoltage=0.001; %percent of max recorded voltage that is noise
 Maxnoise=percentVoltage*max(abs(dainputs2));
-noise=-Maxnoise+(2*Maxnoise).*rand(nCarlo,size(localZeros_da,2));
 
-for i=1:1
+% noise=-Maxnoise+(2*Maxnoise).*rand(nCarlo,size(localZeros_da,2));
+% %equally distributed noise
+
+sigma=Maxnoise./3; % 99.7% of the noise points will be within the defined Maxnoise
+noise=sigma.*randn(nCarlo,size(localZeros_da,2));
+
+
+
+for i=1:nseries
 series_tare=zeros(nCarlo,1);
 series_tare(:,1)=i;
 dalz2_tare=zeros(nCarlo,size(localZeros_da,2));
@@ -469,6 +476,7 @@ for j=1:lasttare
 end
 aprxIN_tare = (xcalib'*comIN_tare)';
 aprxLZ_tare = (xcalib'*comLZ_tare)';       %to find tares AAM042016
+tareStd(i,:)=std(aprxIN_tare);
 end
 
 comINminLZ = comIN-comLZ;
