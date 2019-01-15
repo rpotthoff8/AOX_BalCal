@@ -131,12 +131,12 @@ matrixcolumnlabels = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'
 matrixcolumnlabels(:) = strrep(matrixcolumnlabels(:),'''',''); %get rid of single quotes
 
 loadlist = {'N1','N2','S1','S2','RM','AF','PLM', 'PCM', 'MLM', 'MCM'};
-voltagelist = {'R1','R2','R3','R4','R5','R6','rPLM','rPCM','rMLM','rMCM'};
+voltagelist = {'rN1','rN2','rS1','rS2','rRM','rAF','rPLM','rPCM','rMLM','rMCM'};
 %%%%
 
 if corr_FLAG == 1
     figure('Name','Correlation plot','NumberTitle','off');
-    correlationPlot(excessVec0, targetMatrix0, voltagelist, loadlist);
+    correlationPlot(targetMatrix0, excessVec0, loadlist, voltagelist);
 end
 
 if LHS_Flag == 0
