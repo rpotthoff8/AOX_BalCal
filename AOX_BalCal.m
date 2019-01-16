@@ -348,6 +348,8 @@ for lhs = 1:numLHS
     
     comINminLZ = comIN-comLZ;
  
+   %START: Changes made for bootstrap CI for coefficients, tare from mean
+   %(zap)
     %START issues with resampling
     %Moved outside of loop
     prevVal = 1;
@@ -368,27 +370,24 @@ indexLocalZero = counter(:)+1;
 
 %%start function
 bootalpha=.01;
+nbootstrap=2000;
 f=@zapFinder;
 [fout]=f(comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
 fzap=fout(1:nseries,:);
 faprxLZminGZ_series=fout(size(fzap,1)+1:size(fzap,1)+nseries,:);
 fxcalib=fout(size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
 
-f_ci=bootci(2000,{f,comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries}, 'type', 'cper','alpha',bootalpha);
+f_ci=bootci(nbootstrap,{f,comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries}, 'type', 'cper','alpha',bootalpha);
 fzap_ci=f_ci(:,1:nseries,:);
 faprxLZminGZ_ci=f_ci(:,size(fzap,1)+1:size(fzap,1)+nseries,:);
 fxcalib_ci=f_ci(:,size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
     
-    
+% END: bootstrap section
     
     %%
     %SOLUTION
     xcalib = comINminLZ'\targetMatrix;                    % '\' solution of Ax=b
     
-%     %BOOTSTRAP COEFFICIENTS
-%     coeff_solve=@(comIN,target)comIN\target;
-%     xcalib_ci2=bootci(2000,coeff_solve,comINminLZ',targetMatrix);
-%     % END Bootstrap
  
     %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
     %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
@@ -549,6 +548,21 @@ end
 resSquare = dot(targetRes,targetRes)';
 %AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
 
+%START: uncertainty propagation JRP 16 Jan 19
+%Take Confidence interval found for coefficients using bootstrap, and store
+%the absolute value of the larger error between +/- in a matrix
+for i=1:size(xcalib,1)
+    for j=1:size(xcalib,2)
+        for k=1:2
+            error(k,i,j)=abs(fxcalib_ci(k,i,j)-xcalib(i,j));
+        end
+        xcalib_error(i,j)=max(error(:,i,j));
+    end
+end
+comIN_square=comIN.^2; %Square input matrix
+xcalib_error_square=xcalib_error.^2; %square error matrix
+coeff_error=sqrt((xcalib_error_square'*comIN_square)'); %Matrix for error in each calibration point from uncertainty in coefficients(+/-)
+%END: uncertainty propagation
 
 %---------------------------------------------------------------
 %---------------------------------------------------------------
