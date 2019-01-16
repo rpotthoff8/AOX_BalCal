@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 11-Nov-2018 14:37:35
+% Last Modified by GUIDE v2.5 29-Dec-2018 13:35:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,7 +54,7 @@ function AOX_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % varargin   command line arguments to AOX_GUI (see VARARGIN)
 
 global VERSION
-VERSION = 13;
+VERSION = 15;
 try
     
     [nasalogo,~,aln] = imread('nasa.png','BackgroundColor',[0.941, 0.941, 0.941]);
@@ -94,6 +94,8 @@ if exist(fileName,'file')
         outlier_FLAGcheck_Callback(handles.outlier_FLAGcheck, eventdata, handles);
         set(handles.numSTD,'String',default.numSTD);
         set(handles.zeroed_FLAGcheck,'Value',default.zeroed);
+        set(handles.corr_FLAGcheck,'Value',default.corr);
+        set(handles.rescorr_FLAGcheck,'Value',default.rescorr);
 
         set(handles.calibrate,'Value',default.calibrate);
         set(handles.calPath,'String',default.calPath);
@@ -244,6 +246,8 @@ outStruct.outlier = get(handles.outlier_FLAGcheck,'Value');
 outStruct.numSTD = str2num(get(handles.numSTD,'String'));
 %outStruct.loglog = get(handles.loglog_FLAGcheck,'Value');
 outStruct.zeroed = get(handles.zeroed_FLAGcheck,'Value');
+outStruct.corr = get(handles.corr_FLAGcheck,'Value');
+outStruct.rescorr = get(handles.rescorr_FLAGcheck,'Value');
 
 switch get(get(handles.modelPanel,'SelectedObject'),'Tag');
     case 'full', outStruct.model = 1;
@@ -1149,6 +1153,8 @@ default.hist = get(handles.hist_FLAGcheck,'Value');
 default.outlier = get(handles.outlier_FLAGcheck,'Value');
 default.numSTD = get(handles.numSTD,'String');
 default.zeroed = get(handles.zeroed_FLAGcheck,'Value');
+default.corr = get(handles.corr_FLAGcheck,'Value');
+default.rescorr = get(handles.rescorr_FLAGcheck,'Value');
 
 default.action = get(get(handles.actionpanel,'SelectedObject'),'tag');
 default.calibrate = get(handles.calibrate,'Value');
@@ -1734,3 +1740,21 @@ function a42_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in corr_FLAGcheck.
+function corr_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to corr_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of corr_FLAGcheck
+
+
+% --- Executes on button press in rescorr_FLAGcheck.
+function rescorr_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to rescorr_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of rescorr_FLAGcheck

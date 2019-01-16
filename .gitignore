@@ -8,4 +8,11 @@
 *.cal
 *.val
 *.app
+<<<<<<< HEAD
 AOX_BalCal.asv
+=======
+
+# MATLAB autosave files #
+#########################
+*.asv
+>>>>>>> master
