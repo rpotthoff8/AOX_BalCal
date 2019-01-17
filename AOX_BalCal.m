@@ -442,23 +442,21 @@ end
 %%
 %%
 %ADDED 9 Jan 19 JRP
-nCarlo=200000;
+nCarlo=200;
 for i=1:nseries
     localZeros_da(i,:)=localZeros(i,:)-globalZeros(:)';
 end
 %Define magnitude of noise:
-percentVoltage=0.001; %percent of max recorded voltage that is noise
+percentVoltage=0.01; %percent of max recorded voltage that is noise
 Maxnoise=percentVoltage*max(abs(dainputs2));
 
 % noise=-Maxnoise+(2*Maxnoise).*rand(nCarlo,size(localZeros_da,2));
 % %equally distributed noise
 
 sigma=Maxnoise./3; % 99.7% of the noise points will be within the defined Maxnoise
-noise=sigma.*randn(nCarlo,size(localZeros_da,2));
-
-
 
 for i=1:nseries
+noise=sigma.*randn(nCarlo,size(localZeros_da,2));
 series_tare=zeros(nCarlo,1);
 series_tare(:,1)=i;
 dalz2_tare=zeros(nCarlo,size(localZeros_da,2));
@@ -477,8 +475,28 @@ end
 aprxIN_tare = (xcalib'*comIN_tare)';
 aprxLZ_tare = (xcalib'*comLZ_tare)';       %to find tares AAM042016
 tareStd(i,:)=std(aprxIN_tare);
+tare(i,:)=mean(aprxLZ_tare);
 end
 
+for i=1:20 %Change 20 to # datapoints
+   noise=sigma.*randn(nCarlo,size(localZeros_da,2));
+   for j=1:nCarlo
+        dalz2_carlo(j,:)=dalz2(i,:);
+        dainputs2_carlo(j,:)=dainputs2(i,:);
+        series_carlo(j)=series(i);
+   end
+   dainputs2_carlo=dainputs2_carlo+noise;
+   [comIN_carlo,comLZ_carlo,comGZ_carlo]=balCal_algEquations3(model_FLAG,nterms,dimFlag,nCarlo,series_carlo,max(series_carlo),dainputs2_carlo,dalz2_carlo,biggee);
+   for j=1:lasttare
+    comIN_carlo(nterms+j,:) = 0;
+    comLZ_carlo(nterms+j,:) = 0;
+    comGZ_carlo(nterms+j,:) = 0;
+   end
+    aprxIN_carlo = (xcalib'*comIN_carlo)';
+    aprxLZ_carlo = (xcalib'*comLZ_carlo)';       %to find tares AAM042016
+    pointStd(i,:)=std(aprxIN_carlo);
+end
+%END added for monte-carlo 
 comINminLZ = comIN-comLZ;
 
 %APPROXIMATION

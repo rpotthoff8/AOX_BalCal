@@ -23,6 +23,13 @@ for m=1:ndim
 comINvec(looper,:) = inputmatrix(:,m);
 comLZvec(looper,:) = lzmatrix(:,m);
 comGZvec(looper,:) = gzmatrix(:,m);
+for n=1:ndim %ADD
+    if m==n
+    uncert_comIN(looper,:,n)=ones(1,size(comINvec,2));
+    else
+    uncert_comIN(looper,:,n)=zeros(1,size(comINvec,2));    
+    end
+end %END
 looper = looper+1;
 end
 
@@ -32,6 +39,13 @@ comINvec(looper,:) = abs(inputmatrix(:,m));
 comLZvec(looper,:) = abs(lzmatrix(:,m));
 comGZvec(looper,:) = abs(gzmatrix(:,m));
 looper = looper+1;
+for n=1:ndim %ADD
+    if m==n
+    uncert_comIN(looper,:,n)=sign(inputmatrix(:,m));
+    else
+    uncert_comIN(looper,:,n)=zeros(1,size(comINvec,2));    
+    end
+end %END
 end
 
 
