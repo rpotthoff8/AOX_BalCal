@@ -20,7 +20,6 @@ disp('Copyright 2018 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal. 
 %                       USER INPUT SECTION
 %
 out = AOX_GUI;
-%out = AOX_GUIv12;
 if out.cancel == 1
     return
 end
@@ -76,19 +75,13 @@ LHSp = out.LHSp; %Percent of data used to create sample.
 % A mean of the coefficients is calculated afterwards.
 %
 load(out.savePathcal,'-mat');
+series0 = series;
 %
 %                       END USER INPUT SECTION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-excessVec0_complete = excessVec0;
-targetMatrix0_complete = targetMatrix0;
-series_complete = series;
-
-%iloadCapacities = max(abs(excessVec0_complete));
-
 % 6_14_18 ajm
 warning('off','all');
-warning;
 %
 
 disp('Starting Calculations')
@@ -102,21 +95,20 @@ end
 
 % 6_14_18 ajm
 matrixcolumnlabels = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
-matrixcolumnlabels(:) = strrep(matrixcolumnlabels(:),'''',''); %get rid of single quotes
 
 loadlist = {'N1','N2','S1','S2','RM','AF','PLM', 'PCM', 'MLM', 'MCM'};
 voltagelist = {'rN1','rN2','rS1','rS2','rRM','rAF','rPLM','rPCM','rMLM','rMCM'};
 
 if corr_FLAG == 1
     figure('Name','Correlation plot','NumberTitle','off');
-    correlationPlot(targetMatrix0, excessVec0, loadlist, voltagelist);
+    correlationPlot(targetMatrix0, excessVec, loadlist, voltagelist);
 end
 
 if LHS_Flag == 0
     numLHS = 1;
 end
-lhs_check = zeros(length(excessVec0_complete),1);
-ind = 1:length(excessVec0_complete(:,1));
+lhs_check = zeros(length(excessVec0),1);
+ind = 1:length(excessVec0(:,1));
 
 if LHS_Flag == 1
     disp('  ')
@@ -127,71 +119,53 @@ end
 for lhs = 1:numLHS
     
     if LHS_Flag == 1
-        [series,targetMatrix0,excessVec0,sample] = AOX_LHS(series_complete,targetMatrix0_complete,excessVec0_complete,LHSp);
+        [series,targetMatrix,excessVec,sample] = AOX_LHS(series0,targetMatrix0,excessVec0,LHSp);
         lhs_check(sample) = 1;
         ind(find(lhs_check-1)); % This line outputs which data points haven't been sampled yet
         pct_sampled = sum(lhs_check)/length(lhs_check); % This line outputs what percentage of points have been sampled
+    else
+        excessVec = excessVec0;
+        targetMatrix = targetMatrix0;
+        series = series0;
     end
     
-    [numpts, dimFlag] = size(excessVec0);    
+    [numpts, dimFlag] = size(excessVec);    
     
     %find the average natural zeros (also called global zeros)
     globalZeros = mean(natzeros);    
     
-    %load capacities
-    loadCapacities(loadCapacities == 0) = realmin;
-    
     [~,s_1st,s_id] = unique(series);
-    
     %find number of series; this will tell us the number of tares
     nseries = length(s_1st);  
     
     %find zero points of each series and number of points in a series
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
     %section
-    [localZeros0,localZerosAllPoints0] = localzeros(series,excessVec0);    
-    globalZerosAllPoints0 = ones(numpts,1)*globalZeros;
-    
-    % 5/16/18
-    excessVec = excessVec0 - globalZerosAllPoints0;
-    localZerosAllPoints =  localZerosAllPoints0 - globalZerosAllPoints0;
-    %
+    [localZeros,localZerosAllPoints] = localzeros(series,excessVec);    
+    globalZerosAllPoints = ones(numpts,1)*globalZeros;
     
     disp('  ')
     disp('Working ...')
-
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                 VOLTAGE TO LOAD (DIRECT) SECTION      AJM 8/3/17           %
     %Use the measured to best voltages mapping to find the calibration coefficients
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
-    targetMatrix = targetMatrix0;
-    excessVec = excessVec0; % Direct approach uses the measured voltage
     
     % Indirect approach uses the modeled voltage
     if approach_FLAG == 1
         if balCal_FLAG == 2
-            excessVec0 = qtaprxINminGZ2 + globalZerosAllPoints0;
+            excessVec = qtaprxINminGZ2 + globalZerosAllPoints;
         else
-            excessVec0 = qtaprxINminGZ + globalZerosAllPoints0;
+            excessVec = qtaprxINminGZ + globalZerosAllPoints;
         end
-    end
-    
-    %find the average natural zeros (also called global zeros)
-    globalZeros = mean(natzeros);
-    %globalZeros = zeros(length(excessVec(1,:)),1);
-    
-    %load capacities
-    loadCapacities(loadCapacities == 0) = realmin;
-    
-    %find zero points of each series and number of points in a series
-    %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
-    %section
-    [localZeros,localZerosAllPoints] = localzeros(series,excessVec0);    
+    end   
     
     %%% Subtract the Global Zeros from the Inputs and Local Zeros %%%%%%%%%%
+    dainputs = excessVec - globalZerosAllPoints;
+    dalz = localZerosAllPoints - globalZerosAllPoints;
     for i=1:dimFlag
-        dainputs(:,i) = excessVec0(:,i)-globalZeros(i);
+        dainputs(:,i) = excessVec(:,i)-globalZeros(i);
         %
         dalz(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
         %
@@ -217,6 +191,7 @@ for lhs = 1:numLHS
     end
     
     % Call the Algebraic Subroutine
+    comIN = balCal_algEqns(model_FLAG,dainputs);
     [comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs,dalz,biggee);
     
     % Effectively removes the original tare values so we can calculate the averages
@@ -269,15 +244,14 @@ if LHS_Flag == 1
     xcalib_std = std(x_all,[],3);
 end
 
-excessVec0 = excessVec0_complete;
-excessVec = excessVec0;
-targetMatrix = targetMatrix0_complete;
-series = series_complete;
+excessVec = excessVec;
+targetMatrix = targetMatrix0;
+series = series0;
 
-[localZeros,localZerosAllPoints] = localzeros(series,excessVec0);
+[localZeros,localZerosAllPoints] = localzeros(series,excessVec);
 
 for i=1:dimFlag
-    dainputs2(:,i) = excessVec0(:,i)-globalZeros(i);
+    dainputs2(:,i) = excessVec(:,i)-globalZeros(i);
     dalz2(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
     biggee(:,i) = 0;
 end
@@ -326,7 +300,7 @@ reslist = {'resN1','resN2','resS1','resS2','resRM','resAF','resPLM',...
     'resPCM', 'resMLM', 'resMCM'};
 if rescorr_FLAG == 1
     figure('Name','Residual correlation plot','NumberTitle','off');
-    correlationPlot(excessVec0, targetRes, voltagelist, reslist);
+    correlationPlot(excessVec, targetRes, voltagelist, reslist);
 end
 
 %find the sum of squares of the residual using the dot product
@@ -382,7 +356,7 @@ if balOut_FLAG == 1
         
         % Mark the outliers values, store and use for recalculation:
         zeroed_targetMatrix = targetMatrix;
-        zeroed_excessVec = excessVec0;
+        zeroed_excessVec = excessVec;
         zeroed_series = series;
         zeroed_numpts = numpts;
         
@@ -390,14 +364,14 @@ if balOut_FLAG == 1
         zeroed_excessVec(OUTLIER_ROWS,:) = [];
         
         targetMatrix = unique(zeroed_targetMatrix,'rows');
-        excessVec0 = unique(zeroed_excessVec,'rows');
+        excessVec = unique(zeroed_excessVec,'rows');
         
         zeroed_series(OUTLIER_ROWS) = [];
         
         numpts =  zeroed_numpts - num_outliers;
         
         targetMatrix = zeroed_targetMatrix;
-        excessVec0 = zeroed_excessVec;
+        excessVec = zeroed_excessVec;
         series = zeroed_series;
         
         dainputs = zeros(numpts,dimFlag);
@@ -418,12 +392,12 @@ if balOut_FLAG == 1
         rbfINminGZ = zeros(numpts,dimFlag);
         rbfLZminGZ = zeros(numpts,dimFlag);
         
-        [localZeros,localZerosAllPoints] = localzeros(series,excessVec0);
+        [localZeros,localZerosAllPoints] = localzeros(series,excessVec);
         globalZerosAllPoints = ones(numpts,1)*globalZeros;
         
         % Subtract the Global Zeros from the Inputs and Local Zeros
         for i=1:dimFlag
-            dainputs(:,i) = excessVec0(:,i) - globalZerosAllPoints(i);
+            dainputs(:,i) = excessVec(:,i) - globalZerosAllPoints(i);
             dalz(:,i) = localZerosAllPoints(:,i) - globalZerosAllPoints(i);
         end
         
@@ -595,12 +569,12 @@ if balCal_FLAG == 2
     tareHist = cell(numBasis,1);
 
     for i=1:dimFlag
-        dainputscalib(:,i) = excessVec0(:,i)-globalZeros(i);
+        dainputscalib(:,i) = excessVec(:,i)-globalZeros(i);
         dalzcalib(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
     end
     
     %    localZeroMatrix = localZerosAllPoints;
-    globalZerosAllPoints = zeros(length(excessVec0(:,1)),dimFlag); % ajm 6_2_18
+    globalZerosAllPoints = zeros(length(excessVec(:,1)),dimFlag); % ajm 6_2_18
     
     etaLZ = dot(dalzcalib-dainputscalib,dalzcalib-dainputscalib);
     etaGZ = dot(globalZerosAllPoints-dainputscalib,globalZerosAllPoints-dainputscalib);
@@ -609,7 +583,7 @@ if balCal_FLAG == 2
         for s=1:dimFlag
             [goopLoop(s),centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
             
-            for r=1:length(excessVec0(:,1))
+            for r=1:length(excessVec(:,1))
                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
             end
             
@@ -969,7 +943,7 @@ if balVal_FLAG == 1
     end
     
     for k=1:dimFlag % ajm 6_8_18
-        dainputscalib(:,k) = excessVec0(:,k) - globalZeros(k);
+        dainputscalib(:,k) = excessVec(:,k) - globalZeros(k);
     end
     
     if balCal_FLAG == 2
