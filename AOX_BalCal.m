@@ -323,7 +323,7 @@ for lhs = 1:numLHS
     %
     
     %
-    [comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs,dalz,biggee);
+    [comIN,comLZ,comGZ,uncert_comIN]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs,dalz,biggee);
     %%
     %%
     %%
@@ -420,7 +420,7 @@ end
 %
 
 %
-[comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs2,dalz2,biggee);
+[comIN,comLZ,comGZ,uncert_comIN]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs2,dalz2,biggee);
 %%
 %%
 %%
@@ -441,20 +441,23 @@ end
 
 %%
 %%
-%ADDED 9 Jan 19 JRP
-nCarlo=200;
+%ADDED 9 Jan 19 JRP: Monte carlo
+nCarlo=10000;
 for i=1:nseries
     localZeros_da(i,:)=localZeros(i,:)-globalZeros(:)';
 end
-%Define magnitude of noise:
-percentVoltage=0.01; %percent of max recorded voltage that is noise
-Maxnoise=percentVoltage*max(abs(dainputs2));
+
+% %Define magnitude of noise:
+% percentVoltage=0.01; %percent of max recorded voltage that is noise
+% Maxnoise=percentVoltage*max(abs(dainputs2));
 
 % noise=-Maxnoise+(2*Maxnoise).*rand(nCarlo,size(localZeros_da,2));
 % %equally distributed noise
+% sigma=Maxnoise./3; % 99.7% of the noise points will be within the defined Maxnoise
 
-sigma=Maxnoise./3; % 99.7% of the noise points will be within the defined Maxnoise
+sigma=1/2; %Trust all channels down to 1 microvolt, sigma is trust/2
 
+%Monte carlo for uncert in tares due to uncert in read voltages
 for i=1:nseries
 noise=sigma.*randn(nCarlo,size(localZeros_da,2));
 series_tare=zeros(nCarlo,1);
@@ -466,7 +469,7 @@ dalz2_tare(j,:)=localZeros_da(i,:);
 end
 dainputs2_tare=dalz2_tare+noise;
 
-[comIN_tare,comLZ_tare,comGZ_tare]=balCal_algEquations3(model_FLAG,nterms,dimFlag,nCarlo,series_tare,i,dainputs2_tare,dalz2_tare,biggee);
+[comIN_tare,comLZ_tare,comGZ_tare,uncert_comIN_tare]=balCal_algEquations3(model_FLAG,nterms,dimFlag,nCarlo,series_tare,i,dainputs2_tare,dalz2_tare,biggee);
 for j=1:lasttare
     comIN_tare(nterms+j,:) = 0;
     comLZ_tare(nterms+j,:) = 0;
@@ -478,6 +481,7 @@ tareStd(i,:)=std(aprxIN_tare);
 tare(i,:)=mean(aprxLZ_tare);
 end
 
+%Monte carlo for uncert in all datapoints due to uncert in read voltages
 for i=1:20 %Change 20 to # datapoints
    noise=sigma.*randn(nCarlo,size(localZeros_da,2));
    for j=1:nCarlo
@@ -486,7 +490,7 @@ for i=1:20 %Change 20 to # datapoints
         series_carlo(j)=series(i);
    end
    dainputs2_carlo=dainputs2_carlo+noise;
-   [comIN_carlo,comLZ_carlo,comGZ_carlo]=balCal_algEquations3(model_FLAG,nterms,dimFlag,nCarlo,series_carlo,max(series_carlo),dainputs2_carlo,dalz2_carlo,biggee);
+   [comIN_carlo,comLZ_carlo,comGZ_carlo,uncert_comIN_carlo]=balCal_algEquations3(model_FLAG,nterms,dimFlag,nCarlo,series_carlo,max(series_carlo),dainputs2_carlo,dalz2_carlo,biggee);
    for j=1:lasttare
     comIN_carlo(nterms+j,:) = 0;
     comLZ_carlo(nterms+j,:) = 0;
@@ -494,9 +498,12 @@ for i=1:20 %Change 20 to # datapoints
    end
     aprxIN_carlo = (xcalib'*comIN_carlo)';
     aprxLZ_carlo = (xcalib'*comLZ_carlo)';       %to find tares AAM042016
-    pointStd(i,:)=std(aprxIN_carlo);
+    load_std_carlo(i,:)=std(aprxIN_carlo);
 end
 %END added for monte-carlo 
+
+
+
 comINminLZ = comIN-comLZ;
 
 %APPROXIMATION
@@ -522,6 +529,23 @@ for m=1:length(aprxIN)
     checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
 end
 
+%ADDED 23 Jan 19 JRP: Analytical calc of uncert in loads due to uncertainty in read
+%voltages
+sigma=1/2; %Trust all channels down to 1 microvolt, sigma is trust/2
+for i=1:lasttare
+    for j=1:dimFlag
+    uncert_comIN(nterms+i,:,j) = 0;
+    end
+end
+load_std=zeros(size(aprxIN));
+for i=1:dimFlag
+    partial(:,:,i)=uncert_comIN(:,:,i)'*xcalib;
+    uncert_channel_square(:,:,i)=((partial(:,:,i)).^2).*sigma^2;
+    load_std=load_std+sqrt(uncert_channel_square(:,:,i));
+end
+
+
+%END added for uncert 
 
 
 
@@ -1958,7 +1982,7 @@ if balApprox_FLAG == 1
     end
     
     
-    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggeeapprox);
+    [comINapprox,comLZapprox,comGZapprox,uncert_comINapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggeeapprox);
     
     %%
     %%
