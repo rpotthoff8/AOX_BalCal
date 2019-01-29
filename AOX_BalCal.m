@@ -450,16 +450,21 @@ end
 % %Define magnitude of noise:
 % percentVoltage=0.01; %percent of max recorded voltage that is noise
 % Maxnoise=percentVoltage*max(abs(dainputs2));
+Maxnoise=1;
 
-% noise=-Maxnoise+(2*Maxnoise).*rand(nCarlo,size(localZeros_da,2));
-% %equally distributed noise
-% sigma=Maxnoise./3; % 99.7% of the noise points will be within the defined Maxnoise
+%equally distributed noise
+% sigma=Maxnoise./2; % 95% of the noise points will be within the defined Maxnoise
 
 sigma=1/2; %Trust all channels down to 1 microvolt, sigma is trust/2
 
 %Monte carlo for uncert in tares due to uncert in read voltages
 for i=1:nseries
+% Normally distributed noise
 noise=sigma.*randn(nCarlo,size(localZeros_da,2));
+
+% % Equally distributed Noise
+% noise=-Maxnoise+(2*Maxnoise).*rand(nCarlo,size(localZeros_da,2));
+
 series_tare=zeros(nCarlo,1);
 series_tare(:,1)=i;
 dalz2_tare=zeros(nCarlo,size(localZeros_da,2));
@@ -482,8 +487,14 @@ tare(i,:)=mean(aprxLZ_tare);
 end
 
 %Monte carlo for uncert in all datapoints due to uncert in read voltages
-for i=1:20 %Change 20 to # datapoints
-   noise=sigma.*randn(nCarlo,size(localZeros_da,2));
+for i=1:50 %Change 20 to # datapoints size(dainputs2,1)
+
+   % Normally distributed noise
+noise=sigma.*randn(nCarlo,size(localZeros_da,2));
+
+% Equally distributed Noise
+% noise=-Maxnoise+(2*Maxnoise).*rand(nCarlo,size(localZeros_da,2));
+
    for j=1:nCarlo
         dalz2_carlo(j,:)=dalz2(i,:);
         dainputs2_carlo(j,:)=dainputs2(i,:);
@@ -537,12 +548,13 @@ for i=1:lasttare
     uncert_comIN(nterms+i,:,j) = 0;
     end
 end
-load_std=zeros(size(aprxIN));
+load_std_square=zeros(size(aprxIN));
 for i=1:dimFlag
     partial(:,:,i)=uncert_comIN(:,:,i)'*xcalib;
     uncert_channel_square(:,:,i)=((partial(:,:,i)).^2).*sigma^2;
-    load_std=load_std+sqrt(uncert_channel_square(:,:,i));
+    load_std_square=load_std_square+(uncert_channel_square(:,:,i));
 end
+load_std=(load_std_square).^(.5);
 
 
 %END added for uncert 
