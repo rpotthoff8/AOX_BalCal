@@ -337,11 +337,11 @@ for lhs = 1:numLHS
     end
     
     %%
-    
-    for loopk=1:numpts
-        comLZ(nterms+series(loopk),loopk) = 1.0;
-    end
-    
+%       %CHANGED JRP   
+%     for loopk=1:numpts
+%         comLZ(nterms+series(loopk),loopk) = 1.0;
+%     end
+%     
     %
     %%
     
@@ -472,17 +472,12 @@ for i=1:lasttare
     comGZ(nterms+i,:) = 0;
 end
 
-%%
-<<<<<<< HEAD
-for loopk=1:numpts
-    comLZ(nterms+series(loopk),loopk) = 1.0;
-end
-=======
+
 %CHANGED 9 JAN 19 JRP
 % for loopk=1:numpts
 %     comLZ(nterms+series(loopk),loopk) = 1.0;
 % end
->>>>>>> monte-carlo-tare
+
 
 %%
 %%
@@ -588,24 +583,7 @@ for m=1:length(aprxIN)
     checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
 end
 
-%ADDED 23 Jan 19 JRP: Analytical calc of uncert in loads due to uncertainty in read
-%voltages
-uncert=1; %Trust all channels down to 1 microvolt
-for i=1:lasttare
-    for j=1:dimFlag
-    uncert_comIN(nterms+i,:,j) = 0;
-    end
-end
-load_uncert_square=zeros(size(aprxIN));
-for i=1:dimFlag
-    partial(:,:,i)=uncert_comIN(:,:,i)'*xcalib;
-    uncert_channel_square(:,:,i)=((partial(:,:,i)).^2).*uncert^2;
-    load_uncert_square=load_uncert_square+(uncert_channel_square(:,:,i));
-end
-load_uncert=(load_uncert_square).^(.5);
 
-
-%END added for uncert 
 
 
 
@@ -648,7 +626,7 @@ end
 resSquare = dot(targetRes,targetRes)';
 %AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
 
-%START: uncertainty propagation JRP 16 Jan 19
+%START: coeff uncertainty propagation JRP 16 Jan 19
 %Take Confidence interval found for coefficients using bootstrap, and store
 %the absolute value of the larger error between +/- in a matrix
 for i=1:size(xcalib,1)
@@ -661,8 +639,39 @@ for i=1:size(xcalib,1)
 end
 comIN_square=comIN.^2; %Square input matrix
 xcalib_error_square=xcalib_error.^2; %square error matrix
-coeff_error=sqrt((xcalib_error_square'*comIN_square)'); %Matrix for error in each calibration point from uncertainty in coefficients(+/-)
-%END: uncertainty propagation
+coeff_uncert_square=(xcalib_error_square'*comIN_square)'; %Matrix for error in each calibration point from uncertainty in coefficients(+/-)
+%END:  coeff uncertainty propagation
+%ADDED 23 Jan 19 JRP: Analytical calc of uncert in loads due to uncertainty in read
+%voltages
+uncert=1; %Trust all channels down to 1 microvolt
+for i=1:lasttare
+    for j=1:dimFlag
+    uncert_comIN(nterms+i,:,j) = 0;
+    end
+end
+volt_uncert_square=zeros(size(aprxIN));
+for i=1:dimFlag
+    partial(:,:,i)=uncert_comIN(:,:,i)'*xcalib;
+    uncert_channel_square(:,:,i)=((partial(:,:,i)).^2).*uncert^2;
+    volt_uncert_square=volt_uncert_square+(uncert_channel_square(:,:,i));
+end
+
+%Combine uncertainty from coeff and input voltages for 1 total uncertainty
+%value for every datapoint:
+combined_uncert=(coeff_uncert_square+volt_uncert_square).^(.5);
+tare_uncert=combined_uncert(indexLocalZero(1:(numel(indexLocalZero)-1)),:); %Uncert for tare loads
+
+%FL Uncert:
+for i=1:numel(series)
+    if i==indexLocalZero(series(i))
+        FL_uncert(i,:)=combined_uncert(i,:);
+    else
+        FL_uncert(i,:)=(combined_uncert(i,:).^2+tare_uncert(series(i)).^2).^.5;
+    end
+        
+end
+
+%END added for uncert 
 
 %---------------------------------------------------------------
 %---------------------------------------------------------------
