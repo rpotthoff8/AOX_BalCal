@@ -369,7 +369,7 @@ for lhs = 1:numLHS
 indexLocalZero = counter(:)+1;
 
 %%start function
-bootalpha=.01;
+bootalpha=.05;
 nbootstrap=2000;
 f=@zapFinder;
 [fout]=f(comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
