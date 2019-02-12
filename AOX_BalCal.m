@@ -101,7 +101,7 @@ voltagelist = {'rNF','rBM','rS1','rS2','rRM','rAF','rPLM','rPCM','rMLM','rMCM'};
 
 if corr_FLAG == 1
     figure('Name','Correlation plot','NumberTitle','off');
-    correlationPlot(targetMatrix0, excessVec, loadlist, voltagelist);
+    correlationPlot(targetMatrix0, excessVec0, loadlist, voltagelist);
 end
 
 if LHS_Flag == 0
