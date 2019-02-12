@@ -43,9 +43,8 @@ model_FLAG = out.model;
 %TO OUTPUT INTERMEDIATE PERFORMANCE PARAMETERS TO SCREEN set print_FLAG = 2;
 print_FLAG = out.tables;
 %
-%TO OUTPUT DATA TO EXCEL                           set excel_FLAG = 1;
-%excel_FLAG = out.excel;
-excel_FLAG = 1;
+%TO OUTPUT DATA TO EXCEL (CSV)                          set excel_FLAG = 1;
+excel_FLAG = out.excel;
 %
 %TO OUTPUT CORRELATION PLOTS                       set corr_FLAG = 1;
 corr_FLAG = out.corr;
@@ -309,12 +308,12 @@ for lhs = 1:numLHS
     end
     
     %% Truncated Algebraic Model
-    if model_FLAG == 2;
+    if model_FLAG == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
     
     %% Linear Algebraic Model
-    if model_FLAG == 3;
+    if model_FLAG == 3
         nterms = dimFlag;
     end
     
@@ -361,7 +360,7 @@ for lhs = 1:numLHS
     
     %%  Creates Matrix for the volts to loads
     %  ajm for the users to view 5/11/18
-          APPROX_AOX_COEFF_MATRIX = xcalib;
+    APPROX_AOX_COEFF_MATRIX = xcalib;
     
     for i=1:nterms
         xapproxer(i,:) = xcalib(i,:);
@@ -370,18 +369,18 @@ for lhs = 1:numLHS
     xapproxer(nterms+1,:) = 0.0;
     
     
-  
-   if excel_FLAG == 1;
-            filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-    Z = xapproxer;
-%     xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)nterms';
-    xlRange=char(strcat(matrixcolumnlabels(1),'1:',matrixcolumnlabels(dimFlag),num2str(nterms)));
-    xlswrite(filename,Z,xlRange)
-%   'made it here'
-%%
-    end 
-
-
+    
+    if excel_FLAG == 1
+        filename = 'APPROX_AOX_COEFF_MATRIX.csv';
+        Z = xapproxer;
+        %     xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)nterms';
+        xlRange=char(strcat(matrixcolumnlabels(1),'1:',matrixcolumnlabels(dimFlag),num2str(nterms)));
+        xlswrite(filename,Z,xlRange)
+        %   'made it here'
+        %%
+    end
+    
+    
     
     if LHS_Flag == 1
         x_all(:,:,lhs) = xcalib;
@@ -800,7 +799,7 @@ end
 
 
 %OUTPUT HISTOGRAM PLOTS
-if hist_FLAG == 1;
+if hist_FLAG == 1
     for k0=1:length(targetRes(1,:))
         figure;
         [histALGB, binValues] = hist(targetRes(:,k0)/standardDev(k0,:),20);
@@ -821,7 +820,7 @@ end
 
 %
 %START PRINT OUT PERFORMANCE INFORMATION TO THE SCREEN
-if print_FLAG == 1;
+if print_FLAG == 1
     %
     
     
@@ -831,7 +830,7 @@ if print_FLAG == 1;
     
     
     %% Identify the Possible Outliers
-    if balOut_FLAG == 1;
+    if balOut_FLAG == 1
         disp(' ***** ');
         disp(' ');
         disp('Number of Outliers =');
@@ -851,7 +850,7 @@ if print_FLAG == 1;
         
     end
     
-
+    
     
     
     %%%%%%% 6_14_18 ajm
@@ -885,23 +884,23 @@ if print_FLAG == 1;
     %%%%%%%%%
     
     
-       if excel_FLAG == 1;
-            
+    if excel_FLAG == 1
+        
         % Output results to an excel file
- %
-    disp('  ');
-    disp('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv'); 
-% CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ; 
-    disp(' '); 
-    
-
-%%%%%
-       filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
-       Z = aprxINminGZ;
-%        xlRange = 'A1:Jnumpts';
-       xlRange=char(strcat('A1:J',num2str(numpts)));
-       xlswrite(filename,Z,xlRange)
-%%%%%
+        %
+        disp('  ');
+        disp('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
+        % CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ;
+        disp(' ');
+        
+        
+        %%%%%
+        filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
+        Z = aprxINminGZ;
+        %        xlRange = 'A1:Jnumpts';
+        xlRange=char(strcat('A1:J',num2str(numpts)));
+        xlswrite(filename,Z,xlRange)
+        %%%%%
         
     end
     
@@ -1086,7 +1085,7 @@ if balCal_FLAG == 2
     
     
     %OUTPUT HISTOGRAM PLOTS
-    if hist_FLAG == 1 && balCal_FLAG == 2;
+    if hist_FLAG == 1 && balCal_FLAG == 2
         for k3=1:length(targetRes2(1,:))
             figure;
             [histGRBF2, binValues2] = hist(targetRes2(:,k3)/standardDev2(k3,:),20);
@@ -1100,14 +1099,14 @@ if balCal_FLAG == 2
         end
     end
     
- 
+    
     
     %%%%%%%%
     %% Number of bases
     %numBasis
     %%
-      
-    if excel_FLAG == 1 && balCal_FLAG == 2;               
+    
+    if excel_FLAG == 1 && balCal_FLAG == 2
         %
         disp(' ***** ');
         disp('  ');
@@ -1119,10 +1118,10 @@ if balCal_FLAG == 2
         xlRange=char(strcat('A1:J',num2str(numBasis)));
         xlswrite(filename,Z,xlRange)
         %%%%%%
-     end        
-        
+    end
     
-    if print_FLAG == 1;
+    
+    if print_FLAG == 1
         
         
         disp(' ');
@@ -1160,32 +1159,32 @@ if balCal_FLAG == 2
     
     %%%%%%%%
     
-    if excel_FLAG == 1 && balCal_FLAG == 2;
-%%%%%%%
-%        APPROX_AOX_GRBF_ws = wHist;
-%        APPROX_AOX_GRBF_coeffs  = cHist;
-%        APPROX_AOX_GRBF_Centers = centerIndexHist;
-         
-    filename = 'APPROX_AOX_GRBF_ws.csv';
-    Z = wHist;
-%     xlRange = 'A1:JnumBasis';
-    xlRange=char(strcat('A1:J',num2str(numBasis)));
-    xlswrite(filename,Z,xlRange)
-            
-    filename = 'APPROX_AOX_GRBF_coeffs.csv';
-    Z = cHist;
-%     xlRange = 'A1:JnumBasis';
-    xlRange=char(strcat('A1:J',num2str(numBasis)));
-    xlswrite(filename,Z,xlRange)
-            
-    filename = 'APPROX_AOX_GRBF_Centers.csv';
-    Z = centerIndexHist; 
-%     xlRange = 'A1:JnumBasis';
-    xlRange=char(strcat('A1:J',num2str(numBasis)));
-    xlswrite(filename,Z,xlRange)
-%%%%%%%
-   end 
-   
+    if excel_FLAG == 1 && balCal_FLAG == 2
+        %%%%%%%
+        %        APPROX_AOX_GRBF_ws = wHist;
+        %        APPROX_AOX_GRBF_coeffs  = cHist;
+        %        APPROX_AOX_GRBF_Centers = centerIndexHist;
+        
+        filename = 'APPROX_AOX_GRBF_ws.csv';
+        Z = wHist;
+        %     xlRange = 'A1:JnumBasis';
+        xlRange=char(strcat('A1:J',num2str(numBasis)));
+        xlswrite(filename,Z,xlRange)
+        
+        filename = 'APPROX_AOX_GRBF_coeffs.csv';
+        Z = cHist;
+        %     xlRange = 'A1:JnumBasis';
+        xlRange=char(strcat('A1:J',num2str(numBasis)));
+        xlswrite(filename,Z,xlRange)
+        
+        filename = 'APPROX_AOX_GRBF_Centers.csv';
+        Z = centerIndexHist;
+        %     xlRange = 'A1:JnumBasis';
+        xlRange=char(strcat('A1:J',num2str(numBasis)));
+        xlswrite(filename,Z,xlRange)
+        %%%%%%%
+    end
+    
     
 end
 
@@ -1290,7 +1289,7 @@ if balVal_FLAG == 1
     
     %%
     % <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        %%% 5/16/18
+    %%% 5/16/18
     %Remember that  excessVec = excessVec0_complete - globalZerosAllPoints;
     excessVecvalidkeep = excessVecvalid0  - globalZerosAllPointsvalid;
     %%%
@@ -1308,12 +1307,12 @@ if balVal_FLAG == 1
     end
     
     %% Truncated Algebraic Model
-    if model_FLAG == 2;
+    if model_FLAG == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
     
     %% Linear Algebraic Model
-    if model_FLAG == 3;
+    if model_FLAG == 3
         nterms = dimFlag;
     end
     
@@ -1419,7 +1418,7 @@ if balVal_FLAG == 1
     
     
     %OUTPUT HISTOGRAM PLOTS
-    if hist_FLAG == 1 && balCal_FLAG == 2;
+    if hist_FLAG == 1 && balCal_FLAG == 2
         for k0=1:length(targetResvalid(1,:))
             figure;
             [histGRBFvalid, binValuesvalid] = hist(targetResvalid(:,k0)/standardDevvalid(k0,:),20);
@@ -1436,10 +1435,10 @@ if balVal_FLAG == 1
     
     
     %
-    if print_FLAG == 1;
+    if print_FLAG == 1
         %
         %% Full Algebraic Model
-        if model_FLAG == 1;
+        if model_FLAG == 1
             disp(' ');
             disp('%%%%%%%%%%%%%%%%%');
             disp(' ');
@@ -1447,7 +1446,7 @@ if balVal_FLAG == 1
         end
         
         %% Truncated Algebraic Model
-        if model_FLAG == 2;
+        if model_FLAG == 2
             disp(' ');
             disp('%%%%%%%%%%%%%%%%%');
             disp(' ');
@@ -1455,7 +1454,7 @@ if balVal_FLAG == 1
         end
         
         %% Linear Algebraic Model
-        if model_FLAG == 3;
+        if model_FLAG == 3
             disp(' ');
             disp('%%%%%%%%%%%%%%%%%');
             disp(' ');
@@ -1473,17 +1472,17 @@ if balVal_FLAG == 1
         disp(numptsvalid);
         disp('  ');
         
-           if excel_FLAG == 1;
-%%%%        
-       disp('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
-       disp(' ');   
-
-    filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
-    Z = aprxINminGZvalid;
-    xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)numpts';
-    xlswrite(filename,Z,xlRange)          
-%%%%
-            end 
+        if excel_FLAG == 1
+            %%%%
+            disp('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
+            disp(' ');
+            
+            filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
+            Z = aprxINminGZvalid;
+            xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)numpts';
+            xlswrite(filename,Z,xlRange)
+            %%%%
+        end
         
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag))
         
@@ -1694,7 +1693,7 @@ if balVal_FLAG == 1
         
         
         %OUTPUT HISTOGRAM PLOTS
-        if hist_FLAG == 1 && balCal_FLAG == 2;
+        if hist_FLAG == 1 && balCal_FLAG == 2
             for k3=1:length(targetRes2valid(1,:))
                 figure;
                 [histGRBF2valid, binValues2valid] = hist(targetRes2valid(:,k3)/standardDev2valid(k3,:),20);
@@ -1717,14 +1716,14 @@ if balVal_FLAG == 1
         %%
         
         %
-        if print_FLAG == 1;
+        if print_FLAG == 1
             %
             disp(' ***** ');
             disp(' ');
             disp('Number of GRBFs =');
             disp(numBasis);
             
- 
+            
             
             %%%%
             twoSigmaGRBFvalid = standardDevvalid'.*2;
@@ -1777,21 +1776,21 @@ if balVal_FLAG == 1
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         
-        if excel_FLAG == 1 && balCal_FLAG == 2;
+        if excel_FLAG == 1 && balCal_FLAG == 2
+            
+            %%%%
+            disp(' ');
+            disp('ALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION: Check VALID_AOX_GLOBAL_GRBF_RESULT.csv file');
+            disp(' ');
+            
+            filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
+            Z = aprxINminGZ2valid;
+            xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)numpts';
+            xlswrite(filename,Z,xlRange)
+            %%%%
+            
+        end
         
-%%%%    
-    disp(' ');
-    disp('ALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION: Check VALID_AOX_GLOBAL_GRBF_RESULT.csv file');
-    disp(' ');           
-
-    filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
-    Z = aprxINminGZ2valid;
-    xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)numpts';
-    xlswrite(filename,Z,xlRange) 
-%%%%      
-
-       end
-    
         
     end
     
@@ -1890,12 +1889,12 @@ if balApprox_FLAG == 1
     end
     
     %% Truncated Algebraic Model
-    if model_FLAG == 2;
+    if model_FLAG == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
     
     %% Linear Algebraic Model
-    if model_FLAG == 3;
+    if model_FLAG == 3
         nterms = dimFlag;
     end
     
@@ -1997,18 +1996,18 @@ if balApprox_FLAG == 1
     disp(out.savePathapp);
     disp('  ');
     
-    if excel_FLAG == 1;
-  %%%%%%
-    disp('  ');
-    disp('ALG MODEL GLOBAL LOAD APPROXIMATION: Check APPROX_AOX_GLOBAL_ALG_RESULT.csv file'); 
-    disp(' '); 
-
-    filename = 'APPROX_AOX_GLOBAL_ALG_RESULT.csv';
-    Z = aprxINminGZapprox; 
-    xlRange = 'A1:JnumBasis';
-    xlswrite(filename,Z,xlRange)
-%%%%%%
-    end    
+    if excel_FLAG == 1
+        %%%%%%
+        disp('  ');
+        disp('ALG MODEL GLOBAL LOAD APPROXIMATION: Check APPROX_AOX_GLOBAL_ALG_RESULT.csv file');
+        disp(' ');
+        
+        filename = 'APPROX_AOX_GLOBAL_ALG_RESULT.csv';
+        Z = aprxINminGZapprox;
+        xlRange = 'A1:JnumBasis';
+        xlswrite(filename,Z,xlRange)
+        %%%%%%
+    end
     
     %
     %
@@ -2113,21 +2112,21 @@ if balApprox_FLAG == 1
             
         end
         
-
         
-        if excel_FLAG == 1 && balCal_FLAG == 2;
-   
-%%%%%%
-        disp(' ');
-        disp('ALG+GRBF MODEL GLOBAL LOAD APPROXIMATION: Check APPROX_AOX_GLOBAL_GRBF_RESULT.csv file');
-        disp(' ');
- 
-    filename = 'APPROX_AOX_GLOBAL_GRBF_RESULT.csv';
-    Z = aprxINminGZ2approx; 
-    xlRange = 'A1:JnumBasis';
-    xlswrite(filename,Z,xlRange)
-%%%%%%
-
+        
+        if excel_FLAG == 1 && balCal_FLAG == 2
+            
+            %%%%%%
+            disp(' ');
+            disp('ALG+GRBF MODEL GLOBAL LOAD APPROXIMATION: Check APPROX_AOX_GLOBAL_GRBF_RESULT.csv file');
+            disp(' ');
+            
+            filename = 'APPROX_AOX_GLOBAL_GRBF_RESULT.csv';
+            Z = aprxINminGZ2approx;
+            xlRange = 'A1:JnumBasis';
+            xlswrite(filename,Z,xlRange)
+            %%%%%%
+            
         end
         
     end
