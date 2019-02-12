@@ -271,6 +271,9 @@ switch calext
     case '.csv'
         cal.Range{1} = [get(handles.c11,'String'),'..',get(handles.c12,'String')];
         cal.CSV(1,:) = a12rc(get(handles.c11,'String'));
+        loadend      = a12rc(get(handles.c12,'String'));
+        loadrng      = [cal.CSV(1,1)-4, cal.CSV(1,2), cal.CSV(1,1)-4, loadend(2)];
+        loadlabels   = csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),loadrng);
         cal.Range{2} = [get(handles.c21,'String'),'..',get(handles.c22,'String')];
         cal.CSV(2,:) = a12rc(get(handles.c21,'String'));
         cal.Range{3} = [get(handles.c31,'String'),'..',get(handles.c32,'String')];
