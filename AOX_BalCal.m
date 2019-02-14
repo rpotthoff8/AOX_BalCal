@@ -370,7 +370,7 @@ for lhs = 1:numLHS
     
     %%start function
     bootalpha=.05;
-    nbootstrap=200;
+    nbootstrap=20;
     f=@zapFinder;
     [fout]=f(comINminLZ',targetMatrix,series_complete,excessVec0_complete,targetMatrix0_complete,globalZerosAllPoints0,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
     fzap=fout(1:nseries,:);
@@ -1440,7 +1440,7 @@ if balVal_FLAG == 1
     
     comGZvalid = zeros(nterms+1,1);
     
-    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,1, dainputsvalid,dalzvalid,dagzvalid);
+    [comINvalid,comLZvalid,comGZvalid,uncert_comINvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,1, dainputsvalid,dalzvalid,dagzvalid);
     %%
     
     
@@ -1511,6 +1511,9 @@ if balVal_FLAG == 1
     aprxINminGZvalidprime = targetMatrixvalid+taretalvalid;
     
     %OUTPUTS FOR VALIDATION ALGEBRAIC SECTION
+        %Run function to calculate uncertainty on loads output in approximation
+[combined_uncertvalid,tare_uncertvalid, FL_uncertvalid]=uncert_prop(xvalid,fxcalib_ci,comINvalid,dimFlag,uncert_comINvalid,indexLocalZerovalid,lasttarevalid,nterms,aprxINvalid,seriesvalid);
+
     
     
     
@@ -2100,8 +2103,8 @@ if balApprox_FLAG == 1
     
     %%
     %%
-    %Run function to calculate uncertainty on loads from calibration
-[combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,ntermsapprox,aprxINapprox,seriesapprox);
+    %Run function to calculate uncertainty on loads output in approximation
+[combined_uncertapprox,tare_uncertapprox, FL_uncertapprox]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,ntermsapprox,aprxINapprox,seriesapprox);
 
 
     
@@ -2437,9 +2440,10 @@ for i=1:lasttare
         uncert_comIN(nterms+i,:,j) = 0;
     end
 end
+uncert_comIN_use=uncert_comIN(1:size(xcalib,1),:,:);
 volt_uncert_square=zeros(size(aprxIN));
 for i=1:dimFlag
-    partial(:,:,i)=uncert_comIN(:,:,i)'*xcalib;
+    partial(:,:,i)=uncert_comIN_use(:,:,i)'*xcalib;
     uncert_channel_square(:,:,i)=((partial(:,:,i)).^2).*uncert^2;
     volt_uncert_square=volt_uncert_square+(uncert_channel_square(:,:,i));
 end
