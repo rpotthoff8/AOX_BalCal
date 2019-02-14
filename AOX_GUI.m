@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 29-Dec-2018 13:35:19
+% Last Modified by GUIDE v2.5 12-Feb-2019 13:50:51
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -96,6 +96,7 @@ if exist(fileName,'file')
         set(handles.zeroed_FLAGcheck,'Value',default.zeroed);
         set(handles.corr_FLAGcheck,'Value',default.corr);
         set(handles.rescorr_FLAGcheck,'Value',default.rescorr);
+        set(handles.excel_FLAGcheck,'Value',default.excel);
 
         set(handles.calibrate,'Value',default.calibrate);
         set(handles.calPath,'String',default.calPath);
@@ -248,6 +249,7 @@ outStruct.numSTD = str2num(get(handles.numSTD,'String'));
 outStruct.zeroed = get(handles.zeroed_FLAGcheck,'Value');
 outStruct.corr = get(handles.corr_FLAGcheck,'Value');
 outStruct.rescorr = get(handles.rescorr_FLAGcheck,'Value');
+outStruct.excel = get(handles.excel_FLAGcheck,'Value');
 
 switch get(get(handles.modelPanel,'SelectedObject'),'Tag');
     case 'full', outStruct.model = 1;
@@ -269,6 +271,9 @@ switch calext
     case '.csv'
         cal.Range{1} = [get(handles.c11,'String'),'..',get(handles.c12,'String')];
         cal.CSV(1,:) = a12rc(get(handles.c11,'String'));
+        loadend      = a12rc(get(handles.c12,'String'));
+        loadrng      = [cal.CSV(1,1)-4, cal.CSV(1,2), cal.CSV(1,1)-4, loadend(2)];
+        loadlabels   = csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),loadrng);
         cal.Range{2} = [get(handles.c21,'String'),'..',get(handles.c22,'String')];
         cal.CSV(2,:) = a12rc(get(handles.c21,'String'));
         cal.Range{3} = [get(handles.c31,'String'),'..',get(handles.c32,'String')];
@@ -1155,6 +1160,7 @@ default.numSTD = get(handles.numSTD,'String');
 default.zeroed = get(handles.zeroed_FLAGcheck,'Value');
 default.corr = get(handles.corr_FLAGcheck,'Value');
 default.rescorr = get(handles.rescorr_FLAGcheck,'Value');
+default.excel = get(handles.excel_FLAGcheck,'Value');
 
 default.action = get(get(handles.actionpanel,'SelectedObject'),'tag');
 default.calibrate = get(handles.calibrate,'Value');
@@ -1758,3 +1764,12 @@ function rescorr_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of rescorr_FLAGcheck
+
+
+% --- Executes on button press in excel_FLAGcheck.
+function excel_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to excel_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of excel_FLAGcheck
