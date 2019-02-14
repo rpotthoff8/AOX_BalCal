@@ -191,18 +191,9 @@ for lhs = 1:numLHS
     end
     
     % Call the Algebraic Subroutine
-<<<<<<< HEAD
-    %
-    
-    %
-    [comIN,comLZ,comGZ,uncert_comIN]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs,dalz,biggee);
-    %%
-    %%
-    %%
-=======
     comIN = balCal_algEqns(model_FLAG,dainputs);
-    [comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs,dalz,biggee);
->>>>>>> master
+    [comIN,comLZ,comGZ,uncert_comIN]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs,dalz,biggee);
+
     
     % Effectively removes the original tare values so we can calculate the averages
     for i=1:lasttare
@@ -257,13 +248,13 @@ for lhs = 1:numLHS
     fzap_ci=f_ci(:,1:nseries,:);
     faprxLZminGZ_ci=f_ci(:,size(fzap,1)+1:size(fzap,1)+nseries,:);
     fxcalib_ci=f_ci(:,size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
-=======
+
     for loopk=1:numpts
         comLZ(nterms+series(loopk),loopk) = 1.0;
     end
     
     comINminLZ = comIN-comLZ;
->>>>>>> master
+
     
     % END: bootstrap section
     
@@ -323,17 +314,8 @@ for i=1:dimFlag
 end
 
 % Call the Algebraic Subroutine
-<<<<<<< HEAD
-%
-
-%
 [comIN,comLZ,comGZ,uncert_comIN]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs2,dalz2,biggee);
-%%
-%%
-%%
-=======
-[comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs2,dalz2,biggee);
->>>>>>> master
+
 
 % Effectively removes the original tare values so we can calculate the averages
 for i=1:lasttare
@@ -342,7 +324,6 @@ for i=1:lasttare
     comGZ(nterms+i,:) = 0;
 end
 
-<<<<<<< HEAD
 
 %CHANGED 9 JAN 19 JRP
 % for loopk=1:numpts
@@ -428,13 +409,6 @@ end
 %END added for monte-carlo
 
 
-
-=======
-for loopk=1:numpts
-    comLZ(nterms+series(loopk),loopk) = 1.0;
-end
-
->>>>>>> master
 comINminLZ = comIN-comLZ;
 
 %APPROXIMATION
