@@ -1058,7 +1058,7 @@ if balVal_FLAG == 1
             xlswrite(filename,Z,xlRange)
             %%%%
         end
-
+        zapvalid=taretalvalid(indexLocalZerovalid(1:(numel(indexLocalZerovalid)-1)),:); %tare loads
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag))
 
         mean_alg_Resids_sqrd_valid = array2table(resSquarevalid'./numptsvalid,'VariableNames',loadlist(1:dimFlag))
