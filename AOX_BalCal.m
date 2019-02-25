@@ -1123,6 +1123,7 @@ if balApprox_FLAG == 1
     %
     load(out.savePathapp,'-mat');
     nseriesapprox=max(seriesapprox);
+     [sharedvals,indexLocalZeroapprox]=intersect(seriesapprox, [1:max(seriesapprox)],'stable'); %Create index
     
     % num of data points
     numptsapprox = length(excessVecapprox);
