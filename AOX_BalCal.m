@@ -194,14 +194,23 @@ for lhs = 1:numLHS
     comIN = balCal_algEqns(model_FLAG,dainputs);
     [comIN,comLZ,comGZ,uncert_comIN]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs,dalz,biggee);
 
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
     % Effectively removes the original tare values so we can calculate the averages
     for i=1:lasttare
         comIN(nterms+i,:) = 0;
         comLZ(nterms+i,:) = 0;
         comGZ(nterms+i,:) = 0;
     end
+<<<<<<< HEAD
 
+=======
+    
+<<<<<<< HEAD
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
     %%
     %       %CHANGED JRP
     %     for loopk=1:numpts
@@ -236,7 +245,7 @@ for lhs = 1:numLHS
 
     %%start function
     bootalpha=.05;
-    nbootstrap=200;
+    nbootstrap=20;
     f=@zapFinder;
     [fout]=f(comINminLZ',targetMatrix,series,excessVec0,targetMatrix0,globalZerosAllPoints,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
     fzap=fout(1:nseries,:);
@@ -251,10 +260,17 @@ for lhs = 1:numLHS
     for loopk=1:numpts
         comLZ(nterms+series(loopk),loopk) = 1.0;
     end
+<<<<<<< HEAD
 
     comINminLZ = comIN-comLZ;
 
 
+=======
+    
+    comINminLZ = comIN-comLZ;
+
+    
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
     % END: bootstrap section
 
     %%
@@ -430,7 +446,43 @@ for m=1:length(aprxIN)
     checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
 end
 
+<<<<<<< HEAD
 taretal = meantare(series,checkit);
+=======
+<<<<<<< HEAD
+
+
+
+
+%%
+%% SOLVE FOR TARES BY TAKING THE MEAN
+for i=1:nseries
+    zoop = zeros(length(excessVec(:,1)),dimFlag);
+    kx=indexLocalZero(i)-1;
+    
+    for m=indexLocalZero(i):indexLocalZero(i+1)-1
+        zoop(m-kx,:) = checkit(m,:);
+    end
+    
+    zap(i,:) = mean(zoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
+    
+end
+
+%%
+%%
+for i=1:nseries
+    for m=indexLocalZero(i):indexLocalZero(i+1)-1
+        taretal(m,:) = zap(i,:);
+    end
+end
+%%
+%%
+
+
+=======
+taretal = meantare(series,checkit);
+>>>>>>> master
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
 %RESIDUAL
 targetRes = targetMatrix+taretal-aprxINminGZ;      %0=b-Ax
 
@@ -445,11 +497,20 @@ end
 resSquare = dot(targetRes,targetRes)';
 %AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
 %Run function to calculate uncertainty on loads from calibration
 [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,indexLocalZero,lasttare,nterms,aprxIN,series);
 
 %---------------------------------------------------------------
 %---------------------------------------------------------------
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> master
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
 % Identify Outliers After Filtering
 % (Threshold approach) ajm 8/2/17
 if balOut_FLAG == 1
@@ -917,7 +978,16 @@ if balVal_FLAG == 1
         dalzvalid(:,k) = localZerosAllPointsvalid(:,k)-globalZerosvalid(k);
         dagzvalid(:,k) = 0;
     end
+<<<<<<< HEAD
 
+=======
+    
+<<<<<<< HEAD
+    %%
+    % <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+=======
+>>>>>>> master
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
     %%% 5/16/18
     %Remember that  excessVec = excessVec0_complete - globalZerosAllPoints;
     excessVecvalidkeep = excessVecvalid0  - globalZerosAllPointsvalid;
@@ -941,11 +1011,23 @@ if balVal_FLAG == 1
     [sharedvals,indexLocalZerovalid]=intersect(seriesvalid, [1:max(seriesvalid)],'stable'); %Create index
     % Call the Algebraic Subroutine
     comGZvalid = zeros(nterms+1,1);
+<<<<<<< HEAD
 
     [comINvalid,comLZvalid,comGZvalid,uncert_comINvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,1, dainputsvalid,dalzvalid,dagzvalid);
     %%
 
 
+=======
+<<<<<<< HEAD
+    
+    [comINvalid,comLZvalid,comGZvalid,uncert_comINvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,1, dainputsvalid,dalzvalid,dagzvalid);
+    %%
+    
+=======
+    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,1, dainputsvalid,dalzvalid,dagzvalid);
+>>>>>>> master
+    
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
     comINminLZvalid = comINvalid-comLZvalid;
 
     %VALIDATION APPROXIMATION
@@ -977,11 +1059,23 @@ if balVal_FLAG == 1
     aprxINminGZvalidprime = targetMatrixvalid+taretalvalid;
 
     %OUTPUTS FOR VALIDATION ALGEBRAIC SECTION
+<<<<<<< HEAD
 
         %Run function to calculate uncertainty on loads output in approximation
 [combined_uncertvalid,tare_uncertvalid, FL_uncertvalid]=uncert_prop(xvalid,fxcalib_ci,comINvalid,dimFlag,uncert_comINvalid,indexLocalZerovalid,lasttarevalid,nterms,aprxINvalid,seriesvalid);
 
 
+=======
+<<<<<<< HEAD
+        %Run function to calculate uncertainty on loads output in approximation
+[combined_uncertvalid,tare_uncertvalid, FL_uncertvalid]=uncert_prop(xvalid,fxcalib_ci,comINvalid,dimFlag,uncert_comINvalid,indexLocalZerovalid,lasttarevalid,nterms,aprxINvalid,seriesvalid);
+
+    
+    
+    
+=======
+>>>>>>> master
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
     for k=1:length(targetResvalid(1,:))
         [goopvalid(k),kstarvalid(k)] = max(abs(targetResvalid(:,k)));
         goopValvalid(k) = abs(targetResvalid(kstarvalid(k),k));
@@ -1314,10 +1408,21 @@ if balApprox_FLAG == 1
     for i=1:dimFlag
         biggeeapprox(:,i) = 0;
     end
+<<<<<<< HEAD
 
 
     [comINapprox,comLZapprox,comGZapprox,uncert_comINapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggeeapprox);
 
+=======
+<<<<<<< HEAD
+    
+    
+    [comINapprox,comLZapprox,comGZapprox,uncert_comINapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggeeapprox);
+=======
+    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggeeapprox);
+>>>>>>> master
+    
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
     for i=1:nterms+1
         xapprox(i,:) = xcalib(i,:);
     end
@@ -1334,6 +1439,7 @@ if balApprox_FLAG == 1
 
         stdevchecktestapprox(m,:) = aprxINminGZapprox(m,:);
     end
+<<<<<<< HEAD
 
     %Run function to calculate uncertainty on loads from approx
 [combined_uncertapprox,tare_uncertapprox, FL_uncertapprox]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,nterms,aprxINapprox,seriesapprox);
@@ -1377,6 +1483,53 @@ if balApprox_FLAG == 1
 %     end
 %     
 
+=======
+    
+    % SOLVE FOR TARES
+    for i=1:nseriesapprox
+        zoopapprox = zeros(length(excessVecapprox(:,1)),dimFlag);
+        
+        kx=indexLocalZeroapprox(i)-1;
+        
+        daemmlengthapprox = indexLocalZeroapprox(i+1) - indexLocalZeroapprox(i);
+        
+        stdevchecktestapprox = zeros(daemmlengthapprox,dimFlag);   %% ajm 7_18_18
+        
+        for m= indexLocalZeroapprox(i): indexLocalZeroapprox(i+1)-1
+            zoopapprox(m-kx,:) = aprxINminGZapprox(m,:);
+            stdevchecktestapprox(m-kx,:) = aprxINminGZapprox(m,:);
+        end
+        
+        zapapprox(i,:) = mean(zoopapprox)*numptsapprox/(indexLocalZeroapprox(i+1)-indexLocalZeroapprox(i));
+        
+        zapstdevapprox(i,:) =  std(stdevchecktestapprox);  %%% ajm 7_17_18
+    end
+    
+    for i=1:nseriesapprox
+        for j= 1: dimFlag
+            stdevfilterapprox(i,j) = 100.0*zapstdevapprox(i,j)/loadCapacitiesapprox(1,j); %% ajm 7_17_18
+            
+            if stdevfilterapprox(i,j) > 0.25
+                zapapprox(i,j) = aprxINminGZapprox(indexLocalZeroapprox(i),j);
+            end
+        end
+        for m=indexLocalZeroapprox(i):indexLocalZeroapprox(i+1)-1
+            taretalapprox(m,:) = zapapprox(i,:);
+        end
+    end
+    
+<<<<<<< HEAD
+    %%
+    %%
+    %Run function to calculate uncertainty on loads output in approximation
+[combined_uncertapprox,tare_uncertapprox, FL_uncertapprox]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,ntermsapprox,aprxINapprox,seriesapprox);
+
+
+    
+    
+=======
+>>>>>>> master
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
     disp(' ');
     disp('%%%%%%%%%%%%%%%%%');
     disp('  ');
@@ -1476,6 +1629,10 @@ if balApprox_FLAG == 1
 end
 
 disp('  ')
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
 disp('Calculations Complete.')
 
 % Tidy up the Workspace
@@ -1684,3 +1841,9 @@ end
 %END added for uncert
 
 end
+<<<<<<< HEAD
+=======
+=======
+disp('Calculations Complete.')
+>>>>>>> master
+>>>>>>> c30cbe950d768ef28ed24bcfe0f67fa47356aef9
