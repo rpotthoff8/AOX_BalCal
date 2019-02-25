@@ -28,11 +28,11 @@ function varargout = AOX_GUI(varargin)
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @AOX_GUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @AOX_GUI_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @AOX_GUI_OpeningFcn, ...
+    'gui_OutputFcn',  @AOX_GUI_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -60,11 +60,11 @@ try
     [nasalogo,~,aln] = imread('nasa.png','BackgroundColor',[0.941, 0.941, 0.941]);
     axes(handles.axesNASA);
     imshow(nasalogo, []);
-
+    
     [ricelogo,~,alr] = imread('rice.png','BackgroundColor',[0.941, 0.941, 0.941]);
     axes(handles.axesRice);
     imshow(ricelogo, []);
-
+    
 end
 
 % Choose default command line output for AOX_GUI
@@ -79,9 +79,9 @@ if exist(fileName,'file')
     try
         
         load(fileName,'-mat');
-
+        
         versionCheck(default);
-
+        
         %set(handles.tares_FLAGcheck,'Value',default.tares);
         set(handles.coeff_FLAGcheck,'Value',default.coeff);
         coeff_FLAGcheck_Callback(handles.coeff_FLAGcheck, eventdata, handles);
@@ -97,7 +97,7 @@ if exist(fileName,'file')
         set(handles.corr_FLAGcheck,'Value',default.corr);
         set(handles.rescorr_FLAGcheck,'Value',default.rescorr);
         set(handles.excel_FLAGcheck,'Value',default.excel);
-
+        
         set(handles.calibrate,'Value',default.calibrate);
         set(handles.calPath,'String',default.calPath);
         set(handles.c11,'String',default.calRange{1,1});
@@ -111,7 +111,7 @@ if exist(fileName,'file')
         set(handles.c51,'String',default.calRange{5,1});
         set(handles.c52,'String',default.calRange{5,2});
         calPath_Callback(handles.calPath, eventdata, handles)
-
+        
         set(handles.validate,'Value',default.validate);
         set(handles.valPath,'String',default.valPath);
         set(handles.v11,'String',default.valRange{1,1});
@@ -125,7 +125,7 @@ if exist(fileName,'file')
         set(handles.v51,'String',default.valRange{5,1});
         set(handles.v52,'String',default.valRange{5,2});
         valPath_Callback(handles.valPath, eventdata, handles)
-
+        
         set(handles.approximate,'Value',default.approximate);
         set(handles.appPath,'String',default.appPath);
         set(handles.a11,'String',default.appRange{1,1});
@@ -137,27 +137,27 @@ if exist(fileName,'file')
         set(handles.a41,'String',default.appRange{4,1});
         set(handles.a42,'String',default.appRange{4,2});
         appPath_Callback(handles.appPath, eventdata, handles)
-
+        
         switch default.action
             case 'calibrate', actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
             case 'validate', actionpanel_SelectionChangeFcn(handles.validate, eventdata, handles)
             case 'approximate', actionpanel_SelectionChangeFcn(handles.approximate, eventdata, handles)
         end
-
+        
         set(handles.full,'Value',default.full);
         set(handles.truncated,'Value',default.truncated);
         set(handles.linear,'Value',default.linear);
-
+        
         set(handles.direct,'Value',default.direct);
         set(handles.indirect,'Value',default.indirect);
-
-        set(handles.grbf,'Value',default.grbf);        
+        
+        set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
         %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
         grbf_Callback(handles.grbf, eventdata, handles);
-
-        set(handles.LHS_FLAGcheck,'Value',default.LHS_FLAGcheck);        
+        
+        set(handles.LHS_FLAGcheck,'Value',default.LHS_FLAGcheck);
         set(handles.numLHS,'String',default.numLHS);
         set(handles.LHSp,'String',default.LHSp);
         LHS_FLAGcheck_Callback(handles.LHS_FLAGcheck, eventdata, handles);
@@ -168,7 +168,7 @@ uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = AOX_GUI_OutputFcn(hObject, eventdata, handles) 
+function varargout = AOX_GUI_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -256,7 +256,7 @@ switch get(get(handles.modelPanel,'SelectedObject'),'Tag');
     case 'truncated', outStruct.model = 2;
     case 'linear', outStruct.model = 3;
 end
-    
+
 outStruct.grbf = 1 + get(handles.grbf,'Value');
 outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 
@@ -357,7 +357,7 @@ end
 
 % --- Executes when selected object is changed in modelPanel.
 function modelPanel_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in modelPanel 
+% hObject    handle to the selected object in modelPanel
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -370,7 +370,7 @@ else
 end
 
 function calcsv_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in modelPanel 
+% hObject    handle to the selected object in modelPanel
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -1009,7 +1009,7 @@ end
 
 % --- Executes when selected object is changed in actionpanel.
 function actionpanel_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in actionpanel 
+% hObject    handle to the selected object in actionpanel
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -1204,12 +1204,12 @@ default.full = get(handles.full,'Value');
 default.truncated = get(handles.truncated,'Value');
 default.linear = get(handles.linear,'Value');
 
-default.grbf = get(handles.grbf,'Value');        
+default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
 
-default.LHS_FLAGcheck = get(handles.LHS_FLAGcheck,'Value');        
+default.LHS_FLAGcheck = get(handles.LHS_FLAGcheck,'Value');
 default.numLHS = get(handles.numLHS,'String');
 default.LHSp = get(handles.LHSp,'String');
 
@@ -1445,8 +1445,10 @@ switch cva.type
         
         loadCapacitiesapprox =    csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
         natzerosapprox =          csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
-        seriesapprox =            csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
-        excessVecapprox =         csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
+        %         seriesapprox =            csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
+        %         excessVecapprox =         csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
+        seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
+        excessVecapprox =         csvread(app.Path,app.CSV(4,1),app.CSV(4,2),app.Range{4});
         
         [~,appName,~] = fileparts(app.Path);
         fileNameapprox = [appName,'.app'];
