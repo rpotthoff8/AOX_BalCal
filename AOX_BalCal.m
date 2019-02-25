@@ -1273,31 +1273,10 @@ if balApprox_FLAG == 1
     %     inputApprox_balCal = 'MK14C-ChkLds-Ames2011-Meade-8D_voltage.csv';
     %     excessVecapprox =         csvread(inputApprox_balCal,19,12,'M20..T143');
     load(out.savePathapp,'-mat');
-<<<<<<< HEAD
 
-    % testing
-    % nseriesapprox = nseriesvalid;
-    nseriesapprox = 11;
-    indexLocalZeroapprox(1) = 1;
-    indexLocalZeroapprox(2) = 10;
-    indexLocalZeroapprox(3) = 19;
-    indexLocalZeroapprox(4) = 28;
-    indexLocalZeroapprox(5) = 37;
-    indexLocalZeroapprox(6) = 46;
-    indexLocalZeroapprox(7) = 55;
-    indexLocalZeroapprox(8) = 66;
-    indexLocalZeroapprox(9) = 77 ;
-    indexLocalZeroapprox(10) = 88;
-    indexLocalZeroapprox(11) = 99;
-    indexLocalZeroapprox(12) = 110;
-    loadCapacitiesapprox(1) = 2500;
-    loadCapacitiesapprox(2) = 2500;
-    loadCapacitiesapprox(3) = 1250;
-    loadCapacitiesapprox(4) = 1250;
-    loadCapacitiesapprox(5) = 5000;
-    loadCapacitiesapprox(6) = 700;
-=======
     nseriesapprox=max(seriesapprox);
+    lasttareapprox=nseriesapprox;
+    [sharedvals,indexLocalZeroapprox]=intersect(seriesapprox, [1:max(seriesapprox)],'stable'); %Create index
     
 %     % testing
 %     % nseriesapprox = nseriesvalid;
@@ -1320,7 +1299,7 @@ if balApprox_FLAG == 1
 %     loadCapacitiesapprox(4) = 1250;
 %     loadCapacitiesapprox(5) = 5000;
 %     loadCapacitiesapprox(6) = 700;
->>>>>>> master
+
     % testing
 
     % num of data points
@@ -1381,50 +1360,14 @@ if balApprox_FLAG == 1
 
         stdevchecktestapprox(m,:) = aprxINminGZapprox(m,:);
     end
-<<<<<<< HEAD
 
-    % SOLVE FOR TARES
-    for i=1:nseriesapprox
-        zoopapprox = zeros(length(excessVecapprox(:,1)),dimFlag);
-
-        kx=indexLocalZeroapprox(i)-1;
-
-        daemmlengthapprox = indexLocalZeroapprox(i+1) - indexLocalZeroapprox(i);
-
-        stdevchecktestapprox = zeros(daemmlengthapprox,dimFlag);   %% ajm 7_18_18
-
-        for m= indexLocalZeroapprox(i): indexLocalZeroapprox(i+1)-1
-            zoopapprox(m-kx,:) = aprxINminGZapprox(m,:);
-            stdevchecktestapprox(m-kx,:) = aprxINminGZapprox(m,:);
-        end
-
-        zapapprox(i,:) = mean(zoopapprox)*numptsapprox/(indexLocalZeroapprox(i+1)-indexLocalZeroapprox(i));
-
-        zapstdevapprox(i,:) =  std(stdevchecktestapprox);  %%% ajm 7_17_18
-    end
-
-    for i=1:nseriesapprox
-        for j= 1: dimFlag
-            stdevfilterapprox(i,j) = 100.0*zapstdevapprox(i,j)/loadCapacitiesapprox(1,j); %% ajm 7_17_18
-
-            if stdevfilterapprox(i,j) > 0.25
-                zapapprox(i,j) = aprxINminGZapprox(indexLocalZeroapprox(i),j);
-            end
-        end
-        for m=indexLocalZeroapprox(i):indexLocalZeroapprox(i+1)-1
-            taretalapprox(m,:) = zapapprox(i,:);
-        end
-    end
-
-    %%
-    %%
-    %Run function to calculate uncertainty on loads from calibration
-[combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,ntermsapprox,aprxINapprox,seriesapprox);
+    %Run function to calculate uncertainty on loads from approx
+[combined_uncertapprox,tare_uncertapprox, FL_uncertapprox]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,nterms,aprxINapprox,seriesapprox);
 
 
 
 
-=======
+
     
 %     % SOLVE FOR TARES
 %     for i=1:nseriesapprox
@@ -1459,7 +1402,7 @@ if balApprox_FLAG == 1
 %         end
 %     end
     
->>>>>>> master
+
     disp(' ');
     disp('%%%%%%%%%%%%%%%%%');
     disp('  ');
