@@ -1125,6 +1125,7 @@ if balApprox_FLAG == 1
     %     excessVecapprox =         csvread(inputApprox_balCal,19,12,'M20..T143');
     load(out.savePathapp,'-mat');
     nseriesapprox=max(seriesapprox);
+    
 %     % testing
 %     % nseriesapprox = nseriesvalid;
 %     nseriesapprox = 11;
@@ -1205,38 +1206,38 @@ if balApprox_FLAG == 1
         stdevchecktestapprox(m,:) = aprxINminGZapprox(m,:);
     end
     
-    % SOLVE FOR TARES
-    for i=1:nseriesapprox
-        zoopapprox = zeros(length(excessVecapprox(:,1)),dimFlag);
-        
-        kx=indexLocalZeroapprox(i)-1;
-        
-        daemmlengthapprox = indexLocalZeroapprox(i+1) - indexLocalZeroapprox(i);
-        
-        stdevchecktestapprox = zeros(daemmlengthapprox,dimFlag);   %% ajm 7_18_18
-        
-        for m= indexLocalZeroapprox(i): indexLocalZeroapprox(i+1)-1
-            zoopapprox(m-kx,:) = aprxINminGZapprox(m,:);
-            stdevchecktestapprox(m-kx,:) = aprxINminGZapprox(m,:);
-        end
-        
-        zapapprox(i,:) = mean(zoopapprox)*numptsapprox/(indexLocalZeroapprox(i+1)-indexLocalZeroapprox(i));
-        
-        zapstdevapprox(i,:) =  std(stdevchecktestapprox);  %%% ajm 7_17_18
-    end
-    
-    for i=1:nseriesapprox
-        for j= 1: dimFlag
-            stdevfilterapprox(i,j) = 100.0*zapstdevapprox(i,j)/loadCapacitiesapprox(1,j); %% ajm 7_17_18
-            
-            if stdevfilterapprox(i,j) > 0.25
-                zapapprox(i,j) = aprxINminGZapprox(indexLocalZeroapprox(i),j);
-            end
-        end
-        for m=indexLocalZeroapprox(i):indexLocalZeroapprox(i+1)-1
-            taretalapprox(m,:) = zapapprox(i,:);
-        end
-    end
+%     % SOLVE FOR TARES
+%     for i=1:nseriesapprox
+%         zoopapprox = zeros(length(excessVecapprox(:,1)),dimFlag);
+%         
+%         kx=indexLocalZeroapprox(i)-1;
+%         
+%         daemmlengthapprox = indexLocalZeroapprox(i+1) - indexLocalZeroapprox(i);
+%         
+%         stdevchecktestapprox = zeros(daemmlengthapprox,dimFlag);   %% ajm 7_18_18
+%         
+%         for m= indexLocalZeroapprox(i): indexLocalZeroapprox(i+1)-1
+%             zoopapprox(m-kx,:) = aprxINminGZapprox(m,:);
+%             stdevchecktestapprox(m-kx,:) = aprxINminGZapprox(m,:);
+%         end
+%         
+%         zapapprox(i,:) = mean(zoopapprox)*numptsapprox/(indexLocalZeroapprox(i+1)-indexLocalZeroapprox(i));
+%         
+%         zapstdevapprox(i,:) =  std(stdevchecktestapprox);  %%% ajm 7_17_18
+%     end
+%     
+%     for i=1:nseriesapprox
+%         for j= 1: dimFlag
+%             stdevfilterapprox(i,j) = 100.0*zapstdevapprox(i,j)/loadCapacitiesapprox(1,j); %% ajm 7_17_18
+%             
+%             if stdevfilterapprox(i,j) > 0.25
+%                 zapapprox(i,j) = aprxINminGZapprox(indexLocalZeroapprox(i),j);
+%             end
+%         end
+%         for m=indexLocalZeroapprox(i):indexLocalZeroapprox(i+1)-1
+%             taretalapprox(m,:) = zapapprox(i,:);
+%         end
+%     end
     
     disp(' ');
     disp('%%%%%%%%%%%%%%%%%');
