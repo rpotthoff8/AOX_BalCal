@@ -1124,28 +1124,28 @@ if balApprox_FLAG == 1
     %     inputApprox_balCal = 'MK14C-ChkLds-Ames2011-Meade-8D_voltage.csv';
     %     excessVecapprox =         csvread(inputApprox_balCal,19,12,'M20..T143');
     load(out.savePathapp,'-mat');
-    
-    % testing
-    % nseriesapprox = nseriesvalid;
-    nseriesapprox = 11;
-    indexLocalZeroapprox(1) = 1;
-    indexLocalZeroapprox(2) = 10;
-    indexLocalZeroapprox(3) = 19;
-    indexLocalZeroapprox(4) = 28;
-    indexLocalZeroapprox(5) = 37;
-    indexLocalZeroapprox(6) = 46;
-    indexLocalZeroapprox(7) = 55;
-    indexLocalZeroapprox(8) = 66;
-    indexLocalZeroapprox(9) = 77 ;
-    indexLocalZeroapprox(10) = 88;
-    indexLocalZeroapprox(11) = 99;
-    indexLocalZeroapprox(12) = 110;
-    loadCapacitiesapprox(1) = 2500;
-    loadCapacitiesapprox(2) = 2500;
-    loadCapacitiesapprox(3) = 1250;
-    loadCapacitiesapprox(4) = 1250;
-    loadCapacitiesapprox(5) = 5000;
-    loadCapacitiesapprox(6) = 700;
+    nseriesapprox=max(seriesapprox);
+%     % testing
+%     % nseriesapprox = nseriesvalid;
+%     nseriesapprox = 11;
+%     indexLocalZeroapprox(1) = 1;
+%     indexLocalZeroapprox(2) = 10;
+%     indexLocalZeroapprox(3) = 19;
+%     indexLocalZeroapprox(4) = 28;
+%     indexLocalZeroapprox(5) = 37;
+%     indexLocalZeroapprox(6) = 46;
+%     indexLocalZeroapprox(7) = 55;
+%     indexLocalZeroapprox(8) = 66;
+%     indexLocalZeroapprox(9) = 77 ;
+%     indexLocalZeroapprox(10) = 88;
+%     indexLocalZeroapprox(11) = 99;
+%     indexLocalZeroapprox(12) = 110;
+%     loadCapacitiesapprox(1) = 2500;
+%     loadCapacitiesapprox(2) = 2500;
+%     loadCapacitiesapprox(3) = 1250;
+%     loadCapacitiesapprox(4) = 1250;
+%     loadCapacitiesapprox(5) = 5000;
+%     loadCapacitiesapprox(6) = 700;
     % testing
     
     % num of data points
