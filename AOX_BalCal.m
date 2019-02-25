@@ -1115,137 +1115,164 @@ if balVal_FLAG == 1
 end
 
 if balApprox_FLAG == 1
+ %
+    %
+    % Copyright ©2016 Andrew Meade and Ali Arya Mokhtarzadeh.  All Rights Reserved.
+    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                        APPROXIMATION SECTION      AJM 6/29/17           %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
     %DEFINE THE PRODUCTION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
     %
+
     load(out.savePathapp,'-mat');
     nseriesapprox=max(seriesapprox);
-     [sharedvals,indexLocalZeroapprox]=intersect(seriesapprox, [1:max(seriesapprox)],'stable'); %Create index
+    [sharedvals,indexLocalZeroapprox]=intersect(seriesapprox, [1:max(seriesapprox)],'stable'); %Create index
+    %
     
     % num of data points
     numptsapprox = length(excessVecapprox);
+    %
     
-    dimFlagapprox = length(excessVecapprox(1,:));
     
-    %find the average natural zeros (also called global zeros)
-    globalZerosapprox = mean(natzerosapprox);
+    %natural zeros (also called global zeros) are simply set to zero for approximations
+    globalZerosapprox = zeros(length(excessVecapprox(1,:)),1);
+    
     
     %%% make an array out of the globalZerosapprox vector
     for i=1:numptsapprox
         globalZerosAllPointsapprox(i,:) = globalZerosapprox;
     end
+    %%%
     
-    % Subtract the Global Zeros from the Inputs %%%%%%%%%%
-    for k=1:dimFlagapprox
+    
+    
+    %% Subtract the Global Zeros from the Inputs %%%%%%%%%%
+    
+    for k=1:dimFlag
+        
         dainputsapprox(:,k) = excessVecapprox(:,k)-globalZerosAllPointsapprox(:,k);
+        
         dalzapprox(:,k) = globalZerosAllPointsapprox(:,k)-globalZerosAllPointsapprox(:,k);
+        
     end
+    %%%%%%%%%%%%
     
-    % Build the Algebraic Model
-    % Full Algebraic Model
-    if model_FLAG == 1
-        nterms = 2*dimFlag*(dimFlag+2);
-    end
-    % Truncated Algebraic Model
-    if model_FLAG == 2
-        nterms = dimFlag*(dimFlag+3)/2;
-    end
-    % Linear Algebraic Model
-    if model_FLAG == 3
-        nterms = dimFlag;
-    end
-    
-    % Call the Algebraic Subroutine
-    comGZapprox= zeros(nterms+1,1);
-    for i=1:dimFlag
-        biggeeapprox(:,i) = 0;
-    end
-    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggeeapprox);
-    
-    for i=1:nterms+1
-        xapprox(i,:) = xcalib(i,:);
-    end
+  
+%%
+%% Build the Algebraic Model
+%%
+
+n(1) = 2*dimFlag*(dimFlag+2);
+n(2) = dimFlag*(dimFlag+3)/2;
+n(3) = dimFlag;
+model_FLAG = find(n==size( xapproxer,1)-1);
+%model_FLAG = find(n==size( xapproxer,1));
+
+
+%% Full Algebraic Model
+if model_FLAG == 1
+    nterms = 2*dimFlag*(dimFlag+2);
+end
+
+%% Truncated Algebraic Model
+if model_FLAG == 2;
+    nterms = dimFlag*(dimFlag+3)/2;
+end
+
+%% Linear Algebraic Model
+if model_FLAG == 3;
+    nterms = dimFlag;
+end
+
+
+
+% Call the Algebraic Subroutine
+%
+
+comGZapprox= zeros(nterms,1);
+
+
+for i=1:dimFlag
+    biggee(:,i) = 0;
+end
+
+[comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggee);
+
+%model_FLAG
+%nterms
+%dimFlag
+%numptsapprox
+
+
+%%
+%%
+
     
     %LOAD APPROXIMATION
     %define the approximation for inputs minus global zeros
-    interceptsapprox = -(comGZapprox'*xapprox);
-    aprxINapprox = (xapprox'*comINapprox)';        %to find ?? AJM111516
-    
+    interceptsapprox = -(comGZapprox'*xapproxer);
+    aprxINapprox = ( xapproxer'*comINapprox)';        %to find ?? AJM111516
+    %%
+    %%
     for m=1:length(aprxINapprox)
-        %%%% 3/23/18 Remove Intercepts %%%%%
-        %        aprxINminGZapprox(m,:) = aprxINapprox(m,:)+interceptsapprox;
         aprxINminGZapprox(m,:) = aprxINapprox(m,:);
-        
-        stdevchecktestapprox(m,:) = aprxINminGZapprox(m,:);
     end
+    %%
+    %%
     
-%     % SOLVE FOR TARES
-%     for i=1:nseriesapprox
-%         zoopapprox = zeros(length(excessVecapprox(:,1)),dimFlag);
-%         
-%         kx=indexLocalZeroapprox(i)-1;
-%         
-%         daemmlengthapprox = indexLocalZeroapprox(i+1) - indexLocalZeroapprox(i);
-%         
-%         stdevchecktestapprox = zeros(daemmlengthapprox,dimFlag);   %% ajm 7_18_18
-%         
-%         for m= indexLocalZeroapprox(i): indexLocalZeroapprox(i+1)-1
-%             zoopapprox(m-kx,:) = aprxINminGZapprox(m,:);
-%             stdevchecktestapprox(m-kx,:) = aprxINminGZapprox(m,:);
-%         end
-%         
-%         zapapprox(i,:) = mean(zoopapprox)*numptsapprox/(indexLocalZeroapprox(i+1)-indexLocalZeroapprox(i));
-%         
-%         zapstdevapprox(i,:) =  std(stdevchecktestapprox);  %%% ajm 7_17_18
-%     end
-%     
-%     for i=1:nseriesapprox
-%         for j= 1: dimFlag
-%             stdevfilterapprox(i,j) = 100.0*zapstdevapprox(i,j)/loadCapacitiesapprox(1,j); %% ajm 7_17_18
-%             
-%             if stdevfilterapprox(i,j) > 0.25
-%                 zapapprox(i,j) = aprxINminGZapprox(indexLocalZeroapprox(i),j);
-%             end
-%         end
-%         for m=indexLocalZeroapprox(i):indexLocalZeroapprox(i+1)-1
-%             taretalapprox(m,:) = zapapprox(i,:);
-%         end
-%     end
+ %%%%%%    
+    if excel_FLAG == 1;
+disp(' ');
+disp('%%%%%%%%%%%%%%%%%');
+disp(' ');
+disp('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
+
+    filename = 'Global_ALG_Approx.csv';
+    Z = aprxINminGZapprox; 
+    csvwrite(filename,Z,0,0)      
     
-    disp(' ');
-    disp('%%%%%%%%%%%%%%%%%');
-    disp('  ');
-    disp('Approximation data file read =');
-    disp(out.savePathapp);
-    disp('  ');
+    else
     
-    if excel_FLAG == 1
-        disp('  ');
-        disp('ALG MODEL GLOBAL LOAD APPROXIMATION: Check APPROX_AOX_GLOBAL_ALG_RESULT.csv file');
-        disp(' ');
-        
-        filename = 'APPROX_AOX_GLOBAL_ALG_RESULT.csv';
-        Z = aprxINminGZapprox;
-        xlRange = 'A1:JnumBasis';
-        xlswrite(filename,Z,xlRange)
-    end
+disp(' ');
+disp('%%%%%%%%%%%%%%%%%');
+disp(' ');
+disp('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
+        end
+ %%%%%%
+
+ 
+ 
     
+    %
+   
+    
+    %
+    %
+    %
+    % Copyright ©2016 Andrew Meade and Ali Arya Mokhtarzadeh.  All Rights Reserved.
+    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                    RBF SECTION FOR APPROXIMATION     AJM 6/29/17                         %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %goal to use centers, width and coefficients to approxate parameters against
     %independent data
     
+    %%
+    
     aprxINminGZ2approx = aprxINminGZapprox;
+    
+    
+    %%
+    
     if balCal_FLAG == 2
         
         etaHistapprox = cell(numBasis,1);
         aprxINminGZ_Histapprox = cell(numBasis,1);
         
-        etaGZapprox = dot(dalzapprox-dainputsapprox,dalzapprox-dainputsapprox);
+        
+        etaGZapprox = dot(globalZerosAllPointsapprox-excessVecapprox,globalZerosAllPointsapprox-excessVecapprox);
         
         for u=1:numBasis
             for s=1:length(excessVec(1,:)) % loops through the 8 components
@@ -1253,52 +1280,61 @@ if balApprox_FLAG == 1
                 centerIndexLoop(s) = centerIndexHist(u,s); %Have to use the history or it gets overwritten
                 
                 for r=1:length(excessVecapprox(:,1))
-                    etaapprox(r,s) = dot(dainputsapprox(r,:)-dainputscalib(centerIndexLoop(s),:),dainputsapprox(r,:)-dainputscalib(centerIndexLoop(s),:));
+                    etaapprox(r,s) = dot(excessVecapprox(r,:)-excessVec(centerIndexLoop(s),:),excessVecapprox(r,:)-excessVec(centerIndexLoop(s),:));
                 end
                 
-                rbfINminGZapprox(:,s)=exp(etaapprox(:,s)*log(abs(wHist(u,s))));
+                w(s) = wHist(u,s); % Have to use the history or it gets overwritten
                 
-                rbfc_INminGZapprox(:,s) = cHist(u,s)*rbfINminGZapprox(:,s);
+                
+                rbfINminGZapprox(:,s)=exp(etaapprox(:,s)*log(abs(w(s))));
+                coeffapprox(s) = cHist(u,s); %Have to use the history or it gets overwritten
+                
+                rbfc_INminGZapprox(:,s) = coeffapprox(s)*rbfINminGZapprox(:,s);
+                
+                
             end
             
+            
+            
+            wHistapprox(u,:) = w;
+            cHistapprox(u,:) = coeffapprox;
+            centerIndexHist(u,:) = centerIndexLoop;
+            etaHistapprox{u} = etaapprox;
+            
+            
+            %UPDATE THE RESIDUAL
+            
             %update the approximation
+            
             aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
             aprxINminGZ_Histapprox{u} = aprxINminGZ2approx;
             
-            % SOLVE FOR TARES BY TAKING THE MEAN
-            for i=1:nseriesapprox
-                zoop2approx = zeros(length(excessVecapprox(:,1)),dimFlag);
-                
-                kx=indexLocalZeroapprox(i)-1;
-                
-                daemmlengthapprox = indexLocalZeroapprox(i+1) - indexLocalZeroapprox(i);
-                
-                stdevchecktest2approx = zeros(daemmlengthapprox,dimFlag);   %% ajm 7_18_18
-                
-                for m= indexLocalZeroapprox(i): indexLocalZeroapprox(i+1)-1
-                    zoop2approx(m-kx,:) = aprxINminGZ2approx(m,:);
-                    stdevchecktest2approx(m-kx,:) = aprxINminGZ2approx(m,:);
-                end
-                
-                zap2approx(i,:) = mean(zoop2approx)*numptsapprox/(indexLocalZeroapprox(i+1)-indexLocalZeroapprox(i));
-                
-                zapstdev2approx(i,:) =  std(stdevchecktest2approx);  %%% ajm 7_17_18
-            end
-            
-            for i=1:nseriesapprox
-                for j= 1: dimFlag
-                    stdevfilter2approx(i,j) = 100.0*zapstdev2approx(i,j)/loadCapacitiesapprox(1,j); %% ajm 7_17_18
-                    
-                    if stdevfilter2approx(i,j) > 0.25
-                        zap2approx(i,j) = (aprxINminGZ2approx(indexLocalZeroapprox(i),j)+ aprxINminGZ2approx(indexLocalZeroapprox(i+1)-1,j))/2.0;
-                    end
-                end
-                
-                for m=indexLocalZeroapprox(i):indexLocalZeroapprox(i+1)-1
-                    taretalGRBFapprox(m,:) = zap2approx(i,:);
-                end
-            end
         end
+        
+  
+        
+    if excel_FLAG == 1;
+disp(' ');
+disp('%%%%%%%%%%%%%%%%%');
+disp(' ');
+disp('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
+
+    filename = 'Global_ALG+GRBF_Approx.csv';
+    Z = aprxINminGZ2approx; 
+    csvwrite(filename,Z,0,0)                
+     else
+disp(' ');
+disp('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
+disp(' ');
+     end
+        
+    end
+    
+    
+
+
+    %
+    %End Approximation Option
         
         if excel_FLAG == 1 && balCal_FLAG == 2
             disp(' ');
@@ -1310,7 +1346,6 @@ if balApprox_FLAG == 1
             xlRange = 'A1:JnumBasis';
             xlswrite(filename,Z,xlRange)
         end
-    end
 end
 
 disp('  ')
