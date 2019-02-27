@@ -1127,8 +1127,8 @@ if balApprox_FLAG == 1
     %
     
     load(out.savePathapp,'-mat');
-    nseriesapprox=max(seriesapprox);
-    [sharedvals,indexLocalZeroapprox]=intersect(seriesapprox, [1:max(seriesapprox)],'stable'); %Create index
+    %nseriesapprox=max(seriesapprox);
+    %[sharedvals,indexLocalZeroapprox]=intersect(seriesapprox, [1:max(seriesapprox)],'stable'); %Create index
     %
     
     % num of data points
@@ -1164,11 +1164,10 @@ if balApprox_FLAG == 1
     %% Build the Algebraic Model
     %%
     
-    n(1) = 2*dimFlag*(dimFlag+2);
-    n(2) = dimFlag*(dimFlag+3)/2;
-    n(3) = dimFlag;
-    model_FLAG = find(n==size( xapproxer,1)-1);
-    %model_FLAG = find(n==size( xapproxer,1));
+%     n(1) = 2*dimFlag*(dimFlag+2);
+%     n(2) = dimFlag*(dimFlag+3)/2;
+%     n(3) = dimFlag;
+%     model_FLAG = find(n==size( xapproxer,1)-1);
     
     
     %% Full Algebraic Model
@@ -1177,12 +1176,12 @@ if balApprox_FLAG == 1
     end
     
     %% Truncated Algebraic Model
-    if model_FLAG == 2;
+    if model_FLAG == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
     
     %% Linear Algebraic Model
-    if model_FLAG == 3;
+    if model_FLAG == 3
         nterms = dimFlag;
     end
     
