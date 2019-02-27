@@ -1445,8 +1445,6 @@ switch cva.type
         
         loadCapacitiesapprox =    csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
         natzerosapprox =          csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
-        %         seriesapprox =            csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
-        %         excessVecapprox =         csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
         excessVecapprox =         csvread(app.Path,app.CSV(4,1),app.CSV(4,2),app.Range{4});
         

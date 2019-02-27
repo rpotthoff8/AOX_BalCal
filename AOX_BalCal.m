@@ -129,19 +129,19 @@ for lhs = 1:numLHS
         series = series0;
     end
     
-    [numpts, dimFlag] = size(excessVec);    
+    [numpts, dimFlag] = size(excessVec);
     
     %find the average natural zeros (also called global zeros)
-    globalZeros = mean(natzeros);    
+    globalZeros = mean(natzeros);
     
     [~,s_1st,s_id] = unique(series);
     %find number of series; this will tell us the number of tares
-    nseries = length(s_1st);  
+    nseries = length(s_1st);
     
     %find zero points of each series and number of points in a series
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
     %section
-    [localZeros,localZerosAllPoints] = localzeros(series,excessVec);    
+    [localZeros,localZerosAllPoints] = localzeros(series,excessVec);
     globalZerosAllPoints = ones(numpts,1)*globalZeros;
     
     disp('  ')
@@ -159,7 +159,7 @@ for lhs = 1:numLHS
         else
             excessVec = qtaprxINminGZ + globalZerosAllPoints;
         end
-    end   
+    end
     
     %%% Subtract the Global Zeros from the Inputs and Local Zeros %%%%%%%%%%
     dainputs = excessVec - globalZerosAllPoints;
@@ -312,9 +312,9 @@ resSquare = dot(targetRes,targetRes)';
 
 % Identify Outliers After Filtering
 % (Threshold approach) ajm 8/2/17
-if balOut_FLAG == 1 
+if balOut_FLAG == 1
     detect_targetRes = targetRes;
-
+    
     % Use the modeled input for the rest of the calculations
     for n = 1:dimFlag
         normtargetRes(:,n) = detect_targetRes(:,n)/loadCapacities(n);
@@ -326,7 +326,7 @@ if balOut_FLAG == 1
     out_standardDev = std(normtargetRes);
     numSTD = 3.0; % Whatever you want.
     thresholdValue = numSTD * (out_standardDev) - out_meanValue;
-
+    
     for n = 1:dimFlag
         if thresholdValue(1,n) <= 0.0025
             thresholdValue(1,n) = 0.0025;
@@ -435,7 +435,7 @@ if balOut_FLAG == 1
         taretal = meantare(series,checkit);
         %RESIDUAL
         targetRes = targetMatrix+taretal-aprxINminGZ;      %0=b-Ax
-    end  
+    end
 end
 
 %find the sum of squares of the residual using the dot product
@@ -559,18 +559,18 @@ if balCal_FLAG == 2
     %dt1 = dot(target1,target1);
     %find centers by finding the index of max residual, using that index to
     %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
-    %product of the resulting column vector    
+    %product of the resulting column vector
     for i=1:dimFlag
         for s=1:length(series)
             targetRes2(s,i) = targetRes(s,i);
         end
     end
     aprxINminGZ2 = aprxINminGZ;
-
+    
     etaHist = cell(numBasis,1);
     aprxINminGZ_Hist = cell(numBasis,1);
     tareHist = cell(numBasis,1);
-
+    
     for i=1:dimFlag
         dainputscalib(:,i) = excessVec(:,i)-globalZeros(i);
         dalzcalib(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
@@ -615,7 +615,7 @@ if balCal_FLAG == 2
         
         % SOLVE FOR TARES BY TAKING THE MEAN
         taretalGRBF = meantare(series,aprxINminGZ2-targetMatrix);
-
+        
         taresGRBF = taretalGRBF(s_1st,:);
         
         tareGRBFHist{u} = taresGRBF;
@@ -709,7 +709,7 @@ if balCal_FLAG == 2
         calib_GRBF_Ratio_Max_Mag_Load_Resid_and_Std_Dev = array2table(ratioGoop2,'VariableNames',loadlist(1:dimFlag))
         
         % Prints the GRBF minmax
-        calib_GRBF_minmaxband_per_capacity = array2table(theminmaxband2,'VariableNames',loadlist(1:dimFlag))  
+        calib_GRBF_minmaxband_per_capacity = array2table(theminmaxband2,'VariableNames',loadlist(1:dimFlag))
     end
     
     if excel_FLAG == 1 && balCal_FLAG == 2
@@ -768,7 +768,7 @@ if balVal_FLAG == 1
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
     %section
     [localZerosvalid,localZerosAllPointsvalid] = localzeros(seriesvalid,excessVecvalid0);
-    globalZerosAllPointsvalid = ones(numptsvalid,1)*globalZerosvalid;    
+    globalZerosAllPointsvalid = ones(numptsvalid,1)*globalZerosvalid;
     
     % Subtract the Global Zeros from the Inputs and Local Zeros
     
@@ -928,7 +928,7 @@ if balVal_FLAG == 1
         plotResPages(seriesvalid, targetResvalid, loadCapacities, stdDevPercentCapacityvalid )
         %    hold off
     end
-
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                    RBF SECTION FOR VALIDATION     AJM 12/10/16                         %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -943,7 +943,7 @@ if balVal_FLAG == 1
     targetRes2valid = targetResvalidX;
     aprxINminGZ2valid = aprxINminGZvalid;
     
-    % Subtract the Global Zeros from the Inputs and Local Zeros 
+    % Subtract the Global Zeros from the Inputs and Local Zeros
     for k=1:dimFlagvalid
         dainputsvalid(:,k) = excessVecvalid0(:,k)-globalZerosvalid(k);
         dalzvalid(:,k) = localZerosAllPointsvalid(:,k)-globalZerosvalid(k);
@@ -1115,7 +1115,7 @@ if balVal_FLAG == 1
 end
 
 if balApprox_FLAG == 1
- %
+    %
     %
     % Copyright ©2016 Andrew Meade and Ali Arya Mokhtarzadeh.  All Rights Reserved.
     %
@@ -1125,7 +1125,7 @@ if balApprox_FLAG == 1
     %
     %DEFINE THE PRODUCTION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
     %
-
+    
     load(out.savePathapp,'-mat');
     nseriesapprox=max(seriesapprox);
     [sharedvals,indexLocalZeroapprox]=intersect(seriesapprox, [1:max(seriesapprox)],'stable'); %Create index
@@ -1159,56 +1159,56 @@ if balApprox_FLAG == 1
     end
     %%%%%%%%%%%%
     
-  
-%%
-%% Build the Algebraic Model
-%%
-
-n(1) = 2*dimFlag*(dimFlag+2);
-n(2) = dimFlag*(dimFlag+3)/2;
-n(3) = dimFlag;
-model_FLAG = find(n==size( xapproxer,1)-1);
-%model_FLAG = find(n==size( xapproxer,1));
-
-
-%% Full Algebraic Model
-if model_FLAG == 1
-    nterms = 2*dimFlag*(dimFlag+2);
-end
-
-%% Truncated Algebraic Model
-if model_FLAG == 2;
-    nterms = dimFlag*(dimFlag+3)/2;
-end
-
-%% Linear Algebraic Model
-if model_FLAG == 3;
-    nterms = dimFlag;
-end
-
-
-
-% Call the Algebraic Subroutine
-%
-
-comGZapprox= zeros(nterms,1);
-
-
-for i=1:dimFlag
-    biggee(:,i) = 0;
-end
-
-[comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggee);
-
-%model_FLAG
-%nterms
-%dimFlag
-%numptsapprox
-
-
-%%
-%%
-
+    
+    %%
+    %% Build the Algebraic Model
+    %%
+    
+    n(1) = 2*dimFlag*(dimFlag+2);
+    n(2) = dimFlag*(dimFlag+3)/2;
+    n(3) = dimFlag;
+    model_FLAG = find(n==size( xapproxer,1)-1);
+    %model_FLAG = find(n==size( xapproxer,1));
+    
+    
+    %% Full Algebraic Model
+    if model_FLAG == 1
+        nterms = 2*dimFlag*(dimFlag+2);
+    end
+    
+    %% Truncated Algebraic Model
+    if model_FLAG == 2;
+        nterms = dimFlag*(dimFlag+3)/2;
+    end
+    
+    %% Linear Algebraic Model
+    if model_FLAG == 3;
+        nterms = dimFlag;
+    end
+    
+    
+    
+    % Call the Algebraic Subroutine
+    %
+    
+    comGZapprox= zeros(nterms,1);
+    
+    
+    for i=1:dimFlag
+        biggee(:,i) = 0;
+    end
+    
+    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggee);
+    
+    %model_FLAG
+    %nterms
+    %dimFlag
+    %numptsapprox
+    
+    
+    %%
+    %%
+    
     
     %LOAD APPROXIMATION
     %define the approximation for inputs minus global zeros
@@ -1222,31 +1222,31 @@ end
     %%
     %%
     
- %%%%%%    
+    %%%%%%
     if excel_FLAG == 1;
-disp(' ');
-disp('%%%%%%%%%%%%%%%%%');
-disp(' ');
-disp('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
-
-    filename = 'Global_ALG_Approx.csv';
-    Z = aprxINminGZapprox; 
-    csvwrite(filename,Z,0,0)      
-    
+        disp(' ');
+        disp('%%%%%%%%%%%%%%%%%');
+        disp(' ');
+        disp('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
+        
+        filename = 'Global_ALG_Approx.csv';
+        Z = aprxINminGZapprox;
+        csvwrite(filename,Z,0,0)
+        
     else
+        
+        disp(' ');
+        disp('%%%%%%%%%%%%%%%%%');
+        disp(' ');
+        disp('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
+    end
+    %%%%%%
     
-disp(' ');
-disp('%%%%%%%%%%%%%%%%%');
-disp(' ');
-disp('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
-        end
- %%%%%%
-
- 
- 
+    
+    
     
     %
-   
+    
     
     %
     %
@@ -1311,41 +1311,41 @@ disp('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
             
         end
         
-  
         
-    if excel_FLAG == 1;
-disp(' ');
-disp('%%%%%%%%%%%%%%%%%');
-disp(' ');
-disp('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
-
-    filename = 'Global_ALG+GRBF_Approx.csv';
-    Z = aprxINminGZ2approx; 
-    csvwrite(filename,Z,0,0)                
-     else
-disp(' ');
-disp('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
-disp(' ');
-     end
+        
+        if excel_FLAG == 1;
+            disp(' ');
+            disp('%%%%%%%%%%%%%%%%%');
+            disp(' ');
+            disp('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
+            
+            filename = 'Global_ALG+GRBF_Approx.csv';
+            Z = aprxINminGZ2approx;
+            csvwrite(filename,Z,0,0)
+        else
+            disp(' ');
+            disp('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
+            disp(' ');
+        end
         
     end
     
     
-
-
+    
+    
     %
     %End Approximation Option
+    
+    if excel_FLAG == 1 && balCal_FLAG == 2
+        disp(' ');
+        disp('ALG+GRBF MODEL GLOBAL LOAD APPROXIMATION: Check APPROX_AOX_GLOBAL_GRBF_RESULT.csv file');
+        disp(' ');
         
-        if excel_FLAG == 1 && balCal_FLAG == 2
-            disp(' ');
-            disp('ALG+GRBF MODEL GLOBAL LOAD APPROXIMATION: Check APPROX_AOX_GLOBAL_GRBF_RESULT.csv file');
-            disp(' ');
-            
-            filename = 'APPROX_AOX_GLOBAL_GRBF_RESULT.csv';
-            Z = aprxINminGZ2approx;
-            xlRange = 'A1:JnumBasis';
-            xlswrite(filename,Z,xlRange)
-        end
+        filename = 'APPROX_AOX_GLOBAL_GRBF_RESULT.csv';
+        Z = aprxINminGZ2approx;
+        xlRange = 'A1:JnumBasis';
+        xlswrite(filename,Z,xlRange)
+    end
 end
 
 disp('  ')
