@@ -1,18 +1,24 @@
-function[]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist
+function[]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist,aprxINminGZ,series,targetMatrix,s_1st)
 %ADDED 9 Jan 19 JRP: Monte carlo
     
+     
     % %Define magnitude of noise:
     % percentVoltage=0.01; %percent of max recorded voltage that is noise
     % Maxnoise=percentVoltage*max(abs(dainputs2));
-    Maxnoise=1;
+
     
     %equally distributed noise
     % sigma=Maxnoise./2; % 95% of the noise points will be within the defined Maxnoise
     
     sigma=1/2; %Trust all channels down to 1 microvolt, sigma is trust/2
     
+    
+    
+    aprxINminGZ2_storage=zeros(size(aprxINminGZ,1),size(aprxINminGZ,2),nCarlo);
+    taresGRBF_storage=zeros(size(s_1st,1),size(targetMatrix,2),nCarlo);
+    
     for carloCount=1:nCarlo
-        
+        aprxINminGZ2 = aprxINminGZ;
         % Normally distributed noise
         noise=sigma.*randn(size(excessVec,1),size(excessVec,2));
         
@@ -58,11 +64,27 @@ function[]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndex
                 rbfc_LZminGZ(:,s) = coeff(s)*rbfLZminGZ(:,s); %to find tares AAM042016
             end
             
+%         etaHist{u} = eta;
+
+        %update the approximation
+        aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
+        
+        % SOLVE FOR TARES BY TAKING THE MEAN
+        taretalGRBF = meantare(series,aprxINminGZ2-targetMatrix);
+
+        taresGRBF = taretalGRBF(s_1st,:);
+
+%         tareGRBFHist{u} = taresGRBF;
+
+%         targetRes2 = targetMatrix-aprxINminGZ2+taretalGRBF;      %0=b-Ax
+%         newRes2 = targetRes2'*targetRes2;
+%         resSquare2 = diag(newRes2);
+%         resSquareHist(u,:) = resSquare2;
+
         end
-        
-        
-        
-        
+        aprxINminGZ2_storage(:,:,carloCount)=aprxINminGZ2;
+        taresGRBF_storage(:,:,carloCount)=taresGRBF;
+           
     end
 end
     %END added for monte-carlo
