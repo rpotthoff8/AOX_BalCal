@@ -1,7 +1,5 @@
+function[]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist
 %ADDED 9 Jan 19 JRP: Monte carlo
-carlo=1;
-if carlo==1
-    nCarlo=11;
     
     % %Define magnitude of noise:
     % percentVoltage=0.01; %percent of max recorded voltage that is noise
@@ -25,18 +23,22 @@ if carlo==1
         
         for i=1:dimFlag
             dainputscalib(:,i) = excessVecCarlo(:,i)-globalZeros(i);
-            dalzcalib(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
+%             dalzcalib(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
         end
         
         %    localZeroMatrix = localZerosAllPoints;
-        globalZerosAllPoints = zeros(length(excessVec(:,1)),dimFlag); % ajm 6_2_18
+%         globalZerosAllPoints = zeros(length(excessVec(:,1)),dimFlag); % ajm 6_2_18
         
         etaLZ = dot(dalzcalib-dainputscalib,dalzcalib-dainputscalib);
         etaGZ = dot(globalZerosAllPoints-dainputscalib,globalZerosAllPoints-dainputscalib);
         
         for u=1:numBasis
+            w=wHist(:,u);
+            centerIndexLoop= centerIndexHist(u,:);
+            coeff=cHist(u,:);
             for s=1:dimFlag
-                [goopLoop(s),centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
+                
+%                 [goopLoop(s),centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
                 
                 for r=1:length(excessVec(:,1))
                     eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
@@ -49,7 +51,7 @@ if carlo==1
                 rbfINminGZ(:,s)=exp(eta(:,s)*log(abs(w(s))));
                 rbfLZminGZ(:,s)=exp(etaLZ(:,s)*log(abs(w(s))));%to find tares AAM042016
                 
-                coeff(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
+%                 coeff(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
                 
                 rbfc_INminLZ(:,s) = coeff(s)*rbfINminLZ(:,s);
                 rbfc_INminGZ(:,s) = coeff(s)*rbfINminGZ(:,s);
