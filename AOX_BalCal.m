@@ -754,6 +754,7 @@ if balVal_FLAG == 1
     %     targetMatrixvalid =      csvread(inputFile_balCal,19,4,'E20..L139');
     %     excessVecvalid =         csvread(inputFile_balCal,19,12,'M20..T139');
     load(out.savePathval,'-mat');
+    [~,s_1st,s_id] = unique(seriesvalid);
     
     excessVecvalid0 = excessVecvalid;
     % num of data points
@@ -794,11 +795,11 @@ if balVal_FLAG == 1
     if model_FLAG == 1
         nterms = 2*dimFlag*(dimFlag+2);
     end
-    %% Truncated Algebraic Model
+    % Truncated Algebraic Model
     if model_FLAG == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
-    %% Linear Algebraic Model
+    % Linear Algebraic Model
     if model_FLAG == 3
         nterms = dimFlag;
     end
@@ -828,6 +829,7 @@ if balVal_FLAG == 1
     
     % SOLVE FOR TARES BY TAKING THE MEAN
     taretalvalid = meantare(seriesvalid,checkitvalid);
+    zapvalid     = taretalvalid(s_1st,:);
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taretalvalid;
     
