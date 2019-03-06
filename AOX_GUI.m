@@ -271,9 +271,6 @@ switch calext
     case '.csv'
         cal.Range{1} = [get(handles.c11,'String'),'..',get(handles.c12,'String')];
         cal.CSV(1,:) = a12rc(get(handles.c11,'String'));
-        loadend      = a12rc(get(handles.c12,'String'));
-        loadrng      = [cal.CSV(1,1)-4, cal.CSV(1,2), cal.CSV(1,1)-4, loadend(2)];
-        loadlabels   = csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),loadrng);
         cal.Range{2} = [get(handles.c21,'String'),'..',get(handles.c22,'String')];
         cal.CSV(2,:) = a12rc(get(handles.c21,'String'));
         cal.Range{3} = [get(handles.c31,'String'),'..',get(handles.c32,'String')];
@@ -282,6 +279,10 @@ switch calext
         cal.CSV(4,:) = a12rc(get(handles.c41,'String'));
         cal.Range{5} = [get(handles.c51,'String'),'..',get(handles.c52,'String')];
         cal.CSV(5,:) = a12rc(get(handles.c51,'String'));
+        
+        cal.loadend          = a12rc(get(handles.c12,'String'));
+        cal.voltend          = a12rc(get(handles.c22,'String'));
+        
         outStruct.savePathcal = loadCSV(cal);
     case '.cal'
         outStruct.savePathcal = cal.Path;
@@ -1015,7 +1016,7 @@ function actionpanel_SelectionChangeFcn(hObject, eventdata, handles)
 %	OldValue: handle of the previously selected object or empty if none was selected
 %	NewValue: handle of the currently selected object
 % handles    structure with handles and user data (see GUIDATA)
-calPath_Callback(handles.valPath,eventdata,handles);
+calPath_Callback(handles.calPath,eventdata,handles);
 set(handles.calPath, 'Enable', 'on');
 set(handles.calFind, 'Enable', 'on');
 if (hObject == handles.calibrate)
@@ -1229,15 +1230,16 @@ function a = a12rc(a1)
 %converts spreadsheet notation "A1" to row and column numbers  (0-based)
 alpha_ind = find(isletter(a1));
 alpha = abs(upper(a1(alpha_ind)))-65;
-if length(alpha) == 2
-    c = 26*(alpha(1)+1) + alpha(2);
-else
-    c = alpha;
-end
+c = alpha;
 a1(alpha_ind) = [];
 r = str2num(a1)-1;
 a = [r c];
 
+function a1 = rc2a1(a)
+r = a(1); c = a(2);
+alpha = char(c+65);
+num = int2str(r+1);
+a1 = [alpha, num];
 
 % --- Executes on button press in grbftares_FLAGcheck.
 function grbftares_FLAGcheck_Callback(hObject, eventdata, handles)
@@ -1415,6 +1417,18 @@ switch cva.type
         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
         targetMatrix0 =      csvread(cal.Path,cal.CSV(4,1),cal.CSV(4,2),cal.Range{4});
         excessVec0 =         csvread(cal.Path,cal.CSV(5,1),cal.CSV(5,2),cal.Range{5});
+        
+        try
+            l_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(1,2)]);
+            l_label2         = rc2a1([cal.CSV(1,1)-4, cal.loadend(2)]);
+            [~,loadlabels,~] = xlsread(cal.Path,[l_label1,':',l_label2]);
+
+            v_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(2,2)]);
+            v_label2         = rc2a1([cal.CSV(1,1)-4, cal.voltend(2)]);
+            [~,voltlabels,~] = xlsread(cal.Path,[v_label1,':',v_label2]);
+            
+            clear l_label1 l_label2 v_label1 v_label2
+        end
         
         [~,calName,~] = fileparts(cal.Path);
         fileName = [calName,'.cal'];
