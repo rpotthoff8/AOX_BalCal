@@ -551,7 +551,7 @@ end
 
 if res_FLAG == 1
     figure('Name','Algebraic Model Calibration; Residuals of Load Versus Data Point Index','NumberTitle','off')
-    plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity )
+    plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
     %    hold off
 end
 
@@ -650,7 +650,7 @@ if balCal_FLAG == 2
     %***************** ajm 5/12/18
     if res_FLAG == 1
         figure('Name','GRBF + Algebraic Model Calibration; Residuals of Load Versus Data Point Index','NumberTitle','off')
-        plotResPages(series, targetRes2, loadCapacities, stdDevPercentCapacity2)
+        plotResPages(series, targetRes2, loadCapacities, stdDevPercentCapacity2, loadlist)
         %    hold off
     end
     
@@ -932,7 +932,7 @@ if balVal_FLAG == 1
     
     if res_FLAG == 1
         figure('Name','Algebraic Model Validation; Residuals of Load Versus Data Point Index','NumberTitle','off')
-        plotResPages(seriesvalid, targetResvalid, loadCapacities, stdDevPercentCapacityvalid )
+        plotResPages(seriesvalid, targetResvalid, loadCapacities, stdDevPercentCapacityvalid, loadlist)
         %    hold off
     end
     
@@ -1093,7 +1093,7 @@ if balVal_FLAG == 1
         
         if res_FLAG == 1
             figure('Name','GRBF + Algebraic Model Validation; Residuals of Load Versus Data Point Index','NumberTitle','off')
-            plotResPages(seriesvalid, targetRes2valid, loadCapacities, stdDevPercentCapacity2valid )
+            plotResPages(seriesvalid, targetRes2valid, loadCapacities, stdDevPercentCapacity2valid, loadlist)
             %    hold off
         end
         
