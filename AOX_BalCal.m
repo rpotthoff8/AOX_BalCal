@@ -472,16 +472,22 @@ taresALGB = taretal(s_1st,:);
 
 %OUTPUT HISTOGRAM PLOTS
 if hist_FLAG == 1
+    figure('Name','Calibration - ALGB','NumberTitle','off')
     for k0=1:length(targetRes(1,:))
-        figure;
-        [histALGB, binValues] = hist(targetRes(:,k0)/standardDev(k0,:),20);
-        normalizedCounts = 100 * histALGB / sum(histALGB);
-        bar(binValues, normalizedCounts, 'barwidth', 1);
-        xlabel('Ratio Between Load Residual and Standard Deviation');
-        ylabel('Number of Readings in % of Number of Data Points');
+        subplot(2,3,k0)
+        binWidth = 0.25;
+        edges = [-4.125:binWidth:4.125];
+        h = histogram(targetRes(:,k0)/standardDev(k0,:),edges,'Normalization','probability');
+        centers = edges(1:end-1)+.125;
+        values = h.Values*100;
+        bar(centers,values,'barwidth',1)
+        ylabel('% Data Pts');
         xlim([-4 4]);
         ylim([0 50]);
-        title(strrep(['Histogram of ALG Calibration Model for %s',7],'%s',loadlist(k0)));
+        hold on
+        plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+        hold off
+        xlabel(['\Delta',loadlist{k0},'/\sigma']);
     end
 end
 
@@ -666,16 +672,22 @@ if balCal_FLAG == 2
     
     %OUTPUT HISTOGRAM PLOTS
     if hist_FLAG == 1 && balCal_FLAG == 2
-        for k3=1:length(targetRes2(1,:))
-            figure;
-            [histGRBF2, binValues2] = hist(targetRes2(:,k3)/standardDev2(k3,:),20);
-            normalizedCounts2 = 100 * histGRBF2 / sum(histGRBF2);
-            bar(binValues2, normalizedCounts2, 'barwidth', 1);
-            xlabel('Ratio Between Load Residual and Standard Deviation')
-            ylabel('Number of Readings in % of Number of Data Points')
+        figure('Name','Calibration - GRBF','NumberTitle','off')
+        for k0=1:length(targetRes2(1,:))
+            subplot(2,3,k0)
+            binWidth = 0.25;
+            edges = [-4.125:binWidth:4.125];
+            h = histogram(targetRes2(:,k0)/standardDev2(k0,:),edges,'Normalization','probability');
+            centers = edges(1:end-1)+.125;
+            values = h.Values*100;
+            bar(centers,values,'barwidth',1)
+            ylabel('% Data Pts');
             xlim([-4 4]);
             ylim([0 50]);
-            title(strrep(['Histogram of ALG+GRBF Calibration Model for %s',7],'%s',loadlist(k3)));
+            hold on
+            plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+            hold off
+            xlabel(['\Delta',loadlist{k0},'/\sigma']);
         end
     end
     
@@ -859,17 +871,23 @@ if balVal_FLAG == 1
     theminmaxbandvalid = 100*(abs(maxTargetsvalid + minTargetsvalid)./loadCapacitiesvalid);
     
     %OUTPUT HISTOGRAM PLOTS
-    if hist_FLAG == 1 && balCal_FLAG == 2
+    if hist_FLAG == 1
+        figure('Name','Validation - ALGB','NumberTitle','off')
         for k0=1:length(targetResvalid(1,:))
-            figure;
-            [histGRBFvalid, binValuesvalid] = hist(targetResvalid(:,k0)/standardDevvalid(k0,:),20);
-            normalizedCountsvalid = 100 * histGRBFvalid / sum(histGRBFvalid);
-            bar(binValuesvalid, normalizedCountsvalid, 'barwidth', 1);
-            xlabel('Ratio Between Load Residual and Standard Deviation')
-            ylabel('Number of Readings in % of Number of Data Points')
+            subplot(2,3,k0)
+            binWidth = 0.25;
+            edges = [-4.125:binWidth:4.125];
+            h = histogram(targetResvalid(:,k0)/standardDevvalid(k0,:),edges,'Normalization','probability');
+            centers = edges(1:end-1)+.125;
+            values = h.Values*100;
+            bar(centers,values,'barwidth',1)
+            ylabel('% Data Pts');
             xlim([-4 4]);
             ylim([0 50]);
-            title(strrep(['Histogram of ALG Validation Model for %s',7],'%s',loadlist(k0)));
+            hold on
+            plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+            hold off
+            xlabel(['\Delta',loadlist{k0},'/\sigma']);
         end
     end
     
@@ -1054,16 +1072,22 @@ if balVal_FLAG == 1
         
         %OUTPUT HISTOGRAM PLOTS
         if hist_FLAG == 1 && balCal_FLAG == 2
-            for k3=1:length(targetRes2valid(1,:))
-                figure;
-                [histGRBF2valid, binValues2valid] = hist(targetRes2valid(:,k3)/standardDev2valid(k3,:),20);
-                normalizedCounts2valid = 100 * histGRBF2valid / sum(histGRBF2valid);
-                bar(binValues2valid, normalizedCounts2valid, 'barwidth', 1);
-                xlabel('Ratio Between Load Residual and Standard Deviation')
-                ylabel('Number of Readings in % of Number of Data Points')
+            figure('Name','Validation - GRBF','NumberTitle','off')
+            for k0=1:length(targetRes2valid(1,:))
+                subplot(2,3,k0)
+                binWidth = 0.25;
+                edges = [-4.125:binWidth:4.125];
+                h = histogram(targetRes2valid(:,k0)/standardDev2valid(k0,:),edges,'Normalization','probability');
+                centers = edges(1:end-1)+.125;
+                values = h.Values*100;
+                bar(centers,values,'barwidth',1)
+                ylabel('% Data Pts');
                 xlim([-4 4]);
                 ylim([0 50]);
-                title(strrep(['Histogram of ALG+GRBF Validation Model for %s',7],'%s',loadlist(k3)));
+                hold on
+                plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+                hold off
+                xlabel(['\Delta',loadlist{k0},'/\sigma']);
             end
         end
         if print_FLAG == 1
