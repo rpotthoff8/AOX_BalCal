@@ -217,20 +217,11 @@ for lhs = 1:numLHS
     %  ajm for the users to view 5/11/18
     APPROX_AOX_COEFF_MATRIX = xcalib;
     
-    for i=1:nterms
-        xapproxer(i,:) = xcalib(i,:);
-    end
-    
-    xapproxer(nterms+1,:) = 0.0;
+    xapproxer = xcalib(1:nterms,:);
     
     if excel_FLAG == 1
         filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-        Z = xapproxer;
-        %     xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)nterms';
-        xlRange=char(strcat(matrixcolumnlabels(1),'1:',matrixcolumnlabels(dimFlag),num2str(nterms)));
-        xlswrite(filename,Z,xlRange)
-        %   'made it here'
-        %%
+        csvwrite(filename,xapproxer)
     end
     
     if LHS_Flag == 1
@@ -464,16 +455,22 @@ taresALGB = taretal(s_1st,:);
 
 %OUTPUT HISTOGRAM PLOTS
 if hist_FLAG == 1
+    figure('Name','Calibration - ALGB','NumberTitle','off')
     for k0=1:length(targetRes(1,:))
-        figure;
-        [histALGB, binValues] = hist(targetRes(:,k0)/standardDev(k0,:),20);
-        normalizedCounts = 100 * histALGB / sum(histALGB);
-        bar(binValues, normalizedCounts, 'barwidth', 1);
-        xlabel('Ratio Between Load Residual and Standard Deviation');
-        ylabel('Number of Readings in % of Number of Data Points');
+        subplot(2,3,k0)
+        binWidth = 0.25;
+        edges = [-4.125:binWidth:4.125];
+        h = histogram(targetRes(:,k0)/standardDev(k0,:),edges,'Normalization','probability');
+        centers = edges(1:end-1)+.125;
+        values = h.Values*100;
+        bar(centers,values,'barwidth',1)
+        ylabel('% Data Pts');
         xlim([-4 4]);
         ylim([0 50]);
-        title(strrep(['Histogram of ALG Calibration Model for %s',7],'%s',loadlist(k0)));
+        hold on
+        plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+        hold off
+        xlabel(['\Delta',loadlist{k0},'/\sigma']);
     end
 end
 
@@ -525,25 +522,22 @@ if print_FLAG == 1
     calib_alg_per_minmaxband = array2table(theminmaxband,'VariableNames',loadlist(1:dimFlag))
     %%%%%%%%%
     
-    if excel_FLAG == 1
-        % Output results to an excel file
-        disp('  ');
-        disp('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
-        % CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ;
-        disp(' ');
-        
-        filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
-        Z = aprxINminGZ;
-        %        xlRange = 'A1:Jnumpts';
-        xlRange=char(strcat('A1:J',num2str(numpts)));
-        xlswrite(filename,Z,xlRange)
-    end
-    
+end
+
+if excel_FLAG == 1
+    % Output results to an excel file
+    disp('  ');
+    disp('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
+    % CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ;
+    disp(' ');
+
+    filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
+    csvwrite(filename,aprxINminGZ)
 end
 
 if res_FLAG == 1
     figure('Name','Algebraic Model Calibration; Residuals of Load Versus Data Point Index','NumberTitle','off')
-    plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity )
+    plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
     %    hold off
 end
 
@@ -642,7 +636,7 @@ if balCal_FLAG == 2
     %***************** ajm 5/12/18
     if res_FLAG == 1
         figure('Name','GRBF + Algebraic Model Calibration; Residuals of Load Versus Data Point Index','NumberTitle','off')
-        plotResPages(series, targetRes2, loadCapacities, stdDevPercentCapacity2)
+        plotResPages(series, targetRes2, loadCapacities, stdDevPercentCapacity2, loadlist)
         %    hold off
     end
     
@@ -657,31 +651,42 @@ if balCal_FLAG == 2
     %end
     
     %OUTPUT HISTOGRAM PLOTS
-    if hist_FLAG == 1 && balCal_FLAG == 2
-        for k3=1:length(targetRes2(1,:))
-            figure;
-            [histGRBF2, binValues2] = hist(targetRes2(:,k3)/standardDev2(k3,:),20);
-            normalizedCounts2 = 100 * histGRBF2 / sum(histGRBF2);
-            bar(binValues2, normalizedCounts2, 'barwidth', 1);
-            xlabel('Ratio Between Load Residual and Standard Deviation')
-            ylabel('Number of Readings in % of Number of Data Points')
+    if hist_FLAG == 1
+        figure('Name','Calibration - GRBF','NumberTitle','off')
+        for k0=1:length(targetRes2(1,:))
+            subplot(2,3,k0)
+            binWidth = 0.25;
+            edges = [-4.125:binWidth:4.125];
+            h = histogram(targetRes2(:,k0)/standardDev2(k0,:),edges,'Normalization','probability');
+            centers = edges(1:end-1)+.125;
+            values = h.Values*100;
+            bar(centers,values,'barwidth',1)
+            ylabel('% Data Pts');
             xlim([-4 4]);
             ylim([0 50]);
-            title(strrep(['Histogram of ALG+GRBF Calibration Model for %s',7],'%s',loadlist(k3)));
+            hold on
+            plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+            hold off
+            xlabel(['\Delta',loadlist{k0},'/\sigma']);
         end
     end
     
-    if excel_FLAG == 1 && balCal_FLAG == 2
+    if excel_FLAG == 1
         disp(' ***** ');
         disp('  ');
         disp('ALG+GRBF CALIBRATION MODEL GLOBAL LOAD APPROXIMATION: Check CALIB_AOX_GLOBAL_GRBF_RESULT.csv file');
         
         filename = 'CALIB_AOX_GLOBAL_GRBF_RESULT.csv';
-        Z = aprxINminGZ2;
-        %     xlRange = 'A1:JnumBasis';
-        xlRange=char(strcat('A1:J',num2str(numBasis)));
-        xlswrite(filename,Z,xlRange)
-        %%%%%%
+        csvwrite(filename,aprxINminGZ2)
+        
+        filename = 'APPROX_AOX_GRBF_ws.csv';
+        csvwrite(filename,wHist)
+        
+        filename = 'APPROX_AOX_GRBF_coeffs.csv';
+        csvwrite(filename,cHist)
+        
+        filename = 'APPROX_AOX_GRBF_Centers.csv';
+        csvwrite(filename,centerIndexHist)
     end
     
     
@@ -709,28 +714,6 @@ if balCal_FLAG == 2
         calib_GRBF_minmaxband_per_capacity = array2table(theminmaxband2,'VariableNames',loadlist(1:dimFlag))
     end
     
-    if excel_FLAG == 1 && balCal_FLAG == 2
-        
-        filename = 'APPROX_AOX_GRBF_ws.csv';
-        Z = wHist;
-        %     xlRange = 'A1:JnumBasis';
-        xlRange=char(strcat('A1:J',num2str(numBasis)));
-        xlswrite(filename,Z,xlRange)
-        
-        filename = 'APPROX_AOX_GRBF_coeffs.csv';
-        Z = cHist;
-        %     xlRange = 'A1:JnumBasis';
-        xlRange=char(strcat('A1:J',num2str(numBasis)));
-        xlswrite(filename,Z,xlRange)
-        
-        filename = 'APPROX_AOX_GRBF_Centers.csv';
-        Z = centerIndexHist;
-        %     xlRange = 'A1:JnumBasis';
-        xlRange=char(strcat('A1:J',num2str(numBasis)));
-        xlswrite(filename,Z,xlRange)
-        %%%%%%%
-    end
-    
 end
 
 if balVal_FLAG == 1
@@ -746,6 +729,7 @@ if balVal_FLAG == 1
     %     targetMatrixvalid =      csvread(inputFile_balCal,19,4,'E20..L139');
     %     excessVecvalid =         csvread(inputFile_balCal,19,12,'M20..T139');
     load(out.savePathval,'-mat');
+    [~,s_1st,s_id] = unique(seriesvalid);
     
     excessVecvalid0 = excessVecvalid;
     % num of data points
@@ -786,11 +770,11 @@ if balVal_FLAG == 1
     if model_FLAG == 1
         nterms = 2*dimFlag*(dimFlag+2);
     end
-    %% Truncated Algebraic Model
+    % Truncated Algebraic Model
     if model_FLAG == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
-    %% Linear Algebraic Model
+    % Linear Algebraic Model
     if model_FLAG == 3
         nterms = dimFlag;
     end
@@ -820,6 +804,7 @@ if balVal_FLAG == 1
     
     % SOLVE FOR TARES BY TAKING THE MEAN
     taretalvalid = meantare(seriesvalid,checkitvalid);
+    zapvalid     = taretalvalid(s_1st,:);
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taretalvalid;
     
@@ -849,17 +834,23 @@ if balVal_FLAG == 1
     theminmaxbandvalid = 100*(abs(maxTargetsvalid + minTargetsvalid)./loadCapacitiesvalid);
     
     %OUTPUT HISTOGRAM PLOTS
-    if hist_FLAG == 1 && balCal_FLAG == 2
+    if hist_FLAG == 1
+        figure('Name','Validation - ALGB','NumberTitle','off')
         for k0=1:length(targetResvalid(1,:))
-            figure;
-            [histGRBFvalid, binValuesvalid] = hist(targetResvalid(:,k0)/standardDevvalid(k0,:),20);
-            normalizedCountsvalid = 100 * histGRBFvalid / sum(histGRBFvalid);
-            bar(binValuesvalid, normalizedCountsvalid, 'barwidth', 1);
-            xlabel('Ratio Between Load Residual and Standard Deviation')
-            ylabel('Number of Readings in % of Number of Data Points')
+            subplot(2,3,k0)
+            binWidth = 0.25;
+            edges = [-4.125:binWidth:4.125];
+            h = histogram(targetResvalid(:,k0)/standardDevvalid(k0,:),edges,'Normalization','probability');
+            centers = edges(1:end-1)+.125;
+            values = h.Values*100;
+            bar(centers,values,'barwidth',1)
+            ylabel('% Data Pts');
             xlim([-4 4]);
             ylim([0 50]);
-            title(strrep(['Histogram of ALG Validation Model for %s',7],'%s',loadlist(k0)));
+            hold on
+            plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+            hold off
+            xlabel(['\Delta',loadlist{k0},'/\sigma']);
         end
     end
     
@@ -895,18 +886,6 @@ if balVal_FLAG == 1
         disp(numptsvalid);
         disp('  ');
         
-        if excel_FLAG == 1
-            %%%%
-            disp('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
-            disp(' ');
-            
-            filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
-            Z = aprxINminGZvalid;
-            xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)numpts';
-            xlswrite(filename,Z,xlRange)
-            %%%%
-        end
-        
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag))
         
         mean_alg_Resids_sqrd_valid = array2table(resSquarevalid'./numptsvalid,'VariableNames',loadlist(1:dimFlag))
@@ -920,9 +899,18 @@ if balVal_FLAG == 1
         alg_per_minmaxband_valid = array2table(theminmaxbandvalid,'VariableNames',loadlist(1:dimFlag))
     end
     
+    if excel_FLAG == 1
+        %%%%
+        disp('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
+        disp(' ');
+
+        filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
+        csvwrite(filename,aprxINminGZvalid)
+    end
+    
     if res_FLAG == 1
         figure('Name','Algebraic Model Validation; Residuals of Load Versus Data Point Index','NumberTitle','off')
-        plotResPages(seriesvalid, targetResvalid, loadCapacities, stdDevPercentCapacityvalid )
+        plotResPages(seriesvalid, targetResvalid, loadCapacities, stdDevPercentCapacityvalid, loadlist)
         %    hold off
     end
     
@@ -1043,17 +1031,23 @@ if balVal_FLAG == 1
         theminmaxband2valid = 100*(abs(maxTargets2valid + minTargets2valid)./loadCapacitiesvalid);
         
         %OUTPUT HISTOGRAM PLOTS
-        if hist_FLAG == 1 && balCal_FLAG == 2
-            for k3=1:length(targetRes2valid(1,:))
-                figure;
-                [histGRBF2valid, binValues2valid] = hist(targetRes2valid(:,k3)/standardDev2valid(k3,:),20);
-                normalizedCounts2valid = 100 * histGRBF2valid / sum(histGRBF2valid);
-                bar(binValues2valid, normalizedCounts2valid, 'barwidth', 1);
-                xlabel('Ratio Between Load Residual and Standard Deviation')
-                ylabel('Number of Readings in % of Number of Data Points')
+        if hist_FLAG == 1
+            figure('Name','Validation - GRBF','NumberTitle','off')
+            for k0=1:length(targetRes2valid(1,:))
+                subplot(2,3,k0)
+                binWidth = 0.25;
+                edges = [-4.125:binWidth:4.125];
+                h = histogram(targetRes2valid(:,k0)/standardDev2valid(k0,:),edges,'Normalization','probability');
+                centers = edges(1:end-1)+.125;
+                values = h.Values*100;
+                bar(centers,values,'barwidth',1)
+                ylabel('% Data Pts');
                 xlim([-4 4]);
                 ylim([0 50]);
-                title(strrep(['Histogram of ALG+GRBF Validation Model for %s',7],'%s',loadlist(k3)));
+                hold on
+                plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+                hold off
+                xlabel(['\Delta',loadlist{k0},'/\sigma']);
             end
         end
         if print_FLAG == 1
@@ -1083,7 +1077,7 @@ if balVal_FLAG == 1
         
         if res_FLAG == 1
             figure('Name','GRBF + Algebraic Model Validation; Residuals of Load Versus Data Point Index','NumberTitle','off')
-            plotResPages(seriesvalid, targetRes2valid, loadCapacities, stdDevPercentCapacity2valid )
+            plotResPages(seriesvalid, targetRes2valid, loadCapacities, stdDevPercentCapacity2valid, loadlist)
             %    hold off
         end
         
@@ -1098,15 +1092,13 @@ if balVal_FLAG == 1
         %    hold off
         %end
         
-        if excel_FLAG == 1 && balCal_FLAG == 2
+        if excel_FLAG == 1
             disp(' ');
             disp('ALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION: Check VALID_AOX_GLOBAL_GRBF_RESULT.csv file');
             disp(' ');
             
             filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
-            Z = aprxINminGZ2valid;
-            xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)numpts';
-            xlswrite(filename,Z,xlRange)
+            csvwrite(filename,aprxINminGZ2valid)
         end
     end
 end
@@ -1219,15 +1211,14 @@ if balApprox_FLAG == 1
     %%
     
     %%%%%%
-    if excel_FLAG == 1;
+    if excel_FLAG == 1
         disp(' ');
         disp('%%%%%%%%%%%%%%%%%');
         disp(' ');
         disp('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
         
         filename = 'Global_ALG_Approx.csv';
-        Z = aprxINminGZapprox;
-        csvwrite(filename,Z,0,0)
+        csvwrite(filename,aprxINminGZapprox)
         
     else
         
@@ -1309,15 +1300,14 @@ if balApprox_FLAG == 1
         
         
         
-        if excel_FLAG == 1;
+        if excel_FLAG == 1
             disp(' ');
             disp('%%%%%%%%%%%%%%%%%');
             disp(' ');
             disp('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
             
             filename = 'Global_ALG+GRBF_Approx.csv';
-            Z = aprxINminGZ2approx;
-            csvwrite(filename,Z,0,0)
+            csvwrite(filename,aprxINminGZ2approx)
         else
             disp(' ');
             disp('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
@@ -1326,21 +1316,8 @@ if balApprox_FLAG == 1
         
     end
     
-    
-    
-    
     %
     %End Approximation Option
-    
-    if excel_FLAG == 1 && balCal_FLAG == 2
-        disp(' ');
-        disp('ALG+GRBF MODEL GLOBAL LOAD APPROXIMATION: Check APPROX_AOX_GLOBAL_GRBF_RESULT.csv file');
-        disp(' ');
-        
-        filename = 'APPROX_AOX_GLOBAL_GRBF_RESULT.csv';
-        Z = aprxINminGZ2approx;
-        xlRange = 'A1:JnumBasis';
-        xlswrite(filename,Z,xlRange)
     end
 end
 

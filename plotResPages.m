@@ -1,5 +1,5 @@
 % Version 1.3: Last modified on 5/15/18
-function plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity)
+function plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
 
 n_data = size(targetRes,1);
 n_dim = size(targetRes,2);
@@ -17,8 +17,6 @@ for i = 1:n_series
     ind_s(i,1) = min(find(series==srs(i)));
     ind_s(i,2) = max(find(series==srs(i)));
 end
-
-names = {'N1','N2','S1','S2','RM','AF','PLM', 'PCM', 'MLM', 'MCM'};
 
 sub = 0; 
 r = min(n_dim,6);
@@ -40,9 +38,9 @@ for i = 1:n_dim
     plot([1:n_data],targetResPct(:,i))
     plot([1:n_data],thr*ones(1,n_data),'k--',[1:n_data],-thr*ones(1,n_data),'k--')
     xlabel('Data point index');
-    ylabel(strcat('\Delta',names{i}));
+    ylabel(strcat('\Delta',loadlist{i}));
     title(sprintf('Residual; %% of Load Capacity; Standard Deviation = %0.4f%%',stdDevPercentCapacity(i)));
-    set(gcf,'Position',[100 50 825 r*175.5]);
+    set(gcf,'Position',[100 50 825 min(r*175.5,900)]);
     hold off
 end
 
