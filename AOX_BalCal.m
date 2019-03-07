@@ -226,20 +226,11 @@ for lhs = 1:numLHS
     %  ajm for the users to view 5/11/18
     APPROX_AOX_COEFF_MATRIX = xcalib;
     
-    for i=1:nterms
-        xapproxer(i,:) = xcalib(i,:);
-    end
-    
-    xapproxer(nterms+1,:) = 0.0;
+    xapproxer = xcalib(1:nterms,:);
     
     if excel_FLAG == 1
         filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-        Z = xapproxer;
-        %     xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)nterms';
-        xlRange=char(strcat(matrixcolumnlabels(1),'1:',matrixcolumnlabels(dimFlag),num2str(nterms)));
-        xlswrite(filename,Z,xlRange)
-        %   'made it here'
-        %%
+        csvwrite(filename,xapproxer)
     end
     
     if LHS_Flag == 1
@@ -547,10 +538,7 @@ if print_FLAG == 1
         disp(' ');
         
         filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
-        Z = aprxINminGZ;
-        %        xlRange = 'A1:Jnumpts';
-        xlRange=char(strcat('A1:J',num2str(numpts)));
-        xlswrite(filename,Z,xlRange)
+        csvwrite(filename,aprxINminGZ)
     end
     
 end
@@ -697,11 +685,16 @@ if balCal_FLAG == 2
         disp('ALG+GRBF CALIBRATION MODEL GLOBAL LOAD APPROXIMATION: Check CALIB_AOX_GLOBAL_GRBF_RESULT.csv file');
         
         filename = 'CALIB_AOX_GLOBAL_GRBF_RESULT.csv';
-        Z = aprxINminGZ2;
-        %     xlRange = 'A1:JnumBasis';
-        xlRange=char(strcat('A1:J',num2str(numBasis)));
-        xlswrite(filename,Z,xlRange)
-        %%%%%%
+        csvwrite(filename,aprxINminGZ2)
+        
+        filename = 'APPROX_AOX_GRBF_ws.csv';
+        csvwrite(filename,wHist)
+        
+        filename = 'APPROX_AOX_GRBF_coeffs.csv';
+        csvwrite(filename,cHist)
+        
+        filename = 'APPROX_AOX_GRBF_Centers.csv';
+        csvwrite(filename,centerIndexHist)
     end
     
     
@@ -727,28 +720,6 @@ if balCal_FLAG == 2
         
         % Prints the GRBF minmax
         calib_GRBF_minmaxband_per_capacity = array2table(theminmaxband2,'VariableNames',loadlist(1:dimFlag))
-    end
-    
-    if excel_FLAG == 1 && balCal_FLAG == 2
-        
-        filename = 'APPROX_AOX_GRBF_ws.csv';
-        Z = wHist;
-        %     xlRange = 'A1:JnumBasis';
-        xlRange=char(strcat('A1:J',num2str(numBasis)));
-        xlswrite(filename,Z,xlRange)
-        
-        filename = 'APPROX_AOX_GRBF_coeffs.csv';
-        Z = cHist;
-        %     xlRange = 'A1:JnumBasis';
-        xlRange=char(strcat('A1:J',num2str(numBasis)));
-        xlswrite(filename,Z,xlRange)
-        
-        filename = 'APPROX_AOX_GRBF_Centers.csv';
-        Z = centerIndexHist;
-        %     xlRange = 'A1:JnumBasis';
-        xlRange=char(strcat('A1:J',num2str(numBasis)));
-        xlswrite(filename,Z,xlRange)
-        %%%%%%%
     end
     
 end
@@ -929,10 +900,7 @@ if balVal_FLAG == 1
             disp(' ');
             
             filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
-            Z = aprxINminGZvalid;
-            xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)numpts';
-            xlswrite(filename,Z,xlRange)
-            %%%%
+            csvwrite(filename,aprxINminGZvalid)
         end
         
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag))
@@ -1138,9 +1106,7 @@ if balVal_FLAG == 1
             disp(' ');
             
             filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
-            Z = aprxINminGZ2valid;
-            xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)numpts';
-            xlswrite(filename,Z,xlRange)
+            csvwrite(filename,aprxINminGZ2valid)
         end
     end
 end
@@ -1253,15 +1219,14 @@ if balApprox_FLAG == 1
     %%
     
     %%%%%%
-    if excel_FLAG == 1;
+    if excel_FLAG == 1
         disp(' ');
         disp('%%%%%%%%%%%%%%%%%');
         disp(' ');
         disp('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
         
         filename = 'Global_ALG_Approx.csv';
-        Z = aprxINminGZapprox;
-        csvwrite(filename,Z,0,0)
+        csvwrite(filename,aprxINminGZapprox)
         
     else
         
@@ -1343,15 +1308,14 @@ if balApprox_FLAG == 1
         
         
         
-        if excel_FLAG == 1;
+        if excel_FLAG == 1
             disp(' ');
             disp('%%%%%%%%%%%%%%%%%');
             disp(' ');
             disp('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
             
             filename = 'Global_ALG+GRBF_Approx.csv';
-            Z = aprxINminGZ2approx;
-            csvwrite(filename,Z,0,0)
+            csvwrite(filename,aprxINminGZ2approx)
         else
             disp(' ');
             disp('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
@@ -1360,21 +1324,8 @@ if balApprox_FLAG == 1
         
     end
     
-    
-    
-    
     %
     %End Approximation Option
-    
-    if excel_FLAG == 1 && balCal_FLAG == 2
-        disp(' ');
-        disp('ALG+GRBF MODEL GLOBAL LOAD APPROXIMATION: Check APPROX_AOX_GLOBAL_GRBF_RESULT.csv file');
-        disp(' ');
-        
-        filename = 'APPROX_AOX_GLOBAL_GRBF_RESULT.csv';
-        Z = aprxINminGZ2approx;
-        xlRange = 'A1:JnumBasis';
-        xlswrite(filename,Z,xlRange)
     end
 end
 
