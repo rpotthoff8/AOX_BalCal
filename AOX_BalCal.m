@@ -530,17 +530,17 @@ if print_FLAG == 1
     calib_alg_per_minmaxband = array2table(theminmaxband,'VariableNames',loadlist(1:dimFlag))
     %%%%%%%%%
     
-    if excel_FLAG == 1
-        % Output results to an excel file
-        disp('  ');
-        disp('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
-        % CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ;
-        disp(' ');
-        
-        filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
-        csvwrite(filename,aprxINminGZ)
-    end
-    
+end
+
+if excel_FLAG == 1
+    % Output results to an excel file
+    disp('  ');
+    disp('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
+    % CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ;
+    disp(' ');
+
+    filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
+    csvwrite(filename,aprxINminGZ)
 end
 
 if res_FLAG == 1
@@ -659,7 +659,7 @@ if balCal_FLAG == 2
     %end
     
     %OUTPUT HISTOGRAM PLOTS
-    if hist_FLAG == 1 && balCal_FLAG == 2
+    if hist_FLAG == 1
         figure('Name','Calibration - GRBF','NumberTitle','off')
         for k0=1:length(targetRes2(1,:))
             subplot(2,3,k0)
@@ -679,7 +679,7 @@ if balCal_FLAG == 2
         end
     end
     
-    if excel_FLAG == 1 && balCal_FLAG == 2
+    if excel_FLAG == 1
         disp(' ***** ');
         disp('  ');
         disp('ALG+GRBF CALIBRATION MODEL GLOBAL LOAD APPROXIMATION: Check CALIB_AOX_GLOBAL_GRBF_RESULT.csv file');
@@ -894,15 +894,6 @@ if balVal_FLAG == 1
         disp(numptsvalid);
         disp('  ');
         
-        if excel_FLAG == 1
-            %%%%
-            disp('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
-            disp(' ');
-            
-            filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
-            csvwrite(filename,aprxINminGZvalid)
-        end
-        
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag))
         
         mean_alg_Resids_sqrd_valid = array2table(resSquarevalid'./numptsvalid,'VariableNames',loadlist(1:dimFlag))
@@ -914,6 +905,15 @@ if balVal_FLAG == 1
         
         % Prints the minmaxband
         alg_per_minmaxband_valid = array2table(theminmaxbandvalid,'VariableNames',loadlist(1:dimFlag))
+    end
+    
+    if excel_FLAG == 1
+        %%%%
+        disp('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
+        disp(' ');
+
+        filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
+        csvwrite(filename,aprxINminGZvalid)
     end
     
     if res_FLAG == 1
@@ -1039,7 +1039,7 @@ if balVal_FLAG == 1
         theminmaxband2valid = 100*(abs(maxTargets2valid + minTargets2valid)./loadCapacitiesvalid);
         
         %OUTPUT HISTOGRAM PLOTS
-        if hist_FLAG == 1 && balCal_FLAG == 2
+        if hist_FLAG == 1
             figure('Name','Validation - GRBF','NumberTitle','off')
             for k0=1:length(targetRes2valid(1,:))
                 subplot(2,3,k0)
@@ -1100,7 +1100,7 @@ if balVal_FLAG == 1
         %    hold off
         %end
         
-        if excel_FLAG == 1 && balCal_FLAG == 2
+        if excel_FLAG == 1
             disp(' ');
             disp('ALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION: Check VALID_AOX_GLOBAL_GRBF_RESULT.csv file');
             disp(' ');
