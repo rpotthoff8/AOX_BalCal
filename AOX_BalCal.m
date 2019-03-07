@@ -1326,7 +1326,6 @@ if balApprox_FLAG == 1
     
     %
     %End Approximation Option
-    end
 end
 
 disp('  ')
