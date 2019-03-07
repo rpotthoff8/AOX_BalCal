@@ -40,7 +40,7 @@ for i = 1:n_dim
     xlabel('Data point index');
     ylabel(strcat('\Delta',loadlist{i}));
     title(sprintf('Residual; %% of Load Capacity; Standard Deviation = %0.4f%%',stdDevPercentCapacity(i)));
-    set(gcf,'Position',[100 50 825 r*175.5]);
+    set(gcf,'Position',[100 50 825 min(r*175.5,900)]);
     hold off
 end
 
