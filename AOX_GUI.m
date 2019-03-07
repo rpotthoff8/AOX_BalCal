@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 12-Feb-2019 13:50:51
+% Last Modified by GUIDE v2.5 28-Feb-2019 11:23:36
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -161,6 +161,12 @@ if exist(fileName,'file')
         set(handles.numLHS,'String',default.numLHS);
         set(handles.LHSp,'String',default.LHSp);
         LHS_FLAGcheck_Callback(handles.LHS_FLAGcheck, eventdata, handles);
+        
+        set(handles.Uncert_FLAGcheck,'Value',default.Uncert_FLAGcheck);
+        set(handles.Boot_FLAGcheck,'Value',default.Boot_FLAGcheck);
+        set(handles.Volt_FLAGcheck,'Value',default.Volt_FLAGcheck);
+         set(handles.numBoot,'String',default.numBoot);
+         set(handles.voltTrust,'String',default.voltTrust);
     end
 end
 
@@ -263,6 +269,12 @@ outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 outStruct.lhs = get(handles.LHS_FLAGcheck,'Value');
 outStruct.numLHS = str2num(get(handles.numLHS,'String'));
 outStruct.LHSp = str2num(get(handles.LHSp,'String'))/100;
+
+outStruct.uncertFlag = get(handles.Uncert_FLAGcheck,'Value');
+outStruct.bootFlag = get(handles.Boot_FLAGcheck,'Value');
+outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
+outStruct.numBoot = str2num(get(handles.numBoot,'String'));
+outStruct.voltTrust = str2num(get(handles.voltTrust,'String'));
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -1213,6 +1225,12 @@ default.LHS_FLAGcheck = get(handles.LHS_FLAGcheck,'Value');
 default.numLHS = get(handles.numLHS,'String');
 default.LHSp = get(handles.LHSp,'String');
 
+default.Uncert_FLAGcheck = get(handles.Uncert_FLAGcheck,'Value');
+default.Boot_FLAGcheck = get(handles.Boot_FLAGcheck,'Value');
+default.Volt_FLAGcheck = get(handles.Volt_FLAGcheck,'Value');
+default.numBoot = get(handles.numBoot,'String');
+default.voltTrust = get(handles.voltTrust,'String');
+
 default.direct = get(handles.direct,'Value');
 default.indirect = get(handles.indirect,'Value');
 
@@ -1775,3 +1793,123 @@ function excel_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of excel_FLAGcheck
+
+
+
+function edit53_Callback(hObject, eventdata, handles)
+% hObject    handle to edit53 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit53 as text
+%        str2double(get(hObject,'String')) returns contents of edit53 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit53_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit53 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on key press with focus on edit53 and none of its controls.
+function edit53_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to edit53 (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.CONTROL.UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+
+
+
+function numBoot_Callback(hObject, eventdata, handles)
+% hObject    handle to numBoot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of numBoot as text
+%        str2double(get(hObject,'String')) returns contents of numBoot as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function numBoot_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to numBoot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function voltTrust_Callback(hObject, eventdata, handles)
+% hObject    handle to voltTrust (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of voltTrust as text
+%        str2double(get(hObject,'String')) returns contents of voltTrust as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function voltTrust_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to voltTrust (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Boot_FLAGcheck.
+function Boot_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to Boot_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Boot_FLAGcheck
+
+
+% --- Executes on button press in Volt_FLAGcheck.
+function Volt_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to Volt_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Volt_FLAGcheck
+
+
+% --- Executes on button press in Uncert_FLAGcheck.
+function Uncert_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to Uncert_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if get(hObject,'Value') == 1
+    set(handles.numBoot,'Enable','on');
+    set(handles.voltTrust,'Enable','on');
+    set(handles.Boot_FLAGcheck,'Enable','on');
+    set(handles.Volt_FLAGcheck,'Enable','on');
+    
+else
+    set(handles.numBoot,'Enable','off');
+    set(handles.voltTrust,'Enable','off');
+    set(handles.Boot_FLAGcheck,'Enable','off');
+    set(handles.Volt_FLAGcheck,'Enable','off');
+    set(handles.Boot_FLAGcheck,'Value',0);
+    set(handles.Volt_FLAGcheck,'Value',0);
+    
+end
+% Hint: get(hObject,'Value') returns toggle state of Uncert_FLAGcheck

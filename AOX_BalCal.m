@@ -73,6 +73,12 @@ LHS_Flag = out.lhs;
 numLHS = out.numLHS; %Number of times to iterate.
 LHSp = out.LHSp; %Percent of data used to create sample.
 % A mean of the coefficients is calculated afterwards.
+
+Uncert_Flag=out.uncertFlag;
+numBoot=out.numBoot;
+Boot_Flag=out.bootFlag;
+Volt_Flag=out.voltFlag;
+voltTrust=out.voltTrust;
 %
 load(out.savePathcal,'-mat');
 series0 = series;
@@ -234,9 +240,25 @@ for lhs = 1:numLHS
     %add '1' to every value of counter to find the indices of the local zeros
     indexLocalZero = counter(:)+1;
 
-    %%start function
+    for loopk=1:numpts
+        comLZ(nterms+series(loopk),loopk) = 1.0;
+    end
+
+    comINminLZ = comIN-comLZ;
+
+    %%
+    %SOLUTION
+    xcalib = comINminLZ'\targetMatrix;                    % '\' solution of Ax=b
+
+
+    %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
+    %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
+    %    xcalib = pinv(comINminLZ',1e-2)*targetMatrix;             % alternate solution method
+    
+    if Boot_Flag==1
+    %%start bootstrapfunction
     bootalpha=.05;
-    nbootstrap=20;
+    nbootstrap=numBoot;
     f=@zapFinder;
     [fout]=f(comINminLZ',targetMatrix,series,excessVec0,targetMatrix0,globalZerosAllPoints,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
     fzap=fout(1:nseries,:);
@@ -247,23 +269,13 @@ for lhs = 1:numLHS
     fzap_ci=f_ci(:,1:nseries,:);
     faprxLZminGZ_ci=f_ci(:,size(fzap,1)+1:size(fzap,1)+nseries,:);
     fxcalib_ci=f_ci(:,size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
-
-    for loopk=1:numpts
-        comLZ(nterms+series(loopk),loopk) = 1.0;
+    else
+    fxcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));      
     end
-
-    comINminLZ = comIN-comLZ;
-
     % END: bootstrap section
-
-    %%
-    %SOLUTION
-    xcalib = comINminLZ'\targetMatrix;                    % '\' solution of Ax=b
-
-
-    %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
-    %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
-    %    xcalib = pinv(comINminLZ',1e-2)*targetMatrix;             % alternate solution method
+    
+    
+    
     % 5/17/18
     for i=1:nterms+1
         xvalid(i,:) = xcalib(i,:);
@@ -470,7 +482,9 @@ resSquare = dot(targetRes,targetRes)';
 %AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
 
 %Run function to calculate uncertainty on loads from calibration
-[combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,indexLocalZero,lasttare,nterms,aprxIN,series);
+if Uncert_Flag==1
+[combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,indexLocalZero,lasttare,nterms,aprxIN,series,voltTrust,Boot_Flag,Volt_Flag);
+end
 
 %---------------------------------------------------------------
 %---------------------------------------------------------------
@@ -730,7 +744,9 @@ if balCal_FLAG == 2
         end
     end
     aprxINminGZ2 = aprxINminGZ;
-
+     if Volt_Flag==1
+     aprxINminGZ2_uncertsquare=zeros(size(aprxINminGZ2,1),size(aprxINminGZ2,2));
+     end
     etaHist = cell(numBasis,1);
     aprxINminGZ_Hist = cell(numBasis,1);
     tareHist = cell(numBasis,1);
@@ -752,6 +768,9 @@ if balCal_FLAG == 2
 
             for r=1:length(excessVec(:,1))
                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
+                if Volt_Flag==1
+                etapartial(r,s)=2.*dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),ones(size(dainputscalib(r,:),1),size(dainputscalib(r,:),2))); %UNCERT Added
+                end
             end
 
             %find widths 'w' by optimization routine
@@ -765,6 +784,9 @@ if balCal_FLAG == 2
 
             rbfc_INminLZ(:,s) = coeff(s)*rbfINminLZ(:,s);
             rbfc_INminGZ(:,s) = coeff(s)*rbfINminGZ(:,s);
+            if Volt_Flag==1
+             rbfc_INminGZpartial(:,s) = coeff(s)*exp(eta(:,s)*log(abs(w(s)))).*etapartial(:,s);
+            end
             rbfc_LZminGZ(:,s) = coeff(s)*rbfLZminGZ(:,s); %to find tares AAM042016
         end
 
@@ -775,6 +797,9 @@ if balCal_FLAG == 2
 
         %update the approximation
         aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
+        if Volt_Flag==1
+        aprxINminGZ2_uncertsquare=aprxINminGZ2_uncertsquare+(rbfc_INminGZpartial.^2).*(voltTrust/2)^2; %ADDED
+        end
         aprxINminGZ_Hist{u} = aprxINminGZ2;
 
         % SOLVE FOR TARES BY TAKING THE MEAN
@@ -789,9 +814,18 @@ if balCal_FLAG == 2
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
     end
-    nCarlo=500;
-    [taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist,aprxINminGZ,series,targetMatrix,s_1st,dimFlag,globalZeros,numBasis);
     
+    if Uncert_Flag==1
+    RBFcarloflag=1;
+    if RBFcarloflag==1
+    nCarlo=10;
+    [taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist,aprxINminGZ,series,targetMatrix,s_1st,dimFlag,globalZeros,numBasis,voltTrust);
+    end
+    end
+    
+    if Volt_Flag==1
+     aprxINminGZ2_uncert=sqrt(aprxINminGZ2_uncertsquare);
+    end
     
     for k2=1:length(targetRes(1,:))
         [goop2(k2),kstar2(k2)] = max(abs(targetRes2(:,k2)));
@@ -1007,7 +1041,7 @@ if balVal_FLAG == 1
     %OUTPUTS FOR VALIDATION ALGEBRAIC SECTION
 
         %Run function to calculate uncertainty on loads output in approximation
-[combined_uncertvalid,tare_uncertvalid, FL_uncertvalid]=uncert_prop(xvalid,fxcalib_ci,comINvalid,dimFlag,uncert_comINvalid,indexLocalZerovalid,lasttarevalid,nterms,aprxINvalid,seriesvalid);
+[combined_uncertvalid,tare_uncertvalid, FL_uncertvalid]=uncert_prop(xvalid,fxcalib_ci,comINvalid,dimFlag,uncert_comINvalid,indexLocalZerovalid,lasttarevalid,nterms,aprxINvalid,seriesvalid,voltTrust,Boot_Flag,Volt_Flag);
 
     for k=1:length(targetResvalid(1,:))
         [goopvalid(k),kstarvalid(k)] = max(abs(targetResvalid(:,k)));
@@ -1362,7 +1396,7 @@ if balApprox_FLAG == 1
     end
 
     %Run function to calculate uncertainty on loads from approx
-[combined_uncertapprox,tare_uncertapprox, FL_uncertapprox]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,nterms,aprxINapprox,seriesapprox);
+[combined_uncertapprox,tare_uncertapprox, FL_uncertapprox]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,nterms,aprxINapprox,seriesapprox,voltTrust,Boot_Flag,Volt_Flag);
 
 
 
@@ -1406,7 +1440,7 @@ if balApprox_FLAG == 1
     %%
     %%
     %Run function to calculate uncertainty on loads output in approximation
-[combined_uncertapprox,tare_uncertapprox, FL_uncertapprox]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,nterms,aprxINapprox,seriesapprox);
+[combined_uncertapprox,tare_uncertapprox, FL_uncertapprox]=uncert_prop(xapprox,fxcalib_ci,comINapprox,dimFlag,uncert_comINapprox,indexLocalZeroapprox,lasttareapprox,nterms,aprxINapprox,seriesapprox,voltTrust,Boot_Flag, Volt_Flag);
 
     disp(' ');
     disp('%%%%%%%%%%%%%%%%%');
@@ -1642,7 +1676,7 @@ end
 out=[fzap;aprxLZminGZ_series;xcalib];
 end
 
-function [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,indexLocalZero,lasttare,nterms,aprxIN,series)
+function [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,indexLocalZero,lasttare,nterms,aprxIN,series,voltTrust,Boot_Flag,Volt_Flag)
 %Function calculates uncertainty in load from uncertainty in coefficients and input voltages
 
 %Inputs:
@@ -1657,6 +1691,9 @@ function [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,
 %lasttare: Number of the final series
 %nterms: number of coefficients used for model
 %aprxIN: approximation matrix of loads
+%voltTrust: 95% confidence (+/-) for voltage readings (in mV)
+%Boot_Flag: 1 or 0: flag for if bootstrap method was used to find coeff CI
+%Volt_Flag: 1 or 0: If voltage uncertainty prop is to be performed
 
 %Outputs:
 %combined_uncert: Uncertainty (in pounds) due to coefficient and voltage uncertainty
@@ -1669,6 +1706,7 @@ function [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,
 %START: coeff uncertainty propagation JRP 16 Jan 19
 %Take Confidence interval found for coefficients using bootstrap, and store
 %the absolute value of the larger error between +/- in a matrix
+if Boot_Flag==1
 for i=1:size(xcalib,1)
     for j=1:size(xcalib,2)
         for k=1:2
@@ -1677,13 +1715,18 @@ for i=1:size(xcalib,1)
         xcalib_error(i,j)=max(error(:,i,j));
     end
 end
+else
+    xcalib_error=zeros(size(xcalib,1),size(xcalib,2));
+end
 comIN_square=comIN.^2; %Square input matrix
 xcalib_error_square=xcalib_error.^2; %square error matrix
 coeff_uncert_square=(xcalib_error_square'*comIN_square)'; %Matrix for error in each calibration point from uncertainty in coefficients(+/-)
 %END:  coeff uncertainty propagation
+
 %ADDED 23 Jan 19 JRP: Analytical calc of uncert in loads due to uncertainty in read
 %voltages
-uncert=1; %Trust all channels down to 1 microvolt
+if Volt_Flag==1
+uncert=voltTrust; %Trust all channels down to 1 microvolt
 for i=1:lasttare
     for j=1:dimFlag
         uncert_comIN(nterms+i,:,j) = 0;
@@ -1696,7 +1739,9 @@ for i=1:dimFlag
     uncert_channel_square(:,:,i)=((partial(:,:,i)).^2).*uncert^2;
     volt_uncert_square=volt_uncert_square+(uncert_channel_square(:,:,i));
 end
-
+else
+    volt_uncert_square=zeros(size(aprxIN));
+end
 %Combine uncertainty from coeff and input voltages for 1 total uncertainty
 %value for every datapoint:
 combined_uncert=(coeff_uncert_square+volt_uncert_square).^(.5);
@@ -1716,7 +1761,7 @@ end
 
 end
 
-function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist,aprxINminGZ,series,targetMatrix,s_1st,dimFlag,globalZeros,numBasis)
+function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist,aprxINminGZ,series,targetMatrix,s_1st,dimFlag,globalZeros,numBasis,voltTrust)
 %ADDED 9 Jan 19 JRP: Monte carlo
     
      
@@ -1728,7 +1773,7 @@ function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,gl
     %equally distributed noise
     % sigma=Maxnoise./2; % 95% of the noise points will be within the defined Maxnoise
     
-    sigma=1/2; %Trust all channels down to 1 microvolt, sigma is trust/2
+    sigma=voltTrust/2; %Trust all channels down to 1 microvolt, sigma is trust/2
     
     
     
@@ -1748,7 +1793,8 @@ function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,gl
         excessVecCarlo=excessVec+noise;
         
         for i=1:dimFlag
-            dainputscalib(:,i) = excessVecCarlo(:,i)-globalZeros(i);
+            dainputscalibCarlo(:,i) = excessVecCarlo(:,i)-globalZeros(i);
+            dainputscalib(:,i) = excessVec(:,i)-globalZeros(i);
 %             dalzcalib(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
         end
         
@@ -1767,7 +1813,7 @@ function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,gl
 %                 [goopLoop(s),centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
                 
                 for r=1:length(excessVec(:,1))
-                    eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
+                    eta(r,s) = dot(dainputscalibCarlo(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalibCarlo(r,:)-dainputscalib(centerIndexLoop(s),:));
                 end
                 
 %                 %find widths 'w' by optimization routine
