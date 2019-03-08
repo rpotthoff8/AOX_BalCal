@@ -227,6 +227,7 @@ for lhs = 1:numLHS
     APPROX_AOX_COEFF_MATRIX = xcalib;
     
     xapproxer = xcalib(1:nterms,:);
+    xapproxer(end+1,:)  = zeros(1,dimFlag); 
     
     if excel_FLAG == 1
         filename = 'APPROX_AOX_COEFF_MATRIX.csv';
