@@ -14,3 +14,7 @@
 # MATLAB autosave files #
 #########################
 *.asv
+
+# Prevent subfolders #
+######################
+*/
