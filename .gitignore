@@ -1,6 +1,7 @@
 # Data files #
 ##############
 *.csv
+*.txt
 
 # GUI config files #
 ####################
