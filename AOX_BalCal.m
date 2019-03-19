@@ -185,9 +185,7 @@ for lhs = 1:numLHS
     
     % Call the Algebraic Subroutine
     comIN = balCal_algEqns(model_FLAG,dainputs);
-    comLZ = balCal_algEqns(model_FLAG,dalz);
     
-    %%
     ints = zeros(numpts,nseries);
     ids = sub2ind(size(ints),[1:numpts]',s_id);
     ints(ids) = 1;
@@ -198,7 +196,7 @@ for lhs = 1:numLHS
 
     coeff = xcalib(1:nterms,:);
     tares = -xcalib(nterms+1:end,:);
-    %%
+        
     for i=1:nterms+1
         xvalid(i,:) = xcalib(i,:);
     end
