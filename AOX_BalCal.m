@@ -227,7 +227,7 @@ for lhs = 1:numLHS
     APPROX_AOX_COEFF_MATRIX = xcalib;
     
     xapproxer = xcalib(1:nterms,:);
-    xapproxer(end+1,:)  = zeros(1,dimFlag); 
+    xapproxer(end+1,:)  = zeros(1,dimFlag);
     
     if excel_FLAG == 1
         filename = 'APPROX_AOX_COEFF_MATRIX.csv';
@@ -539,7 +539,7 @@ if excel_FLAG == 1
     disp('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
     % CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ;
     disp(' ');
-
+    
     filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
     csvwrite(filename,aprxINminGZ)
 end
@@ -912,7 +912,7 @@ if balVal_FLAG == 1
         %%%%
         disp('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
         disp(' ');
-
+        
         filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
         csvwrite(filename,aprxINminGZvalid)
     end
@@ -1113,7 +1113,7 @@ if balVal_FLAG == 1
 end
 
 if balApprox_FLAG == 1
- %
+    %
     %
     % Copyright ©2016 Andrew Meade and Ali Arya Mokhtarzadeh.  All Rights Reserved.
     %
@@ -1123,7 +1123,7 @@ if balApprox_FLAG == 1
     %
     %DEFINE THE PRODUCTION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
     %
-
+    
     load(out.savePathapp,'-mat');
     %
     
@@ -1132,7 +1132,7 @@ if balApprox_FLAG == 1
     %
     
     
-    %natural zeros (also called global zeros) 
+    %natural zeros (also called global zeros)
     globalZerosapprox = mean(natzerosapprox);
     
     %%% make an array out of the globalZerosapprox vector
@@ -1154,56 +1154,55 @@ if balApprox_FLAG == 1
     end
     %%%%%%%%%%%%
     
-  
-%%
-%% Build the Algebraic Model
-%%
-
-n(1) = 2*dimFlag*(dimFlag+2);
-n(2) = dimFlag*(dimFlag+3)/2;
-n(3) = dimFlag;
-model_FLAG = find(n==size( xapproxer,1)-1);
-%model_FLAG = find(n==size( xapproxer,1));
-
-
-%% Full Algebraic Model
-if model_FLAG == 1
-    nterms = 2*dimFlag*(dimFlag+2);
-end
-
-%% Truncated Algebraic Model
-if model_FLAG == 2;
-    nterms = dimFlag*(dimFlag+3)/2;
-end
-
-%% Linear Algebraic Model
-if model_FLAG == 3;
-    nterms = dimFlag;
-end
-
-
-
-% Call the Algebraic Subroutine
-%
-
-comGZapprox= zeros(nterms,1);
-
-
-for i=1:dimFlag
-    biggee(:,i) = 0;
-end
-
-[comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggee);
-
-%model_FLAG
-%nterms
-%dimFlag
-%numptsapprox
-
-
-%%
-%%
-
+    
+    %%
+    %% Build the Algebraic Model
+    %%
+    
+    %     n(1) = 2*dimFlag*(dimFlag+2);
+    %     n(2) = dimFlag*(dimFlag+3)/2;
+    %     n(3) = dimFlag;
+    %     model_FLAG = find(n==size( xapproxer,1)-1);
+    
+    
+    %% Full Algebraic Model
+    if model_FLAG == 1
+        nterms = 2*dimFlag*(dimFlag+2);
+    end
+    
+    %% Truncated Algebraic Model
+    if model_FLAG == 2
+        nterms = dimFlag*(dimFlag+3)/2;
+    end
+    
+    %% Linear Algebraic Model
+    if model_FLAG == 3
+        nterms = dimFlag;
+    end
+    
+    
+    
+    % Call the Algebraic Subroutine
+    %
+    
+    comGZapprox= zeros(nterms,1);
+    
+    
+    for i=1:dimFlag
+        biggee(:,i) = 0;
+    end
+    
+    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggee);
+    
+    %model_FLAG
+    %nterms
+    %dimFlag
+    %numptsapprox
+    
+    
+    %%
+    %%
+    
     
     %LOAD APPROXIMATION
     %define the approximation for inputs minus global zeros
@@ -1217,31 +1216,30 @@ end
     %%
     %%
     
- %%%%%%    
+    %%%%%%
     if excel_FLAG == 1;
-disp(' ');
-disp('%%%%%%%%%%%%%%%%%');
-disp(' ');
-disp('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
-
-    filename = 'Global_ALG_Approx.csv';
-    Z = aprxINminGZapprox; 
-    csvwrite(filename,Z,0,0)      
-    
+        disp(' ');
+        disp('%%%%%%%%%%%%%%%%%');
+        disp(' ');
+        disp('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
+        
+        filename = 'Global_ALG_Approx.csv';
+        csvwrite(filename,aprxINminGZapprox)
+        
     else
+        
+        disp(' ');
+        disp('%%%%%%%%%%%%%%%%%');
+        disp(' ');
+        disp('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
+    end
+    %%%%%%
     
-disp(' ');
-disp('%%%%%%%%%%%%%%%%%');
-disp(' ');
-disp('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
-        end
- %%%%%%
-
- 
- 
+    
+    
     
     %
-   
+    
     
     %
     %
@@ -1306,28 +1304,27 @@ disp('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
             
         end
         
-  
         
-    if excel_FLAG == 1;
-disp(' ');
-disp('%%%%%%%%%%%%%%%%%');
-disp(' ');
-disp('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
-
-    filename = 'Global_ALG+GRBF_Approx.csv';
-    Z = aprxINminGZ2approx; 
-    csvwrite(filename,Z,0,0)                
-     else
-disp(' ');
-disp('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
-disp(' ');
-     end
+        
+        if excel_FLAG == 1
+            disp(' ');
+            disp('%%%%%%%%%%%%%%%%%');
+            disp(' ');
+            disp('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
+            
+            filename = 'Global_ALG+GRBF_Approx.csv';
+            csvwrite(filename,aprxINminGZ2approx)
+        else
+            disp(' ');
+            disp('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
+            disp(' ');
+        end
         
     end
     
     
-
-
+    
+    
     %
     %End Approximation Option
 end
