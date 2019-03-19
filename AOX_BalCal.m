@@ -146,47 +146,28 @@ end
 for lhs = 1:numLHS
     
     if LHS_Flag == 1
-        [series,targetMatrix,excessVec,sample] = AOX_LHS(series0,targetMatrix0,excessVec0,LHSp);
+        sample = AOX_LHS(series0,excessVec0,LHSp);
         lhs_check(sample) = 1;
         ind(find(lhs_check-1)); % This line outputs which data points haven't been sampled yet
         pct_sampled = sum(lhs_check)/length(lhs_check); % This line outputs what percentage of points have been sampled
     else
-        excessVec = excessVec0;
-        targetMatrix = targetMatrix0;
-        series = series0;
+        sample = ones(length(series0),1);
     end
     
-    [numpts, ~] = size(excessVec);
-    
-    [~,s_1st,s_id] = unique(series);
-    %find number of series; this will tell us the number of tares
-    nseries = length(s_1st);
-    
-    %find zero points of each series and number of points in a series
-    %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
-    %section
-    [localZeros,localZerosAllPoints] = localzeros(series,excessVec);
-    globalZerosAllPoints = ones(numpts,1)*globalZeros;
+    series = series0(sample);
+    targetMatrix = targetMatrix0(sample,:);
+    comIN = comIN0(sample,:);
     
     disp('  ')
     disp('Working ...')
-    
     % Indirect approach uses the modeled voltage
 %     if approach_FLAG == 1
 %         if balCal_FLAG == 2
-%             excessVec = qtaprxINminGZ2 + globalZerosAllPoints;
+%             excessVec0 = qtaprxINminGZ2 + globalZerosAllPoints;
 %         else
-%             excessVec = qtaprxINminGZ + globalZerosAllPoints;
+%             excessVec0 = qtaprxINminGZ + globalZerosAllPoints;
 %         end
-%     end
-    
-    %%% Subtract the Global Zeros from the Inputs and Local Zeros %%%%%%%%%%
-    dainputs = excessVec - globalZerosAllPoints;
-    
-    %%% Build the Algebraic Model
-    
-    % Call the Algebraic Subroutine
-    comIN = balCal_algEqns(model_FLAG,dainputs,series);    
+%     end  
 
     %SOLUTION
     xcalib = pinv(comIN)*targetMatrix;
@@ -202,6 +183,7 @@ if LHS_Flag == 1
 end
 coeff = xcalib(1:nterms,:);
 tares = -xcalib(nterms+1:end,:);
+taresAllPoints = tares(s_id0,:);
 
 %  Creates Matrix for the volts to loads
 APPROX_AOX_COEFF_MATRIX = coeff;
@@ -216,13 +198,13 @@ end
 aprxIN = comIN0*xcalib;
 
 %RESIDUAL
-targetRes = targetMatrix-aprxIN;      %0=b-Ax
+targetRes = targetMatrix0-aprxIN;      %0=b-Ax
 
 reslist = {'resNF','resBM','resS1','resS2','resRM','resAF','resPLM',...
     'resPCM', 'resMLM', 'resMCM'};
 if rescorr_FLAG == 1
     figure('Name','Residual correlation plot','NumberTitle','off');
-    correlationPlot(excessVec, targetRes, voltagelist, reslist);
+    correlationPlot(excessVec0, targetRes, voltagelist, reslist);
 end
 
 %find the sum of squares of the residual using the dot product
@@ -277,24 +259,24 @@ if balOut_FLAG == 1
         disp(' ************************************************************************ ');
         
         % Mark the outliers values, store and use for recalculation:
-        zeroed_targetMatrix = targetMatrix;
-        zeroed_excessVec = excessVec;
-        zeroed_series = series;
+        zeroed_targetMatrix = targetMatrix0;
+        zeroed_excessVec = excessVec0;
+        zeroed_series = series0;
         zeroed_numpts = numpts;
         
         zeroed_targetMatrix(OUTLIER_ROWS,:) = [];
         zeroed_excessVec(OUTLIER_ROWS,:) = [];
         
-        targetMatrix = unique(zeroed_targetMatrix,'rows');
-        excessVec = unique(zeroed_excessVec,'rows');
+        targetMatrix0 = unique(zeroed_targetMatrix,'rows');
+        excessVec0 = unique(zeroed_excessVec,'rows');
         
         zeroed_series(OUTLIER_ROWS) = [];
         
         numpts =  zeroed_numpts - num_outliers;
         
-        targetMatrix = zeroed_targetMatrix;
-        excessVec = zeroed_excessVec;
-        series = zeroed_series;
+        targetMatrix0 = zeroed_targetMatrix;
+        excessVec0 = zeroed_excessVec;
+        series0 = zeroed_series;
         
         dainputs = zeros(numpts,dimFlag);
         dalz = zeros(numpts,dimFlag);
@@ -314,24 +296,24 @@ if balOut_FLAG == 1
         rbfINminGZ = zeros(numpts,dimFlag);
         rbfLZminGZ = zeros(numpts,dimFlag);
         
-        [localZeros,localZerosAllPoints] = localzeros(series,excessVec);
+        [localZeros,localZerosAllPoints] = localzeros(series0,excessVec0);
         globalZerosAllPoints = ones(numpts,1)*globalZeros;
         
         % Subtract the Global Zeros from the Inputs and Local Zeros
         for i=1:dimFlag
-            dainputs(:,i) = excessVec(:,i) - globalZerosAllPoints(i);
+            dainputs(:,i) = excessVec0(:,i) - globalZerosAllPoints(i);
             dalz(:,i) = localZerosAllPoints(:,i) - globalZerosAllPoints(i);
         end
         
         for i=1:dimFlag
             biggee(:,i) = 0;
         end
-        [comIN,comLZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,nseries, dainputs, dalz, biggee);
+        [comIN,comLZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series0,nseries, dainputs, dalz, biggee);
         
         comINminLZ = comIN-comLZ;
         
         %SOLUTION
-        xcalib = pinv(comINminLZ')*targetMatrix;
+        xcalib = pinv(comINminLZ')*targetMatrix0;
         
         %APPROXIMATION
         %define the approximation for inputs minus local zeros
@@ -347,13 +329,13 @@ if balOut_FLAG == 1
             aprxLZminGZ(m,:) = aprxLZ(m,:);%to find tares
             
             %subtracts the targets from the global approx
-            %This will be averaged over the individual series to give the tares
-            checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
+            %This will be averaged over the individual series0 to give the tares
+            checkit(m,:) = aprxINminGZ(m,:)-targetMatrix0(m,:);
         end
         
-        taresAllPoints = meantare(series,checkit);
+        taresAllPoints = meantare(series0,checkit);
         %RESIDUAL
-        targetRes = targetMatrix+taresAllPoints-aprxINminGZ;      %0=b-Ax
+        targetRes = targetMatrix0+taresAllPoints-aprxINminGZ;      %0=b-Ax
     end
 end
 
@@ -365,7 +347,7 @@ resSquare = dot(targetRes,targetRes)';
 for k=1:length(targetRes(1,:))
     [goop(k),kstar(k)] = max(abs(targetRes(:,k)));
     goopVal(k) = abs(targetRes(kstar(k),k));
-    xCent(k) = excessVec(kstar(k),k);
+    xCent(k) = excessVec0(kstar(k),k);
     maxTargets(k) = max(targetRes(:,k));
     minTargets(k) = min(targetRes(:,k));
 end
@@ -381,7 +363,7 @@ ratioGoop(isnan(ratioGoop)) = realmin;
 %    theminmaxband = abs(maxTargets + minTargets);
 theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
 
-[~,s_1st,~] = unique(series);
+[~,s_1st,~] = unique(series0);
 taresALGB = taresAllPoints(s_1st,:);
 
 %OUTPUT HISTOGRAM PLOTS
@@ -468,7 +450,7 @@ end
 
 if res_FLAG == 1
     figure('Name','Algebraic Model Calibration; Residuals of Load Versus Data Point Index','NumberTitle','off')
-    plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
+    plotResPages(series0, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
     %    hold off
 end
 
@@ -483,7 +465,7 @@ if balCal_FLAG == 2
     %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
     %product of the resulting column vector
     for i=1:dimFlag
-        for s=1:length(series)
+        for s=1:length(series0)
             targetRes2(s,i) = targetRes(s,i);
         end
     end
@@ -494,12 +476,12 @@ if balCal_FLAG == 2
     tareHist = cell(numBasis,1);
     
     for i=1:dimFlag
-        dainputscalib(:,i) = excessVec(:,i)-globalZeros(i);
+        dainputscalib(:,i) = excessVec0(:,i)-globalZeros(i);
         dalzcalib(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
     end
     
     %    localZeroMatrix = localZerosAllPoints;
-    globalZerosAllPoints = zeros(length(excessVec(:,1)),dimFlag); % ajm 6_2_18
+    globalZerosAllPoints = zeros(length(excessVec0(:,1)),dimFlag); % ajm 6_2_18
     
     etaLZ = dot(dalzcalib-dainputscalib,dalzcalib-dainputscalib);
     etaGZ = dot(globalZerosAllPoints-dainputscalib,globalZerosAllPoints-dainputscalib);
@@ -508,7 +490,7 @@ if balCal_FLAG == 2
         for s=1:dimFlag
             [goopLoop(s),centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
             
-            for r=1:length(excessVec(:,1))
+            for r=1:length(excessVec0(:,1))
                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
             end
             
@@ -536,13 +518,13 @@ if balCal_FLAG == 2
         aprxINminGZ_Hist{u} = aprxINminGZ2;
         
         % SOLVE FOR TARES BY TAKING THE MEAN
-        taresAllPointsGRBF = meantare(series,aprxINminGZ2-targetMatrix);
+        taresAllPointsGRBF = meantare(series0,aprxINminGZ2-targetMatrix0);
         
         taresGRBF = taresAllPointsGRBF(s_1st,:);
         
         tareGRBFHist{u} = taresGRBF;
         
-        targetRes2 = targetMatrix-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
+        targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
         newRes2 = targetRes2'*targetRes2;
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
@@ -567,7 +549,7 @@ if balCal_FLAG == 2
     %***************** ajm 5/12/18
     if res_FLAG == 1
         figure('Name','GRBF + Algebraic Model Calibration; Residuals of Load Versus Data Point Index','NumberTitle','off')
-        plotResPages(series, targetRes2, loadCapacities, stdDevPercentCapacity2, loadlist)
+        plotResPages(series0, targetRes2, loadCapacities, stdDevPercentCapacity2, loadlist)
         %    hold off
     end
     
@@ -577,7 +559,7 @@ if balCal_FLAG == 2
     %
     %if res_FLAG == 1
     %    figure('Name','Looking at GRBF Distribution in Calibration','NumberTitle','off')
-    %    plotResPages(series, justtherbfs, loadCapacities, stdDevPercentCapacity2)
+    %    plotResPages(series0, justtherbfs, loadCapacities, stdDevPercentCapacity2)
     %    hold off
     %end
     
@@ -674,10 +656,10 @@ if balVal_FLAG == 1
     %load capacities
     loadCapacitiesvalid(loadCapacitiesvalid == 0) = realmin;
     
-    %find number of series; this will tell us the number of tares
+    %find number of series0; this will tell us the number of tares
     nseriesvalid = max(seriesvalid);
     
-    %find zero points of each series and number of points in a series
+    %find zero points of each series0 and number of points in a series0
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
     %section
     [localZerosvalid,localZerosAllPointsvalid] = localzeros(seriesvalid,excessVecvalid0);
@@ -692,7 +674,7 @@ if balVal_FLAG == 1
     end
     
     %%% 5/16/18
-    %Remember that  excessVec = excessVec0_complete - globalZerosAllPoints;
+    %Remember that  excessVec0 = excessVec0_complete - globalZerosAllPoints;
     excessVecvalidkeep = excessVecvalid0  - globalZerosAllPointsvalid;
     %%%
     
@@ -868,7 +850,7 @@ if balVal_FLAG == 1
     end
     
     for k=1:dimFlag % ajm 6_8_18
-        dainputscalib(:,k) = excessVec(:,k) - globalZeros(k);
+        dainputscalib(:,k) = excessVec0(:,k) - globalZeros(k);
     end
     
     if balCal_FLAG == 2
@@ -883,7 +865,7 @@ if balVal_FLAG == 1
         etaGZvalid = dot(globalZerosAllPointsvalid-dainputsvalid,globalZerosAllPointsvalid-dainputsvalid);
         
         for u=1:numBasis
-            for s=1:length(excessVec(1,:)) % loops through the components
+            for s=1:length(excessVec0(1,:)) % loops through the components
                 
                 centerIndexLoop(s) = centerIndexHist(u,s); %Have to use the history or it gets overwritten
                 
@@ -911,7 +893,7 @@ if balVal_FLAG == 1
             rbfc_INminGZ_Histvalid{u} = rbfc_INminGZvalid;  % temp ajm 6_7_18
             
             rbf_etavalid_Hist{u} = etavalid;   % temp ajm 6_7_18
-            rbf_excessvec_center_Hist{u} = excessVec(centerIndexHist(u,:),:);  % temp ajm 6_7_18
+            rbf_excessvec_center_Hist{u} = excessVec0(centerIndexHist(u,:),:);  % temp ajm 6_7_18
             rbf_excessvec_valid_Hist{u} = excessVecvalid;  % temp ajm 6_7_18
             
             % SOLVE FOR TARES BY TAKING THE MEAN
@@ -948,7 +930,7 @@ if balVal_FLAG == 1
         for k2=1:length(targetResvalid(1,:))
             [goop2valid(k2),kstar2valid(k2)] = max(abs(targetRes2valid(:,k2)));
             goop2valid(k2) = abs(targetRes2valid(kstar2valid(k2),k2));
-            %        xCent2valid(k2) = excessVec(centerIndexLoop(s)(k2),k2);%%??
+            %        xCent2valid(k2) = excessVec0(centerIndexLoop(s)(k2),k2);%%??
             maxTargets2valid(k2) = max(targetRes2valid(:,k2));
             minTargets2valid(k2) = min(targetRes2valid(:,k2));
         end
@@ -1191,12 +1173,12 @@ if balApprox_FLAG == 1
         etaGZapprox = dot(globalZerosAllPointsapprox-excessVecapprox,globalZerosAllPointsapprox-excessVecapprox);
         
         for u=1:numBasis
-            for s=1:length(excessVec(1,:)) % loops through the 8 components
+            for s=1:length(excessVec0(1,:)) % loops through the 8 components
                 
                 centerIndexLoop(s) = centerIndexHist(u,s); %Have to use the history or it gets overwritten
                 
                 for r=1:length(excessVecapprox(:,1))
-                    etaapprox(r,s) = dot(excessVecapprox(r,:)-excessVec(centerIndexLoop(s),:),excessVecapprox(r,:)-excessVec(centerIndexLoop(s),:));
+                    etaapprox(r,s) = dot(excessVecapprox(r,:)-excessVec0(centerIndexLoop(s),:),excessVecapprox(r,:)-excessVec0(centerIndexLoop(s),:));
                 end
                 
                 w(s) = wHist(u,s); % Have to use the history or it gets overwritten

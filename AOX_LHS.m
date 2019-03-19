@@ -1,4 +1,4 @@
-function [series_lhs,targetMatrix_lhs,excessVec_lhs, sample] = AOX_LHS(series,targetMatrix,excessVec,p)
+function [X_cal] = AOX_LHS(series,excessVec,p)
 thr = 0.05;
 
 [n, dim] = size(excessVec);
@@ -43,8 +43,3 @@ end
 
 X_cal = sort([LZ;BD;XI_sample]);
 %X_val = sort([LZ;XI_tmp]);
-
-series_lhs = series(X_cal,:);
-excessVec_lhs = excessVec(X_cal,:);
-targetMatrix_lhs = targetMatrix(X_cal,:);
-sample = X_cal;
