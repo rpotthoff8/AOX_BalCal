@@ -196,17 +196,10 @@ for lhs = 1:numLHS
 
     coeff = xcalib(1:nterms,:);
     tares = -xcalib(nterms+1:end,:);
-        
-    for i=1:nterms+1
-        xvalid(i,:) = xcalib(i,:);
-    end
     
     %  Creates Matrix for the volts to loads
-    %  ajm for the users to view 5/11/18
-    APPROX_AOX_COEFF_MATRIX = xcalib;
-    
-    xapproxer = xcalib(1:nterms,:);
-    
+    APPROX_AOX_COEFF_MATRIX = coeff;
+    xapproxer = coeff;
     if excel_FLAG == 1
         filename = 'APPROX_AOX_COEFF_MATRIX.csv';
         csvwrite(filename,xapproxer)
@@ -707,6 +700,7 @@ if balVal_FLAG == 1
     %     excessVecvalid =         csvread(inputFile_balCal,19,12,'M20..T139');
     load(out.savePathval,'-mat');
     [~,s_1st,s_id] = unique(seriesvalid);
+    xvalid = xcalib;
     
     excessVecvalid0 = excessVecvalid;
     % num of data points
