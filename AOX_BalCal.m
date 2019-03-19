@@ -218,7 +218,7 @@ for lhs = 1:numLHS
     APPROX_AOX_COEFF_MATRIX = xcalib;
     
     xapproxer = xcalib(1:nterms,:);
-    xapproxer(end+1,:)  = zeros(1,dimFlag); 
+    xapproxer(end+1,:)  = zeros(1,dimFlag);
     
     if excel_FLAG == 1
         filename = 'APPROX_AOX_COEFF_MATRIX.csv';
@@ -531,7 +531,7 @@ if excel_FLAG == 1
     disp('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
     % CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ;
     disp(' ');
-
+    
     filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
     csvwrite(filename,aprxINminGZ)
 end
@@ -904,7 +904,7 @@ if balVal_FLAG == 1
         %%%%
         disp('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
         disp(' ');
-
+        
         filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
         csvwrite(filename,aprxINminGZvalid)
     end
@@ -1117,8 +1117,6 @@ if balApprox_FLAG == 1
     %
     
     load(out.savePathapp,'-mat');
-    %nseriesapprox=max(seriesapprox);
-    %[sharedvals,indexLocalZeroapprox]=intersect(seriesapprox, [1:max(seriesapprox)],'stable'); %Create index
     %
     
     % num of data points
@@ -1126,9 +1124,8 @@ if balApprox_FLAG == 1
     %
     
     
-    %natural zeros (also called global zeros) are simply set to zero for approximations
-    globalZerosapprox = zeros(length(excessVecapprox(1,:)),1);
-    
+    %natural zeros (also called global zeros)
+    globalZerosapprox = mean(natzerosapprox);
     
     %%% make an array out of the globalZerosapprox vector
     for i=1:numptsapprox
@@ -1154,10 +1151,10 @@ if balApprox_FLAG == 1
     %% Build the Algebraic Model
     %%
     
-%     n(1) = 2*dimFlag*(dimFlag+2);
-%     n(2) = dimFlag*(dimFlag+3)/2;
-%     n(3) = dimFlag;
-%     model_FLAG = find(n==size( xapproxer,1)-1);
+    %     n(1) = 2*dimFlag*(dimFlag+2);
+    %     n(2) = dimFlag*(dimFlag+3)/2;
+    %     n(3) = dimFlag;
+    %     model_FLAG = find(n==size( xapproxer,1)-1);
     
     
     %% Full Algebraic Model
@@ -1212,7 +1209,7 @@ if balApprox_FLAG == 1
     %%
     
     %%%%%%
-    if excel_FLAG == 1
+    if excel_FLAG == 1;
         disp(' ');
         disp('%%%%%%%%%%%%%%%%%');
         disp(' ');
@@ -1317,9 +1314,18 @@ if balApprox_FLAG == 1
         
     end
     
+    
+    
+    
     %
     %End Approximation Option
 end
 
 disp('  ')
 disp('Calculations Complete.')
+
+%
+% Copyright ©2016 Andrew Meade and Ali Arya Mokhtarzadeh.  All Rights Reserved.
+%
+
+%toc
