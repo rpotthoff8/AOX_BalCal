@@ -167,14 +167,6 @@ for lhs = 1:numLHS
     %%% Subtract the Global Zeros from the Inputs and Local Zeros %%%%%%%%%%
     dainputs = excessVec - globalZerosAllPoints;
     dalz = localZerosAllPoints - globalZerosAllPoints;
-    for i=1:dimFlag
-        dainputs(:,i) = excessVec(:,i)-globalZeros(i);
-        %
-        dalz(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
-        %
-        biggee(:,i) = 0;
-        %
-    end
     
     %%% Build the Algebraic Model
     
