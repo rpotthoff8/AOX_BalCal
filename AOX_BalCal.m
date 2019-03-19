@@ -167,6 +167,7 @@ for lhs = 1:numLHS
     %%% Subtract the Global Zeros from the Inputs and Local Zeros %%%%%%%%%%
     dainputs = excessVec - globalZerosAllPoints;
     dalz = localZerosAllPoints - globalZerosAllPoints;
+    biggee = zeros(1,dimFlag);
     
     %%% Build the Algebraic Model
     
@@ -206,7 +207,6 @@ for lhs = 1:numLHS
     APPROX_AOX_COEFF_MATRIX = xcalib;
     
     xapproxer = xcalib(1:nterms,:);
-    xapproxer(end+1,:)  = zeros(1,dimFlag);
     
     if excel_FLAG == 1
         filename = 'APPROX_AOX_COEFF_MATRIX.csv';
@@ -1172,7 +1172,7 @@ if balApprox_FLAG == 1
         biggee(:,i) = 0;
     end
     
-    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,1,dainputsapprox,dalzapprox,biggee);
+    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,0,dainputsapprox,dalzapprox,biggee);
     
     %model_FLAG
     %nterms
@@ -1197,7 +1197,7 @@ if balApprox_FLAG == 1
     %%
     
     %%%%%%
-    if excel_FLAG == 1;
+    if excel_FLAG == 1
         disp(' ');
         disp('%%%%%%%%%%%%%%%%%');
         disp(' ');
@@ -1274,7 +1274,6 @@ if balApprox_FLAG == 1
             centerIndexHist(u,:) = centerIndexLoop;
             etaHistapprox{u} = etaapprox;
             
-            
             %UPDATE THE RESIDUAL
             
             %update the approximation
@@ -1302,10 +1301,6 @@ if balApprox_FLAG == 1
         
     end
     
-    
-    
-    
-    %
     %End Approximation Option
 end
 
