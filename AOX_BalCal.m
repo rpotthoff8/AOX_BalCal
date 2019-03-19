@@ -167,38 +167,28 @@ for lhs = 1:numLHS
     %%% Subtract the Global Zeros from the Inputs and Local Zeros %%%%%%%%%%
     dainputs = excessVec - globalZerosAllPoints;
     dalz = localZerosAllPoints - globalZerosAllPoints;
-    for i=1:dimFlag
-        dainputs(:,i) = excessVec(:,i)-globalZeros(i);
-        %
-        dalz(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
-        %
-        biggee(:,i) = 0;
-        %
-    end
     
     %%% Build the Algebraic Model
-    
-    lasttare = series(numpts);
-    
+        
     % Full Algebraic Model
     if model_FLAG == 1
         nterms = 2*dimFlag*(dimFlag+2);
     end
-    %% Truncated Algebraic Model
+    % Truncated Algebraic Model
     if model_FLAG == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
-    %% Linear Algebraic Model
+    % Linear Algebraic Model
     if model_FLAG == 3
         nterms = dimFlag;
     end
     
     % Call the Algebraic Subroutine
     comIN = balCal_algEqns(model_FLAG,dainputs);
-    [comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs,dalz,biggee);
+    [comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,nseries,dainputs,dalz,biggee);
     
     % Effectively removes the original tare values so we can calculate the averages
-    for i=1:lasttare
+    for i=1:nseries
         comIN(nterms+i,:) = 0;
         comLZ(nterms+i,:) = 0;
         comGZ(nterms+i,:) = 0;
@@ -255,10 +245,10 @@ for i=1:dimFlag
 end
 
 % Call the Algebraic Subroutine
-[comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs2,dalz2,biggee);
+[comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,nseries,dainputs2,dalz2,biggee);
 
 % Effectively removes the original tare values so we can calculate the averages
-for i=1:lasttare
+for i=1:nseries
     comIN(nterms+i,:) = 0;
     comLZ(nterms+i,:) = 0;
     comGZ(nterms+i,:) = 0;
@@ -402,7 +392,7 @@ if balOut_FLAG == 1
         for i=1:dimFlag
             biggee(:,i) = 0;
         end
-        [comIN,comLZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare, dainputs, dalz, biggee);
+        [comIN,comLZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,nseries, dainputs, dalz, biggee);
         
         comINminLZ = comIN-comLZ;
         
@@ -516,7 +506,7 @@ if print_FLAG == 1
         numCombin(coeffCount) = coeffCount;
     end
     numCombinName = cellstr(num2str(numCombin'));
-    numCombinName(nterms+lasttare+1) = cellstr('Intercept');
+    numCombinName(nterms+nseries+1) = cellstr('Intercept');
     
     calib_mean_algebraic_Resids_sqrd = array2table(resSquare'./numpts,'VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop,'VariableNames',loadlist(1:dimFlag))
