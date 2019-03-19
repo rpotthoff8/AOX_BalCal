@@ -185,8 +185,7 @@ for lhs = 1:numLHS
     end
     
     % Call the Algebraic Subroutine
-    comIN = balCal_algEqns(model_FLAG,dainputs);
-    
+    comIN = balCal_algEqns(model_FLAG,dainputs);    
     ints = zeros(numpts,nseries);
     ids = sub2ind(size(ints),[1:numpts]',s_id);
     ints(ids) = 1;
@@ -238,17 +237,6 @@ end
 
 % Call the Algebraic Subroutine
 [comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,nseries,dainputs2,dalz2,biggee);
-
-% Effectively removes the original tare values so we can calculate the averages
-for i=1:nseries
-    comIN(nterms+i,:) = 0;
-    comLZ(nterms+i,:) = 0;
-    comGZ(nterms+i,:) = 0;
-end
-
-for loopk=1:numpts
-    comLZ(nterms+series(loopk),loopk) = 1.0;
-end
 
 comINminLZ = comIN-comLZ;
 
@@ -770,7 +758,7 @@ if balVal_FLAG == 1
     
     % Call the Algebraic Subroutine
     comGZvalid = zeros(nterms+1,1);
-    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,1, dainputsvalid,dalzvalid,dagzvalid);
+    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,nseriesvalid,dainputsvalid,dalzvalid,dagzvalid);
     
     comINminLZvalid = comINvalid-comLZvalid;
     
