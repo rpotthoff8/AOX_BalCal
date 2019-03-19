@@ -2,7 +2,7 @@
 %
 % Copyright ©2017 Andrew Meade.  All Rights Reserved.
 %
-function [comINvec,comLZvec,comGZvec]=balCal_algEquations3(themodel_FLAG,numeqns, ndim,numdatapts,numseries,thelasttare,inputmatrix,lzmatrix,gzmatrix)
+function [comINvec,comLZvec,comGZvec]=balCal_algEquations3(themodel_FLAG,numeqns, ndim,numdatapts,series,thelasttare,inputmatrix,lzmatrix,gzmatrix)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if themodel_FLAG == 1
@@ -167,7 +167,7 @@ if thelasttare > 0
     end
     
     for loopk=1:numdatapts
-        comLZvec(numeqns+1,loopk) = 1.0;
+        comLZvec(numeqns+series(loopk),loopk) = 1.0;
     end
     
     

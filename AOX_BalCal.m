@@ -188,17 +188,6 @@ for lhs = 1:numLHS
     comIN = balCal_algEqns(model_FLAG,dainputs);
     [comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,nseries,dainputs,dalz,biggee);
     
-    % Effectively removes the original tare values so we can calculate the averages
-    for i=1:nseries
-        comIN(nterms+i,:) = 0;
-        comLZ(nterms+i,:) = 0;
-        comGZ(nterms+i,:) = 0;
-    end
-    
-    for loopk=1:numpts
-        comLZ(nterms+series(loopk),loopk) = 1.0;
-    end
-    
     comINminLZ = comIN-comLZ;
     
     %SOLUTION
@@ -206,10 +195,8 @@ for lhs = 1:numLHS
     %    xcalib = lsqminnorm(comINminLZ',targetMatrix);             % alternate solution method
     %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
     %    xcalib = pinv(comINminLZ',1e-2)*targetMatrix;             % alternate solution method
-    % 5/17/18
-    for i=1:nterms+1
-        xvalid(i,:) = xcalib(i,:);
-    end
+    
+    xvalid = xcalib;
     
     %  Creates Matrix for the volts to loads
     %  ajm for the users to view 5/11/18
@@ -246,17 +233,6 @@ end
 
 % Call the Algebraic Subroutine
 [comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,nseries,dainputs2,dalz2,biggee);
-
-% Effectively removes the original tare values so we can calculate the averages
-for i=1:nseries
-    comIN(nterms+i,:) = 0;
-    comLZ(nterms+i,:) = 0;
-    comGZ(nterms+i,:) = 0;
-end
-
-for loopk=1:numpts
-    comLZ(nterms+series(loopk),loopk) = 1.0;
-end
 
 comINminLZ = comIN-comLZ;
 
@@ -778,7 +754,7 @@ if balVal_FLAG == 1
     
     % Call the Algebraic Subroutine
     comGZvalid = zeros(nterms+1,1);
-    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,1, dainputsvalid,dalzvalid,dagzvalid);
+    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,nseriesvalid,dainputsvalid,dalzvalid,dagzvalid);
     
     comINminLZvalid = comINvalid-comLZvalid;
     
