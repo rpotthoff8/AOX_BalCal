@@ -151,7 +151,7 @@ for lhs = 1:numLHS
         ind(find(lhs_check-1)); % This line outputs which data points haven't been sampled yet
         pct_sampled = sum(lhs_check)/length(lhs_check); % This line outputs what percentage of points have been sampled
     else
-        sample = ones(length(series0),1);
+        sample = [1:length(series0)]';
     end
     
     series = series0(sample);
@@ -187,10 +187,10 @@ taresAllPoints = tares(s_id0,:);
 
 %  Creates Matrix for the volts to loads
 APPROX_AOX_COEFF_MATRIX = coeff;
-xapproxer = coeff;
+xapprox = coeff;
 if excel_FLAG == 1
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-    csvwrite(filename,xapproxer)
+    csvwrite(filename,xapprox)
 end
 
 %APPROXIMATION
@@ -1111,8 +1111,8 @@ if balApprox_FLAG == 1
     
     %LOAD APPROXIMATION
     %define the approximation for inputs minus global zeros
-    interceptsapprox = -(comGZapprox'*xapproxer);
-    aprxINapprox = ( xapproxer'*comINapprox)';        %to find ?? AJM111516
+    interceptsapprox = -(comGZapprox'*xapprox);
+    aprxINapprox = ( xapprox'*comINapprox)';        %to find ?? AJM111516
     %%
     %%
     for m=1:length(aprxINapprox)
