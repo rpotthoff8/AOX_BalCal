@@ -93,10 +93,8 @@ else
     disp('Using the Direct Approach for Calibration');
 end
 
-% 6_14_18 ajm
-matrixcolumnlabels = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
 
-if exist('loadlabels')
+if exist('loadlabels','var')
     loadlist = loadlabels;
     voltagelist = voltlabels;
 else
