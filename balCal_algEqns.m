@@ -1,5 +1,5 @@
 % Copyright ©2017 Andrew Meade, Javier Villarreal.  All Rights Reserved.
-function in_comb = balCal_algEqns(model_FLAG,in)
+function in_comb = balCal_algEqns(model_FLAG,in,series)
 
 % Detect the size of the input
 n = size(in,1); %number of data points
@@ -8,6 +8,7 @@ if model_FLAG == 3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%LINEAR MODEL
     in_comb = in;%                                                        3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    in_comb = interceptTerms(in_comb,series);
     return 
 end
 
@@ -26,6 +27,7 @@ if model_FLAG == 2
                in_sq,   ...
                ini_inj];
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    in_comb = interceptTerms(in_comb,series);
     return 
 end
 
@@ -56,4 +58,15 @@ in_comb = [in,        ...                                                 1
            in_cu,     ...
            abs_incu];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+in_comb = interceptTerms(in_comb,series);
+end
+
+function in_comb = interceptTerms(in_comb,series)
+n = size(in_comb,1);
+[~,s_1st,s_id] = unique(series);
+nseries = length(s_1st);
+ints = zeros(n,nseries);
+ids = sub2ind(size(ints),[1:n]',s_id);
+ints(ids) = 1;
+in_comb = [in_comb, ints];
 end

@@ -16,7 +16,7 @@ disp('Copyright 2018 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal. 
 % The mean of the approximation residual (testmatrix minus local approximation) for each section is taken as the tare for that channel and section. The tare is subtracted from the global values to make the local loads. The accuracy of the validation, when compared to the known loads, is very sensitive to the value of the tares (which is unknown) and NOT the order of the calibration equations.
 % Because of measurement noise in the voltage the APPROXIMATION tare is computed by post-processing. The average and stddev is taken of all channels per section. If the stddev is less than 0.25% of the capacity for any station the tare is equal to the average for that channel. If the stddev is greater than 0.25% then the approximation at the local zero is taken as the tare for that channel and section. The global approximation is left alone but the tare is subtracted from the values to make the local loads. Line 3133.
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       USER INPUT SECTION
 %
 out = AOX_GUI;
@@ -74,21 +74,23 @@ numLHS = out.numLHS; %Number of times to iterate.
 LHSp = out.LHSp; %Percent of data used to create sample.
 % A mean of the coefficients is calculated afterwards.
 %
+%                       END USER INPUT SECTION
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 load(out.savePathcal,'-mat');
 series0 = series;
-%
-%                       END USER INPUT SECTION
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Loads:
+% loadlabes, voltlabels (if they exist)
+% loadCapacities, natzeros, targetMatrix0, excessVec0, series0
 
 disp('Starting Calculations')
-if approach_FLAG == 1
-    disp(' ');
-    disp('Using the Indirect Approach for Calibration');
-else
-    disp(' ');
-    disp('Using the Direct Approach for Calibration');
-end
-
+% if approach_FLAG == 1
+%     disp(' ');
+%     disp('Using the Indirect Approach for Calibration');
+% else
+%     disp(' ');
+%     disp('Using the Direct Approach for Calibration');
+% end
 
 if exist('loadlabels','var')
     loadlist = loadlabels;
@@ -102,6 +104,32 @@ if corr_FLAG == 1
     figure('Name','Correlation plot','NumberTitle','off');
     correlationPlot(targetMatrix0, excessVec0, loadlist, voltagelist);
 end
+
+%find the average natural zeros (also called global zeros)
+globalZeros = mean(natzeros);
+
+[~,s_1st0,s_id0] = unique(series0);
+nseries0 = length(s_1st0);
+[numpts0, dimFlag] = size(excessVec0);
+
+[localZeros0,localZerosAllPoints0] = localzeros(series0,excessVec0);
+globalZerosAllPoints0 = ones(numpts0,1)*globalZeros;
+
+dainputs0 = excessVec0 - globalZerosAllPoints0;
+
+switch model_FLAG
+    case 1
+        % Full Algebraic Model
+        nterms = 2*dimFlag*(dimFlag+2);
+    case 2
+        % Truncated Algebraic Model
+        nterms = dimFlag*(dimFlag+3)/2;
+    case 3
+        % Linear Algebraic Model
+        nterms = dimFlag;
+end
+
+comIN0 = balCal_algEqns(model_FLAG,dainputs0,series0);
 
 if LHS_Flag == 0
     numLHS = 1;
@@ -128,10 +156,7 @@ for lhs = 1:numLHS
         series = series0;
     end
     
-    [numpts, dimFlag] = size(excessVec);
-    
-    %find the average natural zeros (also called global zeros)
-    globalZeros = mean(natzeros);
+    [numpts, ~] = size(excessVec);
     
     [~,s_1st,s_id] = unique(series);
     %find number of series; this will tell us the number of tares
@@ -145,61 +170,26 @@ for lhs = 1:numLHS
     
     disp('  ')
     disp('Working ...')
-    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %                 VOLTAGE TO LOAD (DIRECT) SECTION      AJM 8/3/17           %
-    %Use the measured to best voltages mapping to find the calibration coefficients
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %
     
     % Indirect approach uses the modeled voltage
-    if approach_FLAG == 1
-        if balCal_FLAG == 2
-            excessVec = qtaprxINminGZ2 + globalZerosAllPoints;
-        else
-            excessVec = qtaprxINminGZ + globalZerosAllPoints;
-        end
-    end
+%     if approach_FLAG == 1
+%         if balCal_FLAG == 2
+%             excessVec = qtaprxINminGZ2 + globalZerosAllPoints;
+%         else
+%             excessVec = qtaprxINminGZ + globalZerosAllPoints;
+%         end
+%     end
     
     %%% Subtract the Global Zeros from the Inputs and Local Zeros %%%%%%%%%%
     dainputs = excessVec - globalZerosAllPoints;
-    dalz = localZerosAllPoints - globalZerosAllPoints;
-    biggee = zeros(1,dimFlag);
     
     %%% Build the Algebraic Model
     
-    % Full Algebraic Model
-    if model_FLAG == 1
-        nterms = 2*dimFlag*(dimFlag+2);
-    end
-    % Truncated Algebraic Model
-    if model_FLAG == 2
-        nterms = dimFlag*(dimFlag+3)/2;
-    end
-    % Linear Algebraic Model
-    if model_FLAG == 3
-        nterms = dimFlag;
-    end
-    
     % Call the Algebraic Subroutine
-    comIN = balCal_algEqns(model_FLAG,dainputs);    
-    ints = zeros(numpts,nseries);
-    ids = sub2ind(size(ints),[1:numpts]',s_id);
-    ints(ids) = 1;
-    comIN = [comIN, ints];
+    comIN = balCal_algEqns(model_FLAG,dainputs,series);    
 
     %SOLUTION
     xcalib = pinv(comIN)*targetMatrix;
-
-    coeff = xcalib(1:nterms,:);
-    tares = -xcalib(nterms+1:end,:);
-    
-    %  Creates Matrix for the volts to loads
-    APPROX_AOX_COEFF_MATRIX = coeff;
-    xapproxer = coeff;
-    if excel_FLAG == 1
-        filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-        csvwrite(filename,xapproxer)
-    end
     
     if LHS_Flag == 1
         x_all(:,:,lhs) = xcalib;
@@ -210,48 +200,23 @@ if LHS_Flag == 1
     xcalib = mean(x_all,3);
     xcalib_std = std(x_all,[],3);
 end
+coeff = xcalib(1:nterms,:);
+tares = -xcalib(nterms+1:end,:);
 
-excessVec = excessVec;
-targetMatrix = targetMatrix0;
-series = series0;
-[~,s_1st,s_id] = unique(series);
-
-[localZeros,localZerosAllPoints] = localzeros(series,excessVec);
-
-for i=1:dimFlag
-    dainputs2(:,i) = excessVec(:,i)-globalZeros(i);
-    dalz2(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
-    biggee(:,i) = 0;
+%  Creates Matrix for the volts to loads
+APPROX_AOX_COEFF_MATRIX = coeff;
+xapproxer = coeff;
+if excel_FLAG == 1
+    filename = 'APPROX_AOX_COEFF_MATRIX.csv';
+    csvwrite(filename,xapproxer)
 end
-
-% Call the Algebraic Subroutine
-[comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,nseries,dainputs2,dalz2,biggee);
-
-comINminLZ = comIN-comLZ;
 
 %APPROXIMATION
-%define the approximation for inputs minus local zeros
-aprxINminLZ = comINminLZ'*xcalib;
-
-%DIFFERENT APPROXIMATION
 %define the approximation for inputs minus global zeros
-intercepts = -(comGZ'*xcalib);
-aprxIN = (xcalib'*comIN)';
-aprxLZ = (xcalib'*comLZ)';       %to find tares AAM042016
-for m=1:length(aprxIN)
-    %    aprxINminGZ(m,:) = aprxIN(m,:)+intercepts;  %ajm zap 3/23/18
-    %    aprxLZminGZ(m,:) = aprxLZ(m,:)+intercepts;  %ajm zap 3/23/18
-    aprxINminGZ(m,:) = aprxIN(m,:);
-    aprxLZminGZ(m,:) = aprxLZ(m,:); %to find tares AAM042016
-    
-    %subtracts the targets from the global approx
-    %This will be averaged over the individual series to give the tares
-    checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
-end
+aprxIN = comIN0*xcalib;
 
-taretal = meantare(series,checkit);
 %RESIDUAL
-targetRes = targetMatrix+taretal-aprxINminGZ;      %0=b-Ax
+targetRes = targetMatrix-aprxIN;      %0=b-Ax
 
 reslist = {'resNF','resBM','resS1','resS2','resRM','resAF','resPLM',...
     'resPCM', 'resMLM', 'resMCM'};
@@ -337,7 +302,7 @@ if balOut_FLAG == 1
         aprxINminGZ = zeros(numpts,dimFlag);
         aprxLZminGZ = zeros(numpts,dimFlag);
         zeroed_checkit = zeros(numpts,dimFlag);
-        taretal = zeros(numpts,dimFlag);
+        taresAllPoints = zeros(numpts,dimFlag);
         globalZerosAllPoints = zeros(numpts,dimFlag);
         eta = zeros(numpts,dimFlag);
         zeroed_zoop = zeros(numpts,dimFlag);
@@ -386,9 +351,9 @@ if balOut_FLAG == 1
             checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
         end
         
-        taretal = meantare(series,checkit);
+        taresAllPoints = meantare(series,checkit);
         %RESIDUAL
-        targetRes = targetMatrix+taretal-aprxINminGZ;      %0=b-Ax
+        targetRes = targetMatrix+taresAllPoints-aprxINminGZ;      %0=b-Ax
     end
 end
 
@@ -417,7 +382,7 @@ ratioGoop(isnan(ratioGoop)) = realmin;
 theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
 
 [~,s_1st,~] = unique(series);
-taresALGB = taretal(s_1st,:);
+taresALGB = taresAllPoints(s_1st,:);
 
 %OUTPUT HISTOGRAM PLOTS
 if hist_FLAG == 1
@@ -571,13 +536,13 @@ if balCal_FLAG == 2
         aprxINminGZ_Hist{u} = aprxINminGZ2;
         
         % SOLVE FOR TARES BY TAKING THE MEAN
-        taretalGRBF = meantare(series,aprxINminGZ2-targetMatrix);
+        taresAllPointsGRBF = meantare(series,aprxINminGZ2-targetMatrix);
         
-        taresGRBF = taretalGRBF(s_1st,:);
+        taresGRBF = taresAllPointsGRBF(s_1st,:);
         
         tareGRBFHist{u} = taresGRBF;
         
-        targetRes2 = targetMatrix-aprxINminGZ2+taretalGRBF;      %0=b-Ax
+        targetRes2 = targetMatrix-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
         newRes2 = targetRes2'*targetRes2;
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
@@ -770,16 +735,16 @@ if balVal_FLAG == 1
     end
     
     % SOLVE FOR TARES BY TAKING THE MEAN
-    taretalvalid = meantare(seriesvalid,checkitvalid);
-    zapvalid     = taretalvalid(s_1st,:);
+    taresAllPointsvalid = meantare(seriesvalid,checkitvalid);
+    zapvalid     = taresAllPointsvalid(s_1st,:);
     %RESIDUAL
-    targetResvalid = targetMatrixvalid-aprxINminGZvalid+taretalvalid;
+    targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
     
-    %targetMatrixGlobalvalid = targetMatrixvalid + taretalvalid; % just for testing ajm 5_7_18
+    %targetMatrixGlobalvalid = targetMatrixvalid + taresAllPointsvalid; % just for testing ajm 5_7_18
     
     resSquarevalid = dot(targetResvalid,targetResvalid)';
     
-    aprxINminGZvalidprime = targetMatrixvalid+taretalvalid;
+    aprxINminGZvalidprime = targetMatrixvalid+taresAllPointsvalid;
     
     %OUTPUTS FOR VALIDATION ALGEBRAIC SECTION
     for k=1:length(targetResvalid(1,:))
@@ -951,13 +916,13 @@ if balVal_FLAG == 1
             
             % SOLVE FOR TARES BY TAKING THE MEAN
             [~,s_1st,~] = unique(seriesvalid);
-            taretalvalid2 = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid)
+            taresAllPointsvalid2 = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid)
             
-            taresGRBFvalid = taretalvalid2(s_1st,:);
+            taresGRBFvalid = taresAllPointsvalid2(s_1st,:);
             tareHistvalid{u} = taresGRBFvalid;
             
-            targetRes2valid = targetMatrixvalid+taretalvalid2-aprxINminGZ2valid;      %0=b-Ax
-            targetMatrixGlobalGRBFvalid = targetMatrixvalid+taretalvalid2;  % temp for ajm 6_7_18
+            targetRes2valid = targetMatrixvalid+taresAllPointsvalid2-aprxINminGZ2valid;      %0=b-Ax
+            targetMatrixGlobalGRBFvalid = targetMatrixvalid+taresAllPointsvalid2;  % temp for ajm 6_7_18
             
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
