@@ -80,10 +80,6 @@ series0 = series;
 %                       END USER INPUT SECTION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% 6_14_18 ajm
-warning('off','all');
-%
-
 disp('Starting Calculations')
 if approach_FLAG == 1
     disp(' ');
