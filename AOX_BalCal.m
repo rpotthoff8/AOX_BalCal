@@ -118,7 +118,7 @@ globalZerosAllPoints0 = ones(numpts0,1)*globalZeros;
 dainputs0 = excessVec0 - globalZerosAllPoints0;
 
 switch model_FLAG
-    case 1
+    case {1,4}
         % Full Algebraic Model
         nterms = 2*dimFlag*(dimFlag+2);
     case 2
@@ -127,6 +127,17 @@ switch model_FLAG
     case 3
         % Linear Algebraic Model
         nterms = dimFlag;
+end
+
+%% Temporary; will be user input in the future
+if 1
+    model_FLAG = 4;
+    nterms = 2*dimFlag*(dimFlag+2);
+    customMatrix = randi(2,nterms,dimFlag)-1;
+end
+%%
+if model_FLAG == 4
+    customMatrix = [customMatrix; ones(nseries0,dimFlag)];
 end
 
 comIN0 = balCal_algEqns(model_FLAG,dainputs0,series0);
@@ -158,6 +169,9 @@ for lhs = 1:numLHS
     targetMatrix = targetMatrix0(sample,:);
     comIN = comIN0(sample,:);
     
+    [~,s_1st,~] = unique(series);
+    nseries = length(s_1st);
+    
     disp('  ')
     disp('Working ...')
     % Indirect approach uses the modeled voltage
@@ -169,8 +183,24 @@ for lhs = 1:numLHS
 %         end
 %     end  
 
-    %SOLUTION
-    xcalib = pinv(comIN)*targetMatrix;
+    xcalib = zeros(nterms+nseries0,dimFlag);
+    for k = 1:dimFlag
+        comIN_k = comIN;
+        
+        if model_FLAG == 4
+            comIN_k(:,customMatrix(:,k)==0) = [];
+        end
+        
+        %SOLUTION
+        xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
+        
+        if model_FLAG == 4
+            xcalib(customMatrix(:,k)==1,k) = xcalib_k;
+        else
+            xcalib(:,k) = xcalib_k;
+        end
+        
+    end
     
     if LHS_Flag == 1
         x_all(:,:,lhs) = xcalib;
@@ -308,7 +338,7 @@ if balOut_FLAG == 1
         for i=1:dimFlag
             biggee(:,i) = 0;
         end
-        [comIN,comLZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series0,nseries, dainputs, dalz, biggee);
+        [comIN,comLZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series0,nseries0, dainputs, dalz, biggee);
         
         comINminLZ = comIN-comLZ;
         
@@ -422,7 +452,7 @@ if print_FLAG == 1
         numCombin(coeffCount) = coeffCount;
     end
     numCombinName = cellstr(num2str(numCombin'));
-    numCombinName(nterms+nseries+1) = cellstr('Intercept');
+    numCombinName(nterms+nseries0+1) = cellstr('Intercept');
     
     calib_mean_algebraic_Resids_sqrd = array2table(resSquare'./numpts,'VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop,'VariableNames',loadlist(1:dimFlag))
