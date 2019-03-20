@@ -103,9 +103,11 @@ disp('Starting Calculations')
 if exist('loadlabels','var')
     loadlist = loadlabels;
     voltagelist = voltlabels;
+    reslist = strcat('res',loadlist);
 else
     loadlist = {'NF','BM','S1','S2','RM','AF','PLM', 'PCM', 'MLM', 'MCM'};
     voltagelist = {'rNF','rBM','rS1','rS2','rRM','rAF','rPLM','rPCM','rMLM','rMCM'};
+    reslist = strcat('res',loadlist);
 end
 
 if corr_FLAG == 1
@@ -223,8 +225,6 @@ aprxIN = comIN0*xcalib;
 %RESIDUAL
 targetRes = targetMatrix0-aprxIN;      %0=b-Ax
 
-reslist = {'resNF','resBM','resS1','resS2','resRM','resAF','resPLM',...
-    'resPCM', 'resMLM', 'resMCM'};
 if rescorr_FLAG == 1
     figure('Name','Residual correlation plot','NumberTitle','off');
     correlationPlot(excessVec0, targetRes, voltagelist, reslist);
