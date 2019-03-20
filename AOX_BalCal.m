@@ -12,7 +12,7 @@ clc;
 clearvars;
 close all;
 workspace;
-disp('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.')
+fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.\n')
 % The mean of the approximation residual (testmatrix minus local approximation) for each section is taken as the tare for that channel and section. The tare is subtracted from the global values to make the local loads. The accuracy of the validation, when compared to the known loads, is very sensitive to the value of the tares (which is unknown) and NOT the order of the calibration equations.
 % Because of measurement noise in the voltage the APPROXIMATION tare is computed by post-processing. The average and stddev is taken of all channels per section. If the stddev is less than 0.25% of the capacity for any station the tare is equal to the average for that channel. If the stddev is greater than 0.25% then the approximation at the local zero is taken as the tare for that channel and section. The global approximation is left alone but the tare is subtracted from the values to make the local loads. Line 3133.
 %
@@ -74,6 +74,7 @@ LHSp = out.LHSp; %Percent of data used to create sample.
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Load data and characterize series
 load(out.savePathcal,'-mat');
 series0 = series;
 [~,s_1st0,s_id0] = unique(series0);
@@ -83,20 +84,14 @@ nseries0 = length(s_1st0);
 % loadlabes, voltlabels (if they exist)
 % loadCapacities, natzeros, targetMatrix0, excessVec0, series0
 
+% Load the custom equation matrix if using a custom algebraic model
+% SEE: CustomEquationMatrixTemplate.csv
 if model_FLAG == 4
     customMatrix = out.customMatrix;
     customMatrix = [customMatrix; ones(nseries0,dimFlag)];
 end
 
-disp('Starting Calculations')
-% if approach_FLAG == 1
-%     disp(' ');
-%     disp('Using the Indirect Approach for Calibration');
-% else
-%     disp(' ');
-%     disp('Using the Direct Approach for Calibration');
-% end
-
+% Load data labels if present, otherwise use default values.
 if exist('loadlabels','var')
     loadlist = loadlabels;
     voltagelist = voltlabels;
@@ -107,22 +102,25 @@ else
     reslist = strcat('res',loadlist);
 end
 
+% Prints output vs. input and calculates correlations
 if corr_FLAG == 1
     figure('Name','Correlation plot','NumberTitle','off');
     correlationPlot(targetMatrix0, excessVec0, loadlist, voltagelist);
 end
 
-%find the average natural zeros (also called global zeros)
+% Finds the average  of the natural zeros (called global zeros)
 globalZeros = mean(natzeros);
 
-[localZeros0,localZerosAllPoints0] = localzeros(series0,excessVec0);
-globalZerosAllPoints0 = ones(numpts0,1)*globalZeros;
+% Subtracts global zeros from signal.
+dainputs0 = excessVec0 - ones(numpts0,1)*globalZeros;
 
-dainputs0 = excessVec0 - globalZerosAllPoints0;
-
+% Determines how many terms are in the algebraic model; this will help
+% determine the size of the calibration matrix
 switch model_FLAG
     case {1,4}
-        % Full Algebraic Model
+        % Full Algebraic Model or Custom Algebraic Model
+        % The Custom model calculates all terms, and then excludes them in
+        % the calibration process as determined by the customMatrix.
         nterms = 2*dimFlag*(dimFlag+2);
     case 2
         % Truncated Algebraic Model
@@ -132,40 +130,50 @@ switch model_FLAG
         nterms = dimFlag;
 end
 
+% Creates the algebraic combination terms of the inputs.
+% Also creates intercept terms; a different intercept for each series.
 comIN0 = balCal_algEqns(model_FLAG,dainputs0,series0);
-
+ 
 if LHS_FLAG == 0
     numLHS = 1;
 end
 lhs_check = zeros(length(excessVec0),1);
-ind = 1:length(excessVec0(:,1));
+lhs_ind = 1:length(excessVec0(:,1));
 
 if LHS_FLAG == 1
-    disp('  ')
-    disp('Number of LHS Iterations Selected =')
-    disp(numLHS);
+    fprintf('\nNumber of LHS Iterations Selected: %i\n',numLHS)
 end
 
+fprintf('\nStarting Calculations\n')
+% if approach_FLAG == 1
+%     fprintf('\n\nUsing the Indirect Approach for Calibration');
+% else
+%     fprintf('\n\nUsing the Direct Approach for Calibration');
+% end
+
+%%
 for lhs = 1:numLHS
     
+    % Creates an LHS sub-sample of the data.
     if LHS_FLAG == 1
         sample = AOX_LHS(series0,excessVec0,LHSp);
         lhs_check(sample) = 1;
-        ind(find(lhs_check-1)); % This line outputs which data points haven't been sampled yet
+        lhs_ind(find(lhs_check-1)); % This line outputs which data points haven't been sampled yet
         pct_sampled = sum(lhs_check)/length(lhs_check); % This line outputs what percentage of points have been sampled
     else
         sample = [1:length(series0)]';
     end
     
+    % Uses the sampling indices in "sample" to create the subsamples
     series = series0(sample);
     targetMatrix = targetMatrix0(sample,:);
     comIN = comIN0(sample,:);
     
+    % Characterizes the series in the subsamples
     [~,s_1st,~] = unique(series);
     nseries = length(s_1st);
     
-    disp('  ')
-    disp('Working ...')
+    fprintf('\nWorking ...\n')
     % Indirect approach uses the modeled voltage
 %     if approach_FLAG == 1
 %         if balCal_FLAG == 2
@@ -176,6 +184,9 @@ for lhs = 1:numLHS
 %     end  
 
     xcalib = zeros(nterms+nseries0,dimFlag);
+    % Solves for the coefficient one column at a time.
+    % This is to account for Custom Models, where the terms may be
+    % different depending on the channel.
     for k = 1:dimFlag
         comIN_k = comIN;
         
@@ -183,7 +194,7 @@ for lhs = 1:numLHS
             comIN_k(:,customMatrix(:,k)==0) = [];
         end
         
-        %SOLUTION
+        % SOLUTION
         xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
         
         if model_FLAG == 4
@@ -198,14 +209,15 @@ for lhs = 1:numLHS
         x_all(:,:,lhs) = xcalib;
     end
 end
-
 if LHS_FLAG == 1
     xcalib = mean(x_all,3);
     xcalib_std = std(x_all,[],3);
 end
+
+%%
+% Splits xcalib into Coefficients and Intercepts (which are negative Tares)
 coeff = xcalib(1:nterms,:);
 tares = -xcalib(nterms+1:end,:);
-taresAllPoints = tares(s_id0,:);
 
 %  Creates Matrix for the volts to loads
 APPROX_AOX_COEFF_MATRIX = coeff;
@@ -215,22 +227,23 @@ if excel_FLAG == 1
     csvwrite(filename,xapprox)
 end
 
-%APPROXIMATION
-%define the approximation for inputs minus global zeros
+% APPROXIMATION
+% define the approximation for inputs minus global zeros
 aprxIN = comIN0*xcalib;
 
-%RESIDUAL
-targetRes = targetMatrix0-aprxIN;      %0=b-Ax
+% RESIDUAL
+targetRes = targetMatrix0-aprxIN;
 
+% Prints residual vs. input and calculates correlations
 if rescorr_FLAG == 1
     figure('Name','Residual correlation plot','NumberTitle','off');
     correlationPlot(excessVec0, targetRes, voltagelist, reslist);
 end
 
-%find the sum of squares of the residual using the dot product
-resSquare = dot(targetRes,targetRes)';
-%AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
+% Calculates the Sum of Squares of the reisudal
+resSqaure = sum(targetRes.^2);
 
+%%
 % Identify Outliers After Filtering
 % (Threshold approach) ajm 8/2/17
 if balOut_FLAG == 1
@@ -274,9 +287,9 @@ if balOut_FLAG == 1
     
     % Use the reduced input and target files
     if zeroed_FLAG == 1
-        disp(' ************************************************************************ ');
-        disp('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
-        disp(' ************************************************************************ ');
+        fprintf(' ************************************************************************ ');
+        fprintf('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
+        fprintf(' ************************************************************************ ');
         
         % Mark the outliers values, store and use for recalculation:
         zeroed_targetMatrix = targetMatrix0;
@@ -384,7 +397,6 @@ ratioGoop(isnan(ratioGoop)) = realmin;
 theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
 
 [~,s_1st,~] = unique(series0);
-taresALGB = taresAllPoints(s_1st,:);
 
 %OUTPUT HISTOGRAM PLOTS
 if hist_FLAG == 1
@@ -414,19 +426,19 @@ if print_FLAG == 1
     
     %% Identify the Possible Outliers
     if balOut_FLAG == 1
-        disp(' ***** ');
-        disp(' ');
-        disp('Number of Outliers =');
-        disp(num_outliers);
-        disp('Outliers % of Data =');
-        disp(prcnt_outliers);
+        fprintf(' ***** ');
+        fprintf(' ');
+        fprintf('Number of Outliers =');
+        fprintf(num_outliers);
+        fprintf('Outliers % of Data =');
+        fprintf(prcnt_outliers);
     end
     
     % Recalculated Calibration with Reduced Matrices
     if zeroed_FLAG == 1
-        disp(' ************************************************************************ ');
-        disp('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
-        disp(' ************************************************************************ ');
+        fprintf(' ************************************************************************ ');
+        fprintf('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
+        fprintf(' ************************************************************************ ');
     end
     
     
@@ -435,7 +447,7 @@ if print_FLAG == 1
     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
     
     %Should I use strtrim()  ? -AAM 042116
-    calib_algebraic_Tares = array2table(taresALGB,'VariableNames',loadlist(1:dimFlag))
+    calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag))
     
     coefficientsALGB = [xcalib;intercepts];
     for coeffCount=1:size(coefficientsALGB(:,1),1)
@@ -459,10 +471,10 @@ end
 
 if excel_FLAG == 1
     % Output results to an excel file
-    disp('  ');
-    disp('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
+    fprintf('  ');
+    fprintf('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
     % CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ;
-    disp(' ');
+    fprintf(' ');
     
     filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
     csvwrite(filename,aprxINminGZ)
@@ -605,9 +617,9 @@ if balCal_FLAG == 2
     end
     
     if excel_FLAG == 1
-        disp(' ***** ');
-        disp('  ');
-        disp('ALG+GRBF CALIBRATION MODEL GLOBAL LOAD APPROXIMATION: Check CALIB_AOX_GLOBAL_GRBF_RESULT.csv file');
+        fprintf(' ***** ');
+        fprintf('  ');
+        fprintf('ALG+GRBF CALIBRATION MODEL GLOBAL LOAD APPROXIMATION: Check CALIB_AOX_GLOBAL_GRBF_RESULT.csv file');
         
         filename = 'CALIB_AOX_GLOBAL_GRBF_RESULT.csv';
         csvwrite(filename,aprxINminGZ2)
@@ -625,10 +637,10 @@ if balCal_FLAG == 2
     
     if print_FLAG == 1
         
-        disp(' ');
-        disp('Number of GRBFs =');
-        disp(numBasis);
-        disp(' ');
+        fprintf(' ');
+        fprintf('Number of GRBFs =');
+        fprintf(numBasis);
+        fprintf(' ');
         
         twoSigmaGRBF = standardDev'.*2;
         calib_GRBF_2Sigma = array2table(twoSigmaGRBF,'VariableNames',loadlist(1:dimFlag))
@@ -792,33 +804,33 @@ if balVal_FLAG == 1
         %
         % Full Algebraic Model
         if model_FLAG == 1
-            disp(' ');
-            disp('%%%%%%%%%%%%%%%%%');
-            disp(' ');
-            disp('VALIDATION RESULTS: Full Algebraic Model');
+            fprintf(' ');
+            fprintf('%%%%%%%%%%%%%%%%%');
+            fprintf(' ');
+            fprintf('VALIDATION RESULTS: Full Algebraic Model');
         end
         % Truncated Algebraic Model
         if model_FLAG == 2
-            disp(' ');
-            disp('%%%%%%%%%%%%%%%%%');
-            disp(' ');
-            disp('VALIDATION RESULTS: Truncated Algebraic Model');
+            fprintf(' ');
+            fprintf('%%%%%%%%%%%%%%%%%');
+            fprintf(' ');
+            fprintf('VALIDATION RESULTS: Truncated Algebraic Model');
         end
         % Linear Algebraic Model
         if model_FLAG == 3
-            disp(' ');
-            disp('%%%%%%%%%%%%%%%%%');
-            disp(' ');
-            disp('VALIDATION RESULTS: Linear Algebraic Model');
+            fprintf(' ');
+            fprintf('%%%%%%%%%%%%%%%%%');
+            fprintf(' ');
+            fprintf('VALIDATION RESULTS: Linear Algebraic Model');
         end
         
-        disp('  ');
-        disp('Validation data file read =');
-        disp(out.savePathval);
-        disp('  ');
-        disp('Number of validation data points =');
-        disp(numptsvalid);
-        disp('  ');
+        fprintf('  ');
+        fprintf('Validation data file read =');
+        fprintf(out.savePathval);
+        fprintf('  ');
+        fprintf('Number of validation data points =');
+        fprintf(numptsvalid);
+        fprintf('  ');
         
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag))
         
@@ -835,8 +847,8 @@ if balVal_FLAG == 1
     
     if excel_FLAG == 1
         %%%%
-        disp('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
-        disp(' ');
+        fprintf('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
+        fprintf(' ');
         
         filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
         csvwrite(filename,aprxINminGZvalid)
@@ -986,10 +998,10 @@ if balVal_FLAG == 1
         end
         if print_FLAG == 1
             %
-            disp(' ***** ');
-            disp(' ');
-            disp('Number of GRBFs =');
-            disp(numBasis);
+            fprintf(' ***** ');
+            fprintf(' ');
+            fprintf('Number of GRBFs =');
+            fprintf(numBasis);
             
             
             twoSigmaGRBFvalid = standardDevvalid'.*2;
@@ -1027,9 +1039,9 @@ if balVal_FLAG == 1
         %end
         
         if excel_FLAG == 1
-            disp(' ');
-            disp('ALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION: Check VALID_AOX_GLOBAL_GRBF_RESULT.csv file');
-            disp(' ');
+            fprintf(' ');
+            fprintf('ALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION: Check VALID_AOX_GLOBAL_GRBF_RESULT.csv file');
+            fprintf(' ');
             
             filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
             csvwrite(filename,aprxINminGZ2valid)
@@ -1142,20 +1154,20 @@ if balApprox_FLAG == 1
     
     %%%%%%
     if excel_FLAG == 1
-        disp(' ');
-        disp('%%%%%%%%%%%%%%%%%');
-        disp(' ');
-        disp('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
+        fprintf(' ');
+        fprintf('%%%%%%%%%%%%%%%%%');
+        fprintf(' ');
+        fprintf('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
         
         filename = 'Global_ALG_Approx.csv';
         csvwrite(filename,aprxINminGZapprox)
         
     else
         
-        disp(' ');
-        disp('%%%%%%%%%%%%%%%%%');
-        disp(' ');
-        disp('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
+        fprintf(' ');
+        fprintf('%%%%%%%%%%%%%%%%%');
+        fprintf(' ');
+        fprintf('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
     end
     %%%%%%
     
@@ -1229,17 +1241,17 @@ if balApprox_FLAG == 1
         
         
         if excel_FLAG == 1
-            disp(' ');
-            disp('%%%%%%%%%%%%%%%%%');
-            disp(' ');
-            disp('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
+            fprintf(' ');
+            fprintf('%%%%%%%%%%%%%%%%%');
+            fprintf(' ');
+            fprintf('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
             
             filename = 'Global_ALG+GRBF_Approx.csv';
             csvwrite(filename,aprxINminGZ2approx)
         else
-            disp(' ');
-            disp('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
-            disp(' ');
+            fprintf(' ');
+            fprintf('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
+            fprintf(' ');
         end
         
     end
@@ -1247,8 +1259,8 @@ if balApprox_FLAG == 1
     %End Approximation Option
 end
 
-disp('  ')
-disp('Calculations Complete.')
+fprintf('  ')
+fprintf('Calculations Complete.')
 
 %
 %
