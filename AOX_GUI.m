@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 12-Feb-2019 13:50:51
+% Last Modified by GUIDE v2.5 20-Mar-2019 13:28:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -144,9 +144,15 @@ if exist(fileName,'file')
             case 'approximate', actionpanel_SelectionChangeFcn(handles.approximate, eventdata, handles)
         end
         
+        
         set(handles.full,'Value',default.full);
         set(handles.truncated,'Value',default.truncated);
         set(handles.linear,'Value',default.linear);
+        set(handles.custom,'Value',default.custom);
+        set(handles.customPath,'String',default.customPath);
+        if default.custom
+            modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
+        end
         
         set(handles.direct,'Value',default.direct);
         set(handles.indirect,'Value',default.indirect);
@@ -251,10 +257,14 @@ outStruct.corr = get(handles.corr_FLAGcheck,'Value');
 outStruct.rescorr = get(handles.rescorr_FLAGcheck,'Value');
 outStruct.excel = get(handles.excel_FLAGcheck,'Value');
 
-switch get(get(handles.modelPanel,'SelectedObject'),'Tag');
+switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
     case 'full', outStruct.model = 1;
     case 'truncated', outStruct.model = 2;
     case 'linear', outStruct.model = 3;
+    case 'custom'
+        outStruct.model = 4;
+        customPath = get(handles.customPath,'String');
+        outStruct.customMatrix = csvread(customPath,1,1);
 end
 
 outStruct.grbf = 1 + get(handles.grbf,'Value');
@@ -364,25 +374,13 @@ function modelPanel_SelectionChangeFcn(hObject, eventdata, handles)
 %	OldValue: handle of the previously selected object or empty if none was selected
 %	NewValue: handle of the currently selected object
 % handles    structure with handles and user data (see GUIDATA)
-if (hObject == handles.full)
-    %set(handles.numBasisIn, 'String', 'First');
+if (hObject == handles.custom)
+    set(handles.customPath, 'Enable', 'on');
+    set(handles.customFind, 'Enable', 'on');
 else
-    %set(handles.numBasisIn, 'String', 'Second');
+    set(handles.customPath, 'Enable', 'off');
+    set(handles.customFind, 'Enable', 'off');
 end
-
-function calcsv_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in modelPanel
-% eventdata  structure with the following fields (see UIBUTTONGROUP)
-%	EventName: string 'SelectionChanged' (read only)
-%	OldValue: handle of the previously selected object or empty if none was selected
-%	NewValue: handle of the currently selected object
-% handles    structure with handles and user data (see GUIDATA)
-if (hObject == handles.direct)
-    %set(handles.numBasisIn, 'String', 'First');
-else
-    %set(handles.numBasisIn, 'String', 'Second');
-end
-
 
 % --- Executes on button press in cancelbutton.
 function cancelbutton_Callback(hObject, eventdata, handles)
@@ -393,8 +391,6 @@ outStruct.cancel = 1;
 handles.output = outStruct;
 guidata(hObject,handles);
 uiresume(handles.figure1);
-
-
 
 function calPath_Callback(hObject, eventdata, handles)
 % hObject    handle to calPath (see GCBO)
@@ -1204,6 +1200,8 @@ default.appRange{4,2} = get(handles.a42,'String');
 default.full = get(handles.full,'Value');
 default.truncated = get(handles.truncated,'Value');
 default.linear = get(handles.linear,'Value');
+default.custom = get(handles.custom,'Value');
+default.customPath = get(handles.customPath,'String');
 
 default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
@@ -1791,3 +1789,44 @@ function excel_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of excel_FLAGcheck
+
+
+
+function customPath_Callback(hObject, eventdata, handles)
+% hObject    handle to customPath (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of customPath as text
+%        str2double(get(hObject,'String')) returns contents of customPath as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function customPath_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to customPath (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in customFind.
+function customFind_Callback(hObject, eventdata, handles)
+% hObject    handle to customFind (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+[FileName, PathName] = uigetfile('*.csv');
+if FileName ~= 0
+    [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
+    CurrentPath = [CurrentPath,filesep];
+    if strcmp(CurrentPath,PathName)
+        FullPath = FileName;
+    else
+        FullPath = [PathName,FileName];
+    end
+    set(handles.customPath,'String',FullPath)
+end

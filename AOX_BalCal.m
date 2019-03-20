@@ -79,9 +79,17 @@ LHSp = out.LHSp; %Percent of data used to create sample.
 
 load(out.savePathcal,'-mat');
 series0 = series;
+[~,s_1st0,s_id0] = unique(series0);
+nseries0 = length(s_1st0);
+[numpts0, dimFlag] = size(excessVec0);
 % Loads:
 % loadlabes, voltlabels (if they exist)
 % loadCapacities, natzeros, targetMatrix0, excessVec0, series0
+
+if model_FLAG == 4
+    customMatrix = out.customMatrix;
+    customMatrix = [customMatrix; ones(nseries0,dimFlag)];
+end
 
 disp('Starting Calculations')
 % if approach_FLAG == 1
@@ -108,10 +116,6 @@ end
 %find the average natural zeros (also called global zeros)
 globalZeros = mean(natzeros);
 
-[~,s_1st0,s_id0] = unique(series0);
-nseries0 = length(s_1st0);
-[numpts0, dimFlag] = size(excessVec0);
-
 [localZeros0,localZerosAllPoints0] = localzeros(series0,excessVec0);
 globalZerosAllPoints0 = ones(numpts0,1)*globalZeros;
 
@@ -127,17 +131,6 @@ switch model_FLAG
     case 3
         % Linear Algebraic Model
         nterms = dimFlag;
-end
-
-%% Temporary; will be user input in the future
-if 1
-    model_FLAG = 4;
-    nterms = 2*dimFlag*(dimFlag+2);
-    customMatrix = randi(2,nterms,dimFlag)-1;
-end
-%%
-if model_FLAG == 4
-    customMatrix = [customMatrix; ones(nseries0,dimFlag)];
 end
 
 comIN0 = balCal_algEqns(model_FLAG,dainputs0,series0);
