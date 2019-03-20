@@ -1,6 +1,7 @@
 # Data files #
 ##############
 *.csv
+!CustomEquationMatrixTemplate.csv
 *.txt
 *.pdf
 
