@@ -1,4 +1,4 @@
-% Copyright 2018 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.
+% Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.
 %
 %balanceCalibration_with_RBF_8D.m
 %requires "balCal_meritFunction.m" to run
@@ -12,67 +12,64 @@ clc;
 clearvars;
 close all;
 workspace;
-disp('Copyright 2018 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.')
+disp('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.')
 % The mean of the approximation residual (testmatrix minus local approximation) for each section is taken as the tare for that channel and section. The tare is subtracted from the global values to make the local loads. The accuracy of the validation, when compared to the known loads, is very sensitive to the value of the tares (which is unknown) and NOT the order of the calibration equations.
 % Because of measurement noise in the voltage the APPROXIMATION tare is computed by post-processing. The average and stddev is taken of all channels per section. If the stddev is less than 0.25% of the capacity for any station the tare is equal to the average for that channel. If the stddev is greater than 0.25% then the approximation at the local zero is taken as the tare for that channel and section. The global approximation is left alone but the tare is subtracted from the values to make the local loads. Line 3133.
 %
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       USER INPUT SECTION
-%
 out = AOX_GUI;
 if out.cancel == 1
     return
 end
-%TO SELECT Algebraic Model                         set balCal_FLAG = 1;
-%TO SELECT Algebraic and GRBF Model                set balCal_FLAG = 2;
+%TO SELECT Algebraic Model                             set balCal_FLAG = 1;
+%TO SELECT Algebraic and GRBF Model                    set balCal_FLAG = 2;
 balCal_FLAG = out.grbf;
-%
-%TO SELECT INDIRECT APPROACH         set approach_FLAG = 1;
-approach_FLAG = 0;%out.approach;
-%
-%SELECT ALGEBRAIC MODEL     set model_FLAG = 1 (full), 2 (trun), or 3 (linear)
-model_FLAG = out.model;
-%
-%TO OUTPUT LOAD PERFORMANCE PARAMETERS TO SCREEN        set print_FLAG = 1;
-%TO OUTPUT INTERMEDIATE PERFORMANCE PARAMETERS TO SCREEN set print_FLAG = 2;
-print_FLAG = out.tables;
-%
-%TO OUTPUT DATA TO EXCEL (CSV)                          set excel_FLAG = 1;
-excel_FLAG = out.excel;
-%
-%TO OUTPUT CORRELATION PLOTS                       set corr_FLAG = 1;
-corr_FLAG = out.corr;
-%
-%TO OUTPUT CORRELATION PLOTS                       set rescorr_FLAG = 1;
-rescorr_FLAG = out.rescorr;
-%
-%TO OUTPUT RESIDUALS                               set rest_FLAG = 1;
-res_FLAG = out.res;
-%
-%TO OUTPUT HISTOGRAMS                              set hist_FLAG = 1;
-hist_FLAG = out.hist;
-%
-%TO SELECT Validation of the Model                 set balVal_FLAG = 1;
-balVal_FLAG = out.valid;
-%
-%TO SELECT Approximation from Cal Data             set balApprox_FLAG = 1;
-balApprox_FLAG = out.approx;
-%
 %DEFINE THE NUMBER OF BASIS FUNCTIONS
 numBasis = out.basis;
 %
-%TO IDENTIFY OUTLIERS                              set balOut_FLAG = 1;
-balOut_FLAG = out.outlier;
-numSTD = out.numSTD;          %Number of standard deviations for outlier threshold.
+%TO SELECT INDIRECT APPROACH                         set approach_FLAG = 1;
+approach_FLAG = 0;%out.approach;
 %
-%TO USE THE INPUT-OUTPUT MATRICES WITHOUT OUTLIERS   set zeroed_FLAG = 1;
+%SELECT ALGEBRAIC MODEL
+%          set model_FLAG = 1 (full), 2 (trunc), 3 (linear), or 4 (custom);
+model_FLAG = out.model;
+%
+%TO PRINT LOAD PERFORMANCE PARAMETERS                   set print_FLAG = 1;
+print_FLAG = out.tables;
+%
+%TO SAVE DATA TO CSV                                    set excel_FLAG = 1;
+excel_FLAG = out.excel;
+%
+%TO PRINT INPUT/OUTPUT CORRELATION PLOTS                 set corr_FLAG = 1;
+corr_FLAG = out.corr;
+%
+%TO PRINT INPUT/RESIDUALS CORRELATION PLOTS           set rescorr_FLAG = 1;
+rescorr_FLAG = out.rescorr;
+%
+%TO PRINT ORDER/RESIDUALS PLOTS                          set rest_FLAG = 1;
+res_FLAG = out.res;
+%
+%TO PRINT RESIDUAL HISTOGRAMS                            set hist_FLAG = 1;
+hist_FLAG = out.hist;
+%
+%TO SELECT Validation of the Model                     set balVal_FLAG = 1;
+balVal_FLAG = out.valid;
+%
+%TO SELECT Approximation from Cal Data              set balApprox_FLAG = 1;
+balApprox_FLAG = out.approx;
+%
+%TO FLAG POTENTIAL OUTLIERS                            set balOut_FLAG = 1;
+balOut_FLAG = out.outlier;
+numSTD = out.numSTD;  %Number of standard deviations for outlier threshold.
+%
+%TO REMOVE POTENTIAL OUTLIERS                          set zeroed_FLAG = 1;
 zeroed_FLAG = out.zeroed;
 %
-%TO USE LATIN HYPERCUBE SAMPLING
-LHS_Flag = out.lhs;
+%TO USE LATIN HYPERCUBE SAMPLING set                          LHS_FLAG = 1;
+LHS_FLAG = out.lhs;
 numLHS = out.numLHS; %Number of times to iterate.
 LHSp = out.LHSp; %Percent of data used to create sample.
-% A mean of the coefficients is calculated afterwards.
 %
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,13 +134,13 @@ end
 
 comIN0 = balCal_algEqns(model_FLAG,dainputs0,series0);
 
-if LHS_Flag == 0
+if LHS_FLAG == 0
     numLHS = 1;
 end
 lhs_check = zeros(length(excessVec0),1);
 ind = 1:length(excessVec0(:,1));
 
-if LHS_Flag == 1
+if LHS_FLAG == 1
     disp('  ')
     disp('Number of LHS Iterations Selected =')
     disp(numLHS);
@@ -151,7 +148,7 @@ end
 
 for lhs = 1:numLHS
     
-    if LHS_Flag == 1
+    if LHS_FLAG == 1
         sample = AOX_LHS(series0,excessVec0,LHSp);
         lhs_check(sample) = 1;
         ind(find(lhs_check-1)); % This line outputs which data points haven't been sampled yet
@@ -197,12 +194,12 @@ for lhs = 1:numLHS
         
     end
     
-    if LHS_Flag == 1
+    if LHS_FLAG == 1
         x_all(:,:,lhs) = xcalib;
     end
 end
 
-if LHS_Flag == 1
+if LHS_FLAG == 1
     xcalib = mean(x_all,3);
     xcalib_std = std(x_all,[],3);
 end
@@ -1043,7 +1040,6 @@ end
 if balApprox_FLAG == 1
     %
     %
-    % Copyright ©2016 Andrew Meade and Ali Arya Mokhtarzadeh.  All Rights Reserved.
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                        APPROXIMATION SECTION      AJM 6/29/17           %
@@ -1172,7 +1168,6 @@ if balApprox_FLAG == 1
     %
     %
     %
-    % Copyright ©2016 Andrew Meade and Ali Arya Mokhtarzadeh.  All Rights Reserved.
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                    RBF SECTION FOR APPROXIMATION     AJM 6/29/17                         %
@@ -1256,7 +1251,6 @@ disp('  ')
 disp('Calculations Complete.')
 
 %
-% Copyright ©2016 Andrew Meade and Ali Arya Mokhtarzadeh.  All Rights Reserved.
 %
 
 %toc
