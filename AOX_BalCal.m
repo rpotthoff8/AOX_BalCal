@@ -255,24 +255,7 @@ for lhs = 1:numLHS
     %    xcalib = pinv(comINminLZ')*targetMatrix;             % alternate solution method
     %    xcalib = pinv(comINminLZ',1e-2)*targetMatrix;             % alternate solution method
     
-    if Boot_Flag==1
-    %%start bootstrapfunction
-    bootalpha=.05;
-    nbootstrap=numBoot;
-    f=@zapFinder;
-    [fout]=f(comINminLZ',targetMatrix,series,excessVec0,targetMatrix0,globalZerosAllPoints,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
-    fzap=fout(1:nseries,:);
-    faprxLZminGZ_series=fout(size(fzap,1)+1:size(fzap,1)+nseries,:);
-    fxcalib=fout(size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
-
-    f_ci=bootci(nbootstrap,{f,comINminLZ',targetMatrix,series,excessVec0,targetMatrix0,globalZerosAllPoints,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries}, 'type', 'cper','alpha',bootalpha);
-    fzap_ci=f_ci(:,1:nseries,:);
-    faprxLZminGZ_ci=f_ci(:,size(fzap,1)+1:size(fzap,1)+nseries,:);
-    fxcalib_ci=f_ci(:,size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
-    else
-    fxcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));      
-    end
-    % END: bootstrap section
+   
     
     
     
@@ -305,7 +288,25 @@ for lhs = 1:numLHS
         x_all(:,:,lhs) = xcalib;
     end
 end
+ if Boot_Flag==1
+    %%start bootstrapfunction
+    bootalpha=.05;
+    nbootstrap=numBoot;
+    f=@zapFinder;
+    [fout]=f(comINminLZ',targetMatrix,series,excessVec0,targetMatrix0,globalZerosAllPoints,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries);
+    fzap=fout(1:nseries,:);
+    faprxLZminGZ_series=fout(size(fzap,1)+1:size(fzap,1)+nseries,:);
+    fxcalib=fout(size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
 
+    f_ci=bootci(nbootstrap,{f,comINminLZ',targetMatrix,series,excessVec0,targetMatrix0,globalZerosAllPoints,localZerosAllPoints,dimFlag,model_FLAG,nterms,numpts,lasttare,nseries}, 'type', 'cper','alpha',bootalpha);
+    fzap_ci=f_ci(:,1:nseries,:);
+    faprxLZminGZ_ci=f_ci(:,size(fzap,1)+1:size(fzap,1)+nseries,:);
+    fxcalib_ci=f_ci(:,size(fzap,1)+size(faprxLZminGZ_series)+1:size(fout,1),:);
+    else
+    fxcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));      
+    end
+    % END: bootstrap section
+    
 if LHS_Flag == 1
     xcalib = mean(x_all,3);
     xcalib_std = std(x_all,[],3);
@@ -746,6 +747,7 @@ if balCal_FLAG == 2
     aprxINminGZ2 = aprxINminGZ;
      if Volt_Flag==1
      aprxINminGZ2_uncertsquare=zeros(size(aprxINminGZ2,1),size(aprxINminGZ2,2));
+     aprxINminGZ2_uncertsquare_2=zeros(size(aprxINminGZ2,1),size(aprxINminGZ2,2));
      end
     etaHist = cell(numBasis,1);
     aprxINminGZ_Hist = cell(numBasis,1);
@@ -770,6 +772,7 @@ if balCal_FLAG == 2
                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
                 if Volt_Flag==1
                 etapartial(r,s)=2.*dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),ones(size(dainputscalib(r,:),1),size(dainputscalib(r,:),2))); %UNCERT Added
+                etapartial_2(r,:,s)=2.*(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:)); %UNCERT Added
                 end
             end
 
@@ -785,7 +788,12 @@ if balCal_FLAG == 2
             rbfc_INminLZ(:,s) = coeff(s)*rbfINminLZ(:,s);
             rbfc_INminGZ(:,s) = coeff(s)*rbfINminGZ(:,s);
             if Volt_Flag==1
-             rbfc_INminGZpartial(:,s) = coeff(s)*exp(eta(:,s)*log(abs(w(s)))).*etapartial(:,s);
+             rbfc_INminGZpartial(:,s) = coeff(s)*exp(eta(:,s)*log(abs(w(s)))).*log(abs(w(s))).*etapartial(:,s);
+%              rbfc_INminGZpartial(:,s) = coeff(s)*exp(eta(:,s)*log(abs(w(s)))).*etapartial(:,s);
+            for i=1:size(etapartial_2,2)
+                rbfc_INminGZpartial_2(:,i,s) = coeff(s)*exp(eta(:,s)*log(abs(w(s)))).*log(abs(w(s))).*etapartial_2(:,i,s);
+            end
+            
             end
             rbfc_LZminGZ(:,s) = coeff(s)*rbfLZminGZ(:,s); %to find tares AAM042016
         end
@@ -798,7 +806,15 @@ if balCal_FLAG == 2
         %update the approximation
         aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
         if Volt_Flag==1
+        rbfc_INminGZ_uncertsquare=zeros(size(rbfc_INminGZ,1),size(rbfc_INminGZ,2));
+            for i=1:s
+            for j=1:size(etapartial_2,2)
+                rbfc_INminGZ_uncertsquare(:,i)=rbfc_INminGZ_uncertsquare(:,i)+rbfc_INminGZpartial_2(:,j,i).^2;
+            end
+            end
+       
         aprxINminGZ2_uncertsquare=aprxINminGZ2_uncertsquare+(rbfc_INminGZpartial.^2).*(voltTrust/2)^2; %ADDED
+        aprxINminGZ2_uncertsquare_2=aprxINminGZ2_uncertsquare+(rbfc_INminGZ_uncertsquare).*(voltTrust/2)^2; %ADDED
         end
         aprxINminGZ_Hist{u} = aprxINminGZ2;
 
@@ -818,13 +834,14 @@ if balCal_FLAG == 2
     if Uncert_Flag==1
     RBFcarloflag=1;
     if RBFcarloflag==1
-    nCarlo=10;
-    [taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist,aprxINminGZ,series,targetMatrix,s_1st,dimFlag,globalZeros,numBasis,voltTrust);
+    nCarlo=2000;
+    [taresGRBF_std,aprxINminGZ2_std,rbfc_INminGZ_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist,aprxINminGZ,series,targetMatrix,s_1st,dimFlag,globalZeros,numBasis,voltTrust);
     end
     end
     
     if Volt_Flag==1
      aprxINminGZ2_uncert=sqrt(aprxINminGZ2_uncertsquare);
+     aprxINminGZ2_uncert_2=sqrt(aprxINminGZ2_uncertsquare_2);
     end
     
     for k2=1:length(targetRes(1,:))
@@ -1761,7 +1778,7 @@ end
 
 end
 
-function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist,aprxINminGZ,series,targetMatrix,s_1st,dimFlag,globalZeros,numBasis,voltTrust)
+function[taresGRBF_std,aprxINminGZ2_std,rbfc_INminGZ_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,globalZerosAllPoints,centerIndexHist,wHist,cHist,aprxINminGZ,series,targetMatrix,s_1st,dimFlag,globalZeros,numBasis,voltTrust)
 %ADDED 9 Jan 19 JRP: Monte carlo
     
      
@@ -1780,9 +1797,12 @@ function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,gl
 %     aprxINminGZ2_storage=zeros(size(aprxINminGZ,1),size(aprxINminGZ,2),nCarlo);
 %     taresGRBF_storage=zeros(size(s_1st,1),size(targetMatrix,2),nCarlo);
     aprxINminGZ2_storage=zeros(nCarlo,size(aprxINminGZ,2),size(aprxINminGZ,1));
+    rbfc_INminGZ_storage=zeros(nCarlo,size(aprxINminGZ,2),size(aprxINminGZ,1));
     taresGRBF_storage=zeros(nCarlo,size(targetMatrix,2),size(s_1st,1));
+
     
     for carloCount=1:nCarlo
+        rbfc_INminGZ_tot=zeros(size(aprxINminGZ,1),size(aprxINminGZ,2));
         aprxINminGZ2 = aprxINminGZ;
         % Normally distributed noise
         noise=sigma.*randn(size(excessVec,1),size(excessVec,2));
@@ -1813,7 +1833,7 @@ function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,gl
 %                 [goopLoop(s),centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
                 
                 for r=1:length(excessVec(:,1))
-                    eta(r,s) = dot(dainputscalibCarlo(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalibCarlo(r,:)-dainputscalib(centerIndexLoop(s),:));
+                    eta(r,s) = dot(dainputscalibCarlo(r,:)-dainputscalibCarlo(centerIndexLoop(s),:),dainputscalibCarlo(r,:)-dainputscalibCarlo(centerIndexLoop(s),:));
                 end
                 
 %                 %find widths 'w' by optimization routine
@@ -1834,6 +1854,7 @@ function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,gl
 
         %update the approximation
         aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
+        rbfc_INminGZ_tot=rbfc_INminGZ_tot+rbfc_INminGZ;
         
         % SOLVE FOR TARES BY TAKING THE MEAN
         taretalGRBF = meantare(series,aprxINminGZ2-targetMatrix);
@@ -1852,6 +1873,7 @@ function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,gl
 %         taresGRBF_storage(:,:,carloCount)=taresGRBF;
         for i=1:size(aprxINminGZ2,1)
             aprxINminGZ2_storage(carloCount,:,i)=aprxINminGZ2(i,:);
+            rbfc_INminGZ_storage(carloCount,:,i)=rbfc_INminGZ_tot(i,:);
         end
         for i=1:size(taresGRBF,1)
                   taresGRBF_storage(carloCount,:,i)=taresGRBF(i,:);
@@ -1861,6 +1883,7 @@ function[taresGRBF_std,aprxINminGZ2_std]=RBFcarlo(nCarlo,excessVec, dalzcalib,gl
     taresGRBF_std=zeros(size(taresGRBF,1),size(taresGRBF,2));
     for i=1:size(aprxINminGZ2,1)
         aprxINminGZ2_std(i,:)=std(aprxINminGZ2_storage(:,:,i));
+        rbfc_INminGZ_std(i,:)=std(rbfc_INminGZ_storage(:,:,i));
     end
     for i=1:size(taresGRBF,1)
         taresGRBF_std(i,:)=std(taresGRBF_storage(:,:,i));
