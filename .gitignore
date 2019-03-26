@@ -4,6 +4,7 @@
 !CustomEquationMatrixTemplate.csv
 *.txt
 *.pdf
+*.mat
 
 # GUI config files #
 ####################
