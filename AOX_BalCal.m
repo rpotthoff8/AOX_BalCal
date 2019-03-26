@@ -231,7 +231,7 @@ end
 % APPROXIMATION
 % define the approximation for inputs minus global zeros
 aprxIN = comIN0*xcalib;
-
+aprxINminGZ=aprxIN; %JRP 26 March
 % RESIDUAL
 targetRes = targetMatrix0-aprxIN;
 
@@ -507,7 +507,7 @@ if balCal_FLAG == 2
     etaHist = cell(numBasis,1);
     aprxINminGZ_Hist = cell(numBasis,1);
     tareHist = cell(numBasis,1);
-    
+     localZerosAllPoints=tares(series0,:);
     for i=1:dimFlag
         dainputscalib(:,i) = excessVec0(:,i)-globalZeros(i);
         dalzcalib(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
@@ -534,15 +534,15 @@ if balCal_FLAG == 2
             rbfINminGZ(:,s)=exp(eta(:,s)*log(abs(w(s))));
             rbfLZminGZ(:,s)=exp(etaLZ(:,s)*log(abs(w(s))));%to find tares AAM042016
             
-            coeff(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
+            coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
             
-            rbfc_INminLZ(:,s) = coeff(s)*rbfINminLZ(:,s);
-            rbfc_INminGZ(:,s) = coeff(s)*rbfINminGZ(:,s);
-            rbfc_LZminGZ(:,s) = coeff(s)*rbfLZminGZ(:,s); %to find tares AAM042016
+            rbfc_INminLZ(:,s) = coeffRBF(s)*rbfINminLZ(:,s);
+            rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
+            rbfc_LZminGZ(:,s) = coeffRBF(s)*rbfLZminGZ(:,s); %to find tares AAM042016
         end
         
         wHist(u,:) = w;
-        cHist(u,:) = coeff;
+        cHist(u,:) = coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
         etaHist{u} = eta;
         
@@ -640,7 +640,7 @@ if balCal_FLAG == 2
         
         fprintf(' ');
         fprintf('Number of GRBFs =');
-        fprintf(numBasis);
+        fprintf(string(numBasis));
         fprintf(' ');
         
         twoSigmaGRBF = standardDev'.*2;
