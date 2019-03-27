@@ -142,6 +142,7 @@ end
 % Also creates intercept terms; a different intercept for each series.
 comIN0 = balCal_algEqns(model_FLAG,dainputs0,series0);
  
+ 
 if LHS_FLAG == 0
     numLHS = 1;
 end
@@ -190,15 +191,19 @@ if LHS_FLAG == 1
     xcalib_std = std(x_all,[],3);
 end
 
- if Boot_Flag==1
+if Boot_Flag==1
     %%start bootstrapfunction
     bootalpha=.05;
     f=@calc_xcalib;
     xcalib_ci=bootci(numBoot,{f,comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix});
- else
-   xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));      
- end
-    % END: bootstrap section
+else
+    xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
+end
+% END: bootstrap section
+
+if Volt_Flag==1
+    uncert_comIN=balCal_algEquations_partialdiff(model_FLAG, dimFlag, dainputs0);
+end
 
 %%
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
