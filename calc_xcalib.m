@@ -1,5 +1,10 @@
-function xcalib=calc_xcalib(comIN,series,nterms,nseries0,dimFlag,model_FLAG,targetMatrix,customMatrix)
+function xcalib=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix)
 %Function calculates coefficient matrix (xcalib)
+
+%Orders data by series
+[series,sortI]=sort(series);
+comIN=comIN(sortI,:);
+targetMatrix=targetMatrix(sortI,:);
 
 % Characterizes the series in the subsamples
     [~,s_1st,~] = unique(series);

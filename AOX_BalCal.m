@@ -96,7 +96,7 @@ if model_FLAG == 4
     customMatrix = out.customMatrix;
     customMatrix = [customMatrix; ones(nseries0,dimFlag)];
 else 
-    customMatrix = [];
+    customMatrix = 1;
 end
 
 % Load data labels if present, otherwise use default values.
@@ -178,7 +178,8 @@ for lhs = 1:numLHS
     comIN = comIN0(sample,:);
     fprintf('\nWorking ...\n')
    
-    xcalib=calc_xcalib(comIN,series,nterms,nseries0,dimFlag,model_FLAG,targetMatrix,customMatrix);
+    %Calculate xcalib (coefficients)
+    xcalib=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix)
     
     if LHS_FLAG == 1
         x_all(:,:,lhs) = xcalib;
@@ -188,6 +189,16 @@ if LHS_FLAG == 1
     xcalib = mean(x_all,3);
     xcalib_std = std(x_all,[],3);
 end
+
+ if Boot_Flag==1
+    %%start bootstrapfunction
+    bootalpha=.05;
+    f=@calc_xcalib;
+    xcalib_ci=bootci(numBoot,{f,comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix});
+ else
+   xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));      
+ end
+    % END: bootstrap section
 
 %%
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
