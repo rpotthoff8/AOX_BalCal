@@ -232,7 +232,6 @@ end
 aprxIN = comIN0*xcalib;
 
 % RESIDUAL
-% %targetRes = targetMatrix0+taretal-aprxIN;
 targetRes = targetMatrix0-aprxIN;
 
 % Prints residual vs. input and calculates correlations
@@ -242,7 +241,7 @@ if rescorr_FLAG == 1
 end
 
 % Calculates the Sum of Squares of the reisudal
-resSqaure = sum(targetRes.^2);
+resSquare = sum(targetRes.^2);
 
 %%
 % Identify Outliers After Filtering
@@ -250,7 +249,7 @@ resSqaure = sum(targetRes.^2);
 if balOut_FLAG == 1
     
     %Identify outliers based on residuals
-   [OUTLIER_ROWS,num_outliers,prcnt_outliers]=ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD);
+    [OUTLIER_ROWS,num_outliers,prcnt_outliers]=ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD);
     
     % Use the reduced input and target files
     if zeroed_FLAG == 1
@@ -258,7 +257,7 @@ if balOut_FLAG == 1
         fprintf('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
         fprintf(' ************************************************************************ ');
         
-        % Remove outlier rows for recalculation and all future calculations:    
+        % Remove outlier rows for recalculation and all future calculations:
         numpts0 =  numpts0 - num_outliers;
         targetMatrix0(OUTLIER_ROWS,:) = [];
         excessVec0(OUTLIER_ROWS,:) = [];
@@ -267,26 +266,33 @@ if balOut_FLAG == 1
         [~,s_1st0,~] = unique(series0);
         nseries0 = length(s_1st0);
         
-         %Calculate xcalib (coefficients)
+        %Calculate xcalib (coefficients)
         xcalib=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix);
         
-%         dainputs = zeros(numpts0,dimFlag);
-%         dalz = zeros(numpts0,dimFlag);
-%         localZerosAllPoints = zeros(numpts0,dimFlag);
-%         aprxINminGZ = zeros(numpts0,dimFlag);
-%         aprxLZminGZ = zeros(numpts0,dimFlag);
-%         zeroed_checkit = zeros(numpts0,dimFlag);
-%         taresAllPoints = zeros(numpts0,dimFlag);
-%         globalZerosAllPoints = zeros(numpts0,dimFlag);
-%         eta = zeros(numpts0,dimFlag);
-%         zeroed_zoop = zeros(numpts0,dimFlag);
-%         
-%         rbfc_INminLZ = zeros(numpts0,dimFlag);
-%         rbfc_INminGZ = zeros(numpts0,dimFlag);
-%         rbfc_LZminGZ = zeros(numpts0,dimFlag);
-%         rbfINminLZ = zeros(numpts0,dimFlag);
-%         rbfINminGZ = zeros(numpts0,dimFlag);
-%         rbfLZminGZ = zeros(numpts0,dimFlag);
+        % APPROXIMATION
+        % define the approximation for inputs minus global zeros
+        aprxIN = comIN0*xcalib;
+        
+        % RESIDUAL
+        targetRes = targetMatrix0-aprxIN;
+        
+        %         dainputs = zeros(numpts0,dimFlag);
+        %         dalz = zeros(numpts0,dimFlag);
+        %         localZerosAllPoints = zeros(numpts0,dimFlag);
+        %         aprxINminGZ = zeros(numpts0,dimFlag);
+        %         aprxLZminGZ = zeros(numpts0,dimFlag);
+        %         zeroed_checkit = zeros(numpts0,dimFlag);
+        %         taresAllPoints = zeros(numpts0,dimFlag);
+        %         globalZerosAllPoints = zeros(numpts0,dimFlag);
+        %         eta = zeros(numpts0,dimFlag);
+        %         zeroed_zoop = zeros(numpts0,dimFlag);
+        %
+        %         rbfc_INminLZ = zeros(numpts0,dimFlag);
+        %         rbfc_INminGZ = zeros(numpts0,dimFlag);
+        %         rbfc_LZminGZ = zeros(numpts0,dimFlag);
+        %         rbfINminLZ = zeros(numpts0,dimFlag);
+        %         rbfINminGZ = zeros(numpts0,dimFlag);
+        %         rbfLZminGZ = zeros(numpts0,dimFlag);
         
         [localZeros,localZerosAllPoints] = localzeros(series0,excessVec0);
         globalZerosAllPoints = ones(numpts0,1)*globalZeros;
@@ -313,7 +319,7 @@ if balOut_FLAG == 1
         
         %A DIFFERENT APPROXIMATION
         %define the approximation for inputs minus global zeros
-%         intercepts = -(comGZ'*xcalib);
+        %         intercepts = -(comGZ'*xcalib);
         aprxIN = (xcalib'*comIN)';
         aprxLZ = (xcalib'*comLZ)';       %to find tares AAM042016
         for m=1:length(aprxIN)
