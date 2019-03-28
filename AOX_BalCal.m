@@ -215,8 +215,9 @@ end %end uncertainty section
 %%
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
 coeff = xcalib(1:nterms,:);
-tares = -xcalib(nterms+1:end,:);
+tares = xcalib(nterms+1:end,:);
 intercepts=-tares;
+taretal=tares(series0,:); %create matrix with tares for each row of input data
 
 %  Creates Matrix for the volts to loads
 APPROX_AOX_COEFF_MATRIX = coeff;
@@ -231,7 +232,7 @@ end
 aprxIN = comIN0*xcalib;
 
 % RESIDUAL
-targetRes = targetMatrix0-aprxIN;
+targetRes = targetMatrix0+taretal-aprxIN;
 
 % Prints residual vs. input and calculates correlations
 if rescorr_FLAG == 1
