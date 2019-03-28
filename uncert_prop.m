@@ -9,10 +9,9 @@ function [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,
 %dimFlag: Number of dimensions (channels)
 %uncert_comIN: Produced by balCal_algEquations3: Voltages provided put into
 %matrix to multiply by coefficients for partial derivatives
-%indexLocalZero: Index of where which datapoints are tare loads
-%lasttare: Number of the final series
+%s_1st0: Index of where which datapoints are tare loads
 %nterms: number of coefficients used for model
-%aprxIN: approximation matrix of loads
+%targetMatrix: desired output loads
 %voltTrust: 95% confidence (+/-) for voltage readings (in mV)
 %Boot_Flag: 1 or 0: flag for if bootstrap method was used to find coeff CI
 %Volt_Flag: 1 or 0: If voltage uncertainty prop is to be performed
@@ -77,7 +76,5 @@ for i=1:numel(series)
     end
 
 end
-
 %END added for uncert
-
 end

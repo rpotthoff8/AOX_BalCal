@@ -180,7 +180,7 @@ for lhs = 1:numLHS
     fprintf('\nWorking ...\n')
    
     %Calculate xcalib (coefficients)
-    xcalib=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix)
+    xcalib=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix);
     
     if LHS_FLAG == 1
         x_all(:,:,lhs) = xcalib;
@@ -246,18 +246,16 @@ resSqaure = sum(targetRes.^2);
 % Identify Outliers After Filtering
 % (Threshold approach) ajm 8/2/17
 if balOut_FLAG == 1
-    detect_targetRes = targetRes;
     
     % Use the modeled input for the rest of the calculations
     for n = 1:dimFlag
-        normtargetRes(:,n) = detect_targetRes(:,n)/loadCapacities(n);
+        normtargetRes(:,n) = targetRes(:,n)/loadCapacities(n);
     end
     out_meanValue = mean(normtargetRes);
     
     % Identify outliers. They are considered outliers if the residual
     % is more than 3 standard deviations as % of capacity from the mean.
     out_standardDev = std(normtargetRes);
-    numSTD = 3.0; % Whatever you want.
     thresholdValue = numSTD * (out_standardDev) - out_meanValue;
     
     for n = 1:dimFlag
@@ -297,15 +295,10 @@ if balOut_FLAG == 1
         zeroed_numpts = numpts0;
         
         zeroed_targetMatrix(OUTLIER_ROWS,:) = [];
-        zeroed_excessVec(OUTLIER_ROWS,:) = [];
-        
-        targetMatrix0 = unique(zeroed_targetMatrix,'rows');
-        excessVec0 = unique(zeroed_excessVec,'rows');
-        
+        zeroed_excessVec(OUTLIER_ROWS,:) = [];        
         zeroed_series(OUTLIER_ROWS) = [];
         
-        numpts0 =  zeroed_numpts - num_outliers;
-        
+        numpts0 =  zeroed_numpts - num_outliers; 
         targetMatrix0 = zeroed_targetMatrix;
         excessVec0 = zeroed_excessVec;
         series0 = zeroed_series;
