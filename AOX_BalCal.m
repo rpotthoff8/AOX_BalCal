@@ -215,7 +215,7 @@ end %end uncertainty section
 %%
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
 coeff = xcalib(1:nterms,:);
-tares = xcalib(nterms+1:end,:);
+tares = -xcalib(nterms+1:end,:);
 intercepts=-tares;
 taretal=tares(series0,:); %create matrix with tares for each row of input data
 
@@ -232,7 +232,8 @@ end
 aprxIN = comIN0*xcalib;
 
 % RESIDUAL
-targetRes = targetMatrix0+taretal-aprxIN;
+% %targetRes = targetMatrix0+taretal-aprxIN;
+targetRes = targetMatrix0-aprxIN;
 
 % Prints residual vs. input and calculates correlations
 if rescorr_FLAG == 1
@@ -349,7 +350,7 @@ if balOut_FLAG == 1
         
         %A DIFFERENT APPROXIMATION
         %define the approximation for inputs minus global zeros
-        intercepts = -(comGZ'*xcalib);
+%         intercepts = -(comGZ'*xcalib);
         aprxIN = (xcalib'*comIN)';
         aprxLZ = (xcalib'*comLZ)';       %to find tares AAM042016
         for m=1:length(aprxIN)
