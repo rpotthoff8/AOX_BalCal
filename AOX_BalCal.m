@@ -258,22 +258,17 @@ if balOut_FLAG == 1
         fprintf('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
         fprintf(' ************************************************************************ ');
         
-        % Mark the outliers values, store and use for recalculation:
-        zeroed_targetMatrix = targetMatrix0;
-        zeroed_excessVec = excessVec0;
-        zeroed_series = series0;
-        zeroed_numpts = numpts0;
-
+        % Remove outlier rows for recalculation and all future calculations:    
+        numpts0 =  numpts0 - num_outliers;
+        targetMatrix0(OUTLIER_ROWS,:) = [];
+        excessVec0(OUTLIER_ROWS,:) = [];
+        series0(OUTLIER_ROWS) = [];
+        comIN0(OUTLIER_ROWS,:) = [];
+        [~,s_1st0,~] = unique(series0);
+        nseries0 = length(s_1st0);
         
-        zeroed_targetMatrix(OUTLIER_ROWS,:) = [];
-        zeroed_excessVec(OUTLIER_ROWS,:) = [];
-        zeroed_series(OUTLIER_ROWS) = [];
-
-        
-        numpts0 =  zeroed_numpts - num_outliers;
-        targetMatrix0 = zeroed_targetMatrix;
-        excessVec0 = zeroed_excessVec;
-        series0 = zeroed_series;
+         %Calculate xcalib (coefficients)
+        xcalib=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix);
         
 %         dainputs = zeros(numpts0,dimFlag);
 %         dalz = zeros(numpts0,dimFlag);
