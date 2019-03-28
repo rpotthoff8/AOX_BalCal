@@ -191,25 +191,26 @@ if LHS_FLAG == 1
     xcalib_std = std(x_all,[],3);
 end
 
-if Uncert_Flag==1
+if Uncert_Flag==1 %Start uncertainty section
 if Boot_Flag==1
     %%start bootstrapfunction
     bootalpha=.05;
     f=@calc_xcalib;
-    xcalib_ci=bootci(numBoot,{f,comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix});
+    xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix});
 else
     xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
 end
 % END: bootstrap section
 
 if Volt_Flag==1
+    %uncertainty due to uncertainty in volt readings
     uncert_comIN=balCal_algEquations_partialdiff(model_FLAG, dimFlag, dainputs0);
 else
     uncert_comIN=zeros(nterms,numpts0,dimFlag);
 end
 
-[combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,xcalib_ci,comIN,dimFlag,uncert_comIN,indexLocalZero,lasttare,nterms,aprxIN,series,voltTrust,Boot_Flag,Volt_Flag);
-end
+[combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,Boot_Flag,Volt_Flag);
+end %end uncertainty section
 
 %%
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)

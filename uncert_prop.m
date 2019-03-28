@@ -1,4 +1,4 @@
-function [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,indexLocalZero,lasttare,nterms,aprxIN,series,voltTrust,Boot_Flag,Volt_Flag)
+function [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix,series,voltTrust,Boot_Flag,Volt_Flag)
 %Function calculates uncertainty in load from uncertainty in coefficients and input voltages
 
 %Inputs:
@@ -42,36 +42,35 @@ else
 end
 comIN_square=comIN.^2; %Square input matrix
 xcalib_error_square=xcalib_error.^2; %square error matrix
-coeff_uncert_square=(xcalib_error_square'*comIN_square)'; %Matrix for error in each calibration point from uncertainty in coefficients(+/-)
+coeff_uncert_square=(comIN_square*xcalib_error_square); %Matrix for error in each calibration point from uncertainty in coefficients(+/-)
 %END:  coeff uncertainty propagation
 
 %ADDED 23 Jan 19 JRP: Analytical calc of uncert in loads due to uncertainty in read
 %voltages
 if Volt_Flag==1
-uncert=voltTrust; %Trust all channels down to 1 microvolt
-for i=1:lasttare
+for i=1:max(series)
     for j=1:dimFlag
         uncert_comIN(nterms+i,:,j) = 0;
     end
 end
 uncert_comIN_use=uncert_comIN(1:size(xcalib,1),:,:);
-volt_uncert_square=zeros(size(aprxIN));
+volt_uncert_square=zeros(size(targetMatrix));
 for i=1:dimFlag
     partial(:,:,i)=uncert_comIN_use(:,:,i)'*xcalib;
-    uncert_channel_square(:,:,i)=((partial(:,:,i)).^2).*uncert^2;
+    uncert_channel_square(:,:,i)=((partial(:,:,i)).^2).*voltTrust^2;
     volt_uncert_square=volt_uncert_square+(uncert_channel_square(:,:,i));
 end
 else
-    volt_uncert_square=zeros(size(aprxIN));
+    volt_uncert_square=zeros(size(targetMatrix));
 end
 %Combine uncertainty from coeff and input voltages for 1 total uncertainty
 %value for every datapoint:
 combined_uncert=(coeff_uncert_square+volt_uncert_square).^(.5);
-tare_uncert=combined_uncert(indexLocalZero(1:(numel(indexLocalZero)-1)),:); %Uncert for tare loads
+tare_uncert=combined_uncert(s_1st0(1:(numel(s_1st0)-1)),:); %Uncert for tare loads
 
 %FL Uncert:
 for i=1:numel(series)
-    if i==indexLocalZero(series(i))
+    if i==s_1st0(series(i))
         FL_uncert(i,:)=combined_uncert(i,:);
     else
         FL_uncert(i,:)=(combined_uncert(i,:).^2+tare_uncert(series(i)).^2).^.5;
