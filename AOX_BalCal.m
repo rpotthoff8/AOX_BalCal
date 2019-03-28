@@ -240,7 +240,7 @@ if rescorr_FLAG == 1
     correlationPlot(excessVec0, targetRes, voltagelist, reslist);
 end
 
-% Calculates the Sum of Squares of the reisudal
+% Calculates the Sum of Squares of the residual
 resSquare = sum(targetRes.^2);
 
 %%
@@ -276,64 +276,6 @@ if balOut_FLAG == 1
         % RESIDUAL
         targetRes = targetMatrix0-aprxIN;
         
-        %         dainputs = zeros(numpts0,dimFlag);
-        %         dalz = zeros(numpts0,dimFlag);
-        %         localZerosAllPoints = zeros(numpts0,dimFlag);
-        %         aprxINminGZ = zeros(numpts0,dimFlag);
-        %         aprxLZminGZ = zeros(numpts0,dimFlag);
-        %         zeroed_checkit = zeros(numpts0,dimFlag);
-        %         taresAllPoints = zeros(numpts0,dimFlag);
-        %         globalZerosAllPoints = zeros(numpts0,dimFlag);
-        %         eta = zeros(numpts0,dimFlag);
-        %         zeroed_zoop = zeros(numpts0,dimFlag);
-        %
-        %         rbfc_INminLZ = zeros(numpts0,dimFlag);
-        %         rbfc_INminGZ = zeros(numpts0,dimFlag);
-        %         rbfc_LZminGZ = zeros(numpts0,dimFlag);
-        %         rbfINminLZ = zeros(numpts0,dimFlag);
-        %         rbfINminGZ = zeros(numpts0,dimFlag);
-        %         rbfLZminGZ = zeros(numpts0,dimFlag);
-        
-        [localZeros,localZerosAllPoints] = localzeros(series0,excessVec0);
-        globalZerosAllPoints = ones(numpts0,1)*globalZeros;
-        
-        % Subtract the Global Zeros from the Inputs and Local Zeros
-        for i=1:dimFlag
-            dainputs(:,i) = excessVec0(:,i) - globalZerosAllPoints(i);
-            dalz(:,i) = localZerosAllPoints(:,i) - globalZerosAllPoints(i);
-        end
-        
-        for i=1:dimFlag
-            biggee(:,i) = 0;
-        end
-        [comIN,comLZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts0,series0,nseries0, dainputs, dalz, biggee);
-        
-        comINminLZ = comIN-comLZ;
-        
-        %SOLUTION
-        xcalib = pinv(comINminLZ')*targetMatrix0;
-        
-        %APPROXIMATION
-        %define the approximation for inputs minus local zeros
-        aprxINminLZ = comINminLZ'*xcalib;
-        
-        %A DIFFERENT APPROXIMATION
-        %define the approximation for inputs minus global zeros
-        %         intercepts = -(comGZ'*xcalib);
-        aprxIN = (xcalib'*comIN)';
-        aprxLZ = (xcalib'*comLZ)';       %to find tares AAM042016
-        for m=1:length(aprxIN)
-            aprxINminGZ(m,:) = aprxIN(m,:);
-            aprxLZminGZ(m,:) = aprxLZ(m,:);%to find tares
-            
-            %subtracts the targets from the global approx
-            %This will be averaged over the individual series0 to give the tares
-            checkit(m,:) = aprxINminGZ(m,:)-targetMatrix0(m,:);
-        end
-        
-        taresAllPoints = meantare(series0,checkit);
-        %RESIDUAL
-        targetRes2 = targetMatrix0+taresAllPoints-aprxINminGZ;      %0=b-Ax
     end
 end
 
@@ -394,9 +336,9 @@ if print_FLAG == 1
         fprintf(' ***** ');
         fprintf(' ');
         fprintf('Number of Outliers =');
-        fprintf(num_outliers);
+        fprintf(string(num_outliers));
         fprintf('Outliers % of Data =');
-        fprintf(prcnt_outliers);
+        fprintf(string(prcnt_outliers));
     end
     
     % Recalculated Calibration with Reduced Matrices
