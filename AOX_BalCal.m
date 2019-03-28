@@ -83,7 +83,7 @@ voltTrust=out.voltTrust;
 % Load data and characterize series
 load(out.savePathcal,'-mat');
 series0 = series;
-[~,s_1st0,s_id0] = unique(series0);
+[~,s_1st0,~] = unique(series0);
 nseries0 = length(s_1st0);
 [numpts0, dimFlag] = size(excessVec0);
 % Loads:
@@ -186,6 +186,7 @@ for lhs = 1:numLHS
         x_all(:,:,lhs) = xcalib;
     end
 end
+
 if LHS_FLAG == 1
     xcalib = mean(x_all,3);
     xcalib_std = std(x_all,[],3);
@@ -221,10 +222,9 @@ taretal=tares(series0,:); %create matrix with tares for each row of input data
 
 %  Creates Matrix for the volts to loads
 APPROX_AOX_COEFF_MATRIX = coeff;
-xapprox = coeff;
 if excel_FLAG == 1
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-    csvwrite(filename,xapprox)
+    csvwrite(filename,coeff)
 end
 
 % APPROXIMATION
@@ -249,42 +249,8 @@ resSqaure = sum(targetRes.^2);
 % (Threshold approach) ajm 8/2/17
 if balOut_FLAG == 1
     
-    % Use the modeled input for the rest of the calculations
-    for n = 1:dimFlag
-        normtargetRes(:,n) = targetRes(:,n)/loadCapacities(n);
-    end
-    out_meanValue = mean(normtargetRes);
-    
-    % Identify outliers. They are considered outliers if the residual
-    % is more than 3 standard deviations as % of capacity from the mean.
-    out_standardDev = std(normtargetRes);
-    thresholdValue = numSTD * (out_standardDev) - out_meanValue;
-    
-    for n = 1:dimFlag
-        if thresholdValue(1,n) <= 0.0025
-            thresholdValue(1,n) = 0.0025;
-        end
-    end
-    
-    outlierIndices = abs(normtargetRes) > thresholdValue;
-    
-    % ID outlier rows :
-    zero_counter = 1;
-    for k1 = 1:numpts0
-        for k4 = 1:dimFlag
-            if outlierIndices(k1,k4) == 1
-                outlier_values(zero_counter,1) = k1;
-                zero_counter = zero_counter + 1;
-            end
-        end
-    end
-    if zero_counter==1
-        outlier_values=[];
-    end
-    OUTLIER_ROWS = unique(outlier_values,'rows');
-    
-    num_outliers = length(OUTLIER_ROWS);
-    prcnt_outliers = 100.0*num_outliers/numpts0;
+    %Identify outliers based on residuals
+   [OUTLIER_ROWS,num_outliers,prcnt_outliers]=ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD);
     
     % Use the reduced input and target files
     if zeroed_FLAG == 1
@@ -297,10 +263,12 @@ if balOut_FLAG == 1
         zeroed_excessVec = excessVec0;
         zeroed_series = series0;
         zeroed_numpts = numpts0;
+
         
         zeroed_targetMatrix(OUTLIER_ROWS,:) = [];
         zeroed_excessVec(OUTLIER_ROWS,:) = [];
         zeroed_series(OUTLIER_ROWS) = [];
+
         
         numpts0 =  zeroed_numpts - num_outliers;
         targetMatrix0 = zeroed_targetMatrix;
@@ -364,7 +332,7 @@ if balOut_FLAG == 1
         
         taresAllPoints = meantare(series0,checkit);
         %RESIDUAL
-        targetRes = targetMatrix0+taresAllPoints-aprxINminGZ;      %0=b-Ax
+        targetRes2 = targetMatrix0+taresAllPoints-aprxINminGZ;      %0=b-Ax
     end
 end
 
@@ -1138,8 +1106,8 @@ if balApprox_FLAG == 1
     
     %LOAD APPROXIMATION
     %define the approximation for inputs minus global zeros
-    interceptsapprox = -(comGZapprox'*xapprox);
-    aprxINapprox = ( xapprox'*comINapprox)';        %to find ?? AJM111516
+    interceptsapprox = -(comGZapprox'*coeff);
+    aprxINapprox = ( coeff'*comINapprox)';        %to find ?? AJM111516
     %%
     %%
     for m=1:length(aprxINapprox)
