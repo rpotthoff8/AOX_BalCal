@@ -70,12 +70,6 @@ zeroed_FLAG = out.zeroed;
 LHS_FLAG = out.lhs;
 numLHS = out.numLHS; %Number of times to iterate.
 LHSp = out.LHSp; %Percent of data used to create sample.
-
-Uncert_Flag=out.uncertFlag;
-numBoot=out.numBoot;
-Boot_Flag=out.bootFlag;
-Volt_Flag=out.voltFlag;
-voltTrust=out.voltTrust;
 %
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

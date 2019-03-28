@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 28-Feb-2019 11:23:36
+% Last Modified by GUIDE v2.5 20-Mar-2019 13:28:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -144,9 +144,15 @@ if exist(fileName,'file')
             case 'approximate', actionpanel_SelectionChangeFcn(handles.approximate, eventdata, handles)
         end
         
+        
         set(handles.full,'Value',default.full);
         set(handles.truncated,'Value',default.truncated);
         set(handles.linear,'Value',default.linear);
+        set(handles.custom,'Value',default.custom);
+        set(handles.customPath,'String',default.customPath);
+        if default.custom
+            modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
+        end
         
         set(handles.direct,'Value',default.direct);
         set(handles.indirect,'Value',default.indirect);
@@ -161,12 +167,6 @@ if exist(fileName,'file')
         set(handles.numLHS,'String',default.numLHS);
         set(handles.LHSp,'String',default.LHSp);
         LHS_FLAGcheck_Callback(handles.LHS_FLAGcheck, eventdata, handles);
-        
-        set(handles.Uncert_FLAGcheck,'Value',default.Uncert_FLAGcheck);
-        set(handles.Boot_FLAGcheck,'Value',default.Boot_FLAGcheck);
-        set(handles.Volt_FLAGcheck,'Value',default.Volt_FLAGcheck);
-         set(handles.numBoot,'String',default.numBoot);
-         set(handles.voltTrust,'String',default.voltTrust);
     end
 end
 
@@ -257,10 +257,14 @@ outStruct.corr = get(handles.corr_FLAGcheck,'Value');
 outStruct.rescorr = get(handles.rescorr_FLAGcheck,'Value');
 outStruct.excel = get(handles.excel_FLAGcheck,'Value');
 
-switch get(get(handles.modelPanel,'SelectedObject'),'Tag');
+switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
     case 'full', outStruct.model = 1;
     case 'truncated', outStruct.model = 2;
     case 'linear', outStruct.model = 3;
+    case 'custom'
+        outStruct.model = 4;
+        customPath = get(handles.customPath,'String');
+        outStruct.customMatrix = csvread(customPath,1,1);
 end
 
 outStruct.grbf = 1 + get(handles.grbf,'Value');
@@ -270,12 +274,6 @@ outStruct.lhs = get(handles.LHS_FLAGcheck,'Value');
 outStruct.numLHS = str2num(get(handles.numLHS,'String'));
 outStruct.LHSp = str2num(get(handles.LHSp,'String'))/100;
 
-outStruct.uncertFlag = get(handles.Uncert_FLAGcheck,'Value');
-outStruct.bootFlag = get(handles.Boot_FLAGcheck,'Value');
-outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
-outStruct.numBoot = str2num(get(handles.numBoot,'String'));
-outStruct.voltTrust = str2num(get(handles.voltTrust,'String'));
-
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
 [~,~,calext] = fileparts(cal.Path);
@@ -283,9 +281,6 @@ switch calext
     case '.csv'
         cal.Range{1} = [get(handles.c11,'String'),'..',get(handles.c12,'String')];
         cal.CSV(1,:) = a12rc(get(handles.c11,'String'));
-        loadend      = a12rc(get(handles.c12,'String'));
-        loadrng      = [cal.CSV(1,1)-4, cal.CSV(1,2), cal.CSV(1,1)-4, loadend(2)];
-        loadlabels   = csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),loadrng);
         cal.Range{2} = [get(handles.c21,'String'),'..',get(handles.c22,'String')];
         cal.CSV(2,:) = a12rc(get(handles.c21,'String'));
         cal.Range{3} = [get(handles.c31,'String'),'..',get(handles.c32,'String')];
@@ -294,6 +289,10 @@ switch calext
         cal.CSV(4,:) = a12rc(get(handles.c41,'String'));
         cal.Range{5} = [get(handles.c51,'String'),'..',get(handles.c52,'String')];
         cal.CSV(5,:) = a12rc(get(handles.c51,'String'));
+        
+        cal.loadend          = a12rc(get(handles.c12,'String'));
+        cal.voltend          = a12rc(get(handles.c22,'String'));
+        
         outStruct.savePathcal = loadCSV(cal);
     case '.cal'
         outStruct.savePathcal = cal.Path;
@@ -375,25 +374,13 @@ function modelPanel_SelectionChangeFcn(hObject, eventdata, handles)
 %	OldValue: handle of the previously selected object or empty if none was selected
 %	NewValue: handle of the currently selected object
 % handles    structure with handles and user data (see GUIDATA)
-if (hObject == handles.full)
-    %set(handles.numBasisIn, 'String', 'First');
+if (hObject == handles.custom)
+    set(handles.customPath, 'Enable', 'on');
+    set(handles.customFind, 'Enable', 'on');
 else
-    %set(handles.numBasisIn, 'String', 'Second');
+    set(handles.customPath, 'Enable', 'off');
+    set(handles.customFind, 'Enable', 'off');
 end
-
-function calcsv_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in modelPanel
-% eventdata  structure with the following fields (see UIBUTTONGROUP)
-%	EventName: string 'SelectionChanged' (read only)
-%	OldValue: handle of the previously selected object or empty if none was selected
-%	NewValue: handle of the currently selected object
-% handles    structure with handles and user data (see GUIDATA)
-if (hObject == handles.direct)
-    %set(handles.numBasisIn, 'String', 'First');
-else
-    %set(handles.numBasisIn, 'String', 'Second');
-end
-
 
 % --- Executes on button press in cancelbutton.
 function cancelbutton_Callback(hObject, eventdata, handles)
@@ -404,8 +391,6 @@ outStruct.cancel = 1;
 handles.output = outStruct;
 guidata(hObject,handles);
 uiresume(handles.figure1);
-
-
 
 function calPath_Callback(hObject, eventdata, handles)
 % hObject    handle to calPath (see GCBO)
@@ -1027,7 +1012,7 @@ function actionpanel_SelectionChangeFcn(hObject, eventdata, handles)
 %	OldValue: handle of the previously selected object or empty if none was selected
 %	NewValue: handle of the currently selected object
 % handles    structure with handles and user data (see GUIDATA)
-calPath_Callback(handles.valPath,eventdata,handles);
+calPath_Callback(handles.calPath,eventdata,handles);
 set(handles.calPath, 'Enable', 'on');
 set(handles.calFind, 'Enable', 'on');
 if (hObject == handles.calibrate)
@@ -1215,6 +1200,8 @@ default.appRange{4,2} = get(handles.a42,'String');
 default.full = get(handles.full,'Value');
 default.truncated = get(handles.truncated,'Value');
 default.linear = get(handles.linear,'Value');
+default.custom = get(handles.custom,'Value');
+default.customPath = get(handles.customPath,'String');
 
 default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
@@ -1224,12 +1211,6 @@ default.basis = get(handles.numBasisIn,'String');
 default.LHS_FLAGcheck = get(handles.LHS_FLAGcheck,'Value');
 default.numLHS = get(handles.numLHS,'String');
 default.LHSp = get(handles.LHSp,'String');
-
-default.Uncert_FLAGcheck = get(handles.Uncert_FLAGcheck,'Value');
-default.Boot_FLAGcheck = get(handles.Boot_FLAGcheck,'Value');
-default.Volt_FLAGcheck = get(handles.Volt_FLAGcheck,'Value');
-default.numBoot = get(handles.numBoot,'String');
-default.voltTrust = get(handles.voltTrust,'String');
 
 default.direct = get(handles.direct,'Value');
 default.indirect = get(handles.indirect,'Value');
@@ -1247,15 +1228,16 @@ function a = a12rc(a1)
 %converts spreadsheet notation "A1" to row and column numbers  (0-based)
 alpha_ind = find(isletter(a1));
 alpha = abs(upper(a1(alpha_ind)))-65;
-if length(alpha) == 2
-    c = 26*(alpha(1)+1) + alpha(2);
-else
-    c = alpha;
-end
+c = alpha;
 a1(alpha_ind) = [];
 r = str2num(a1)-1;
 a = [r c];
 
+function a1 = rc2a1(a)
+r = a(1); c = a(2);
+alpha = char(c+65);
+num = int2str(r+1);
+a1 = [alpha, num];
 
 % --- Executes on button press in grbftares_FLAGcheck.
 function grbftares_FLAGcheck_Callback(hObject, eventdata, handles)
@@ -1433,13 +1415,29 @@ switch cva.type
         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
         targetMatrix0 =      csvread(cal.Path,cal.CSV(4,1),cal.CSV(4,2),cal.Range{4});
         excessVec0 =         csvread(cal.Path,cal.CSV(5,1),cal.CSV(5,2),cal.Range{5});
+                    
+        ndim = size(loadCapacities,2);
+        row = cal.CSV(1,1)-4;
+        load_col = cal.CSV(1,2);
+        volt_col = cal.CSV(2,2);
+        fileID = fopen(cal.Path);
+        tline = fgetl(fileID); %reads the first row, NOTE: Causes textscan to start reading from second row
+        parse_row = regexp(tline,',','split');
+        ncol = size(parse_row,2); %to know how many columns in this data file
+        C = textscan(fileID,[repmat('%s',[1,ncol])],'Delimiter',',');
+        fclose(fileID);
+        for k = 1:ndim
+            loadlabels{k} = C{load_col+k}{row};
+            voltlabels{k} = C{volt_col+k}{row};
+        end
         
         [~,calName,~] = fileparts(cal.Path);
         fileName = [calName,'.cal'];
         [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
         savePath = [CurrentPath,filesep,fileName];
         
-        clear cva calName CurrentPath
+        clear cva calName CurrentPath ndim row load_col volt_col fileID...
+            tline parse_row ncol C
         save(savePath);
     case 'validate'
         val = cva;
@@ -1463,8 +1461,6 @@ switch cva.type
         
         loadCapacitiesapprox =    csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
         natzerosapprox =          csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
-        %         seriesapprox =            csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
-        %         excessVecapprox =         csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
         excessVecapprox =         csvread(app.Path,app.CSV(4,1),app.CSV(4,2),app.Range{4});
         
@@ -1796,18 +1792,18 @@ function excel_FLAGcheck_Callback(hObject, eventdata, handles)
 
 
 
-function edit53_Callback(hObject, eventdata, handles)
-% hObject    handle to edit53 (see GCBO)
+function customPath_Callback(hObject, eventdata, handles)
+% hObject    handle to customPath (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit53 as text
-%        str2double(get(hObject,'String')) returns contents of edit53 as a double
+% Hints: get(hObject,'String') returns contents of customPath as text
+%        str2double(get(hObject,'String')) returns contents of customPath as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit53_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit53 (see GCBO)
+function customPath_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to customPath (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -1818,100 +1814,19 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on key press with focus on edit53 and none of its controls.
-function edit53_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to edit53 (see GCBO)
-% eventdata  structure with the following fields (see MATLAB.UI.CONTROL.UICONTROL)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-% handles    structure with handles and user data (see GUIDATA)
-
-
-
-function numBoot_Callback(hObject, eventdata, handles)
-% hObject    handle to numBoot (see GCBO)
+% --- Executes on button press in customFind.
+function customFind_Callback(hObject, eventdata, handles)
+% hObject    handle to customFind (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of numBoot as text
-%        str2double(get(hObject,'String')) returns contents of numBoot as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function numBoot_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to numBoot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+[FileName, PathName] = uigetfile('*.csv');
+if FileName ~= 0
+    [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
+    CurrentPath = [CurrentPath,filesep];
+    if strcmp(CurrentPath,PathName)
+        FullPath = FileName;
+    else
+        FullPath = [PathName,FileName];
+    end
+    set(handles.customPath,'String',FullPath)
 end
-
-
-
-function voltTrust_Callback(hObject, eventdata, handles)
-% hObject    handle to voltTrust (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of voltTrust as text
-%        str2double(get(hObject,'String')) returns contents of voltTrust as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function voltTrust_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to voltTrust (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in Boot_FLAGcheck.
-function Boot_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to Boot_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of Boot_FLAGcheck
-
-
-% --- Executes on button press in Volt_FLAGcheck.
-function Volt_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to Volt_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of Volt_FLAGcheck
-
-
-% --- Executes on button press in Uncert_FLAGcheck.
-function Uncert_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to Uncert_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value') == 1
-    set(handles.numBoot,'Enable','on');
-    set(handles.voltTrust,'Enable','on');
-    set(handles.Boot_FLAGcheck,'Enable','on');
-    set(handles.Volt_FLAGcheck,'Enable','on');
-    set(handles.Boot_FLAGcheck,'Value',1);
-    set(handles.Volt_FLAGcheck,'Value',1);
-    
-else
-    set(handles.numBoot,'Enable','off');
-    set(handles.voltTrust,'Enable','off');
-    set(handles.Boot_FLAGcheck,'Enable','off');
-    set(handles.Volt_FLAGcheck,'Enable','off');
-    set(handles.Boot_FLAGcheck,'Value',0);
-    set(handles.Volt_FLAGcheck,'Value',0);
-    
-end
-% Hint: get(hObject,'Value') returns toggle state of Uncert_FLAGcheck
