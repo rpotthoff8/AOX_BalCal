@@ -95,7 +95,7 @@ nseries0 = length(s_1st0);
 if model_FLAG == 4
     customMatrix = out.customMatrix;
     customMatrix = [customMatrix; ones(nseries0,dimFlag)];
-else 
+else
     customMatrix = 1;
 end
 
@@ -141,8 +141,8 @@ end
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
 comIN0 = balCal_algEqns(model_FLAG,dainputs0,series0);
- 
- 
+
+
 if LHS_FLAG == 0
     numLHS = 1;
 end
@@ -178,7 +178,7 @@ for lhs = 1:numLHS
     targetMatrix = targetMatrix0(sample,:);
     comIN = comIN0(sample,:);
     fprintf('\nWorking ...\n')
-   
+    
     %Calculate xcalib (coefficients)
     xcalib=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix);
     
@@ -192,24 +192,24 @@ if LHS_FLAG == 1
 end
 
 if Uncert_Flag==1 %Start uncertainty section
-if Boot_Flag==1
-    %%start bootstrapfunction
-    bootalpha=.05;
-    f=@calc_xcalib;
-    xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix});
-else
-    xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
-end
-% END: bootstrap section
-
-if Volt_Flag==1
-    %uncertainty due to uncertainty in volt readings
-    uncert_comIN=balCal_algEquations_partialdiff(model_FLAG, dimFlag, dainputs0);
-else
-    uncert_comIN=zeros(nterms,numpts0,dimFlag);
-end
-
-[combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,Boot_Flag,Volt_Flag);
+    if Boot_Flag==1
+        %%start bootstrapfunction
+        bootalpha=.05;
+        f=@calc_xcalib;
+        xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix});
+    else
+        xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
+    end
+    % END: bootstrap section
+    
+    if Volt_Flag==1
+        %uncertainty due to uncertainty in volt readings
+        uncert_comIN=balCal_algEquations_partialdiff(model_FLAG, dimFlag, dainputs0);
+    else
+        uncert_comIN=zeros(nterms,numpts0,dimFlag);
+    end
+    
+    [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,Boot_Flag,Volt_Flag);
 end %end uncertainty section
 
 %%
@@ -229,7 +229,7 @@ end
 % APPROXIMATION
 % define the approximation for inputs minus global zeros
 aprxIN = comIN0*xcalib;
-aprxINminGZ=aprxIN; %JRP 26 March
+
 % RESIDUAL
 targetRes = targetMatrix0-aprxIN;
 
@@ -276,7 +276,9 @@ if balOut_FLAG == 1
             end
         end
     end
-    
+    if zero_counter==1
+        outlier_values=[];
+    end
     OUTLIER_ROWS = unique(outlier_values,'rows');
     
     num_outliers = length(OUTLIER_ROWS);
@@ -295,31 +297,31 @@ if balOut_FLAG == 1
         zeroed_numpts = numpts0;
         
         zeroed_targetMatrix(OUTLIER_ROWS,:) = [];
-        zeroed_excessVec(OUTLIER_ROWS,:) = [];        
+        zeroed_excessVec(OUTLIER_ROWS,:) = [];
         zeroed_series(OUTLIER_ROWS) = [];
         
-        numpts0 =  zeroed_numpts - num_outliers; 
+        numpts0 =  zeroed_numpts - num_outliers;
         targetMatrix0 = zeroed_targetMatrix;
         excessVec0 = zeroed_excessVec;
         series0 = zeroed_series;
         
-        dainputs = zeros(numpts0,dimFlag);
-        dalz = zeros(numpts0,dimFlag);
-        localZerosAllPoints = zeros(numpts0,dimFlag);
-        aprxINminGZ = zeros(numpts0,dimFlag);
-        aprxLZminGZ = zeros(numpts0,dimFlag);
-        zeroed_checkit = zeros(numpts0,dimFlag);
-        taresAllPoints = zeros(numpts0,dimFlag);
-        globalZerosAllPoints = zeros(numpts0,dimFlag);
-        eta = zeros(numpts0,dimFlag);
-        zeroed_zoop = zeros(numpts0,dimFlag);
-        
-        rbfc_INminLZ = zeros(numpts0,dimFlag);
-        rbfc_INminGZ = zeros(numpts0,dimFlag);
-        rbfc_LZminGZ = zeros(numpts0,dimFlag);
-        rbfINminLZ = zeros(numpts0,dimFlag);
-        rbfINminGZ = zeros(numpts0,dimFlag);
-        rbfLZminGZ = zeros(numpts0,dimFlag);
+%         dainputs = zeros(numpts0,dimFlag);
+%         dalz = zeros(numpts0,dimFlag);
+%         localZerosAllPoints = zeros(numpts0,dimFlag);
+%         aprxINminGZ = zeros(numpts0,dimFlag);
+%         aprxLZminGZ = zeros(numpts0,dimFlag);
+%         zeroed_checkit = zeros(numpts0,dimFlag);
+%         taresAllPoints = zeros(numpts0,dimFlag);
+%         globalZerosAllPoints = zeros(numpts0,dimFlag);
+%         eta = zeros(numpts0,dimFlag);
+%         zeroed_zoop = zeros(numpts0,dimFlag);
+%         
+%         rbfc_INminLZ = zeros(numpts0,dimFlag);
+%         rbfc_INminGZ = zeros(numpts0,dimFlag);
+%         rbfc_LZminGZ = zeros(numpts0,dimFlag);
+%         rbfINminLZ = zeros(numpts0,dimFlag);
+%         rbfINminGZ = zeros(numpts0,dimFlag);
+%         rbfLZminGZ = zeros(numpts0,dimFlag);
         
         [localZeros,localZerosAllPoints] = localzeros(series0,excessVec0);
         globalZerosAllPoints = ones(numpts0,1)*globalZeros;
@@ -498,7 +500,7 @@ if balCal_FLAG == 2
     etaHist = cell(numBasis,1);
     aprxINminGZ_Hist = cell(numBasis,1);
     tareHist = cell(numBasis,1);
-     localZerosAllPoints=tares(series0,:);
+    localZerosAllPoints=tares(series0,:);
     for i=1:dimFlag
         dainputscalib(:,i) = excessVec0(:,i)-globalZeros(i);
         dalzcalib(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
