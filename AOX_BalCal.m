@@ -71,6 +71,12 @@ LHS_FLAG = out.lhs;
 numLHS = out.numLHS; %Number of times to iterate.
 LHSp = out.LHSp; %Percent of data used to create sample.
 %
+%Uncertainty button outputs
+Uncert_Flag=out.uncertFlag;
+numBoot=out.numBoot;
+Boot_Flag=out.bootFlag;
+Volt_Flag=out.voltFlag;
+voltTrust=out.voltTrust;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
