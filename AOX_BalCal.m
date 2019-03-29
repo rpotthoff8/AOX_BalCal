@@ -22,52 +22,52 @@ out = AOX_GUI;
 if out.cancel == 1
     return
 end
-%TO SELECT Algebraic Model                             set balCal_FLAG = 1;
-%TO SELECT Algebraic and GRBF Model                    set balCal_FLAG = 2;
-balCal_FLAG = out.grbf;
+%TO SELECT Algebraic Model                             set FLAGS.balCal = 1;
+%TO SELECT Algebraic and GRBF Model                    set FLAGS.balCal = 2;
+FLAGS.balCal = out.grbf;
 %DEFINE THE NUMBER OF BASIS FUNCTIONS
 numBasis = out.basis;
 %
-%TO SELECT INDIRECT APPROACH                         set approach_FLAG = 1;
-approach_FLAG = 0;%out.approach;
+%TO SELECT INDIRECT APPROACH                         set FLAGS.approach = 1;
+FLAGS.approach = 0;%out.approach;
 %
 %SELECT ALGEBRAIC MODEL
-%          set model_FLAG = 1 (full), 2 (trunc), 3 (linear), or 4 (custom);
-model_FLAG = out.model;
+%          set FLAGS.model = 1 (full), 2 (trunc), 3 (linear), or 4 (custom);
+FLAGS.model = out.model;
 %
-%TO PRINT LOAD PERFORMANCE PARAMETERS                   set print_FLAG = 1;
-print_FLAG = out.tables;
+%TO PRINT LOAD PERFORMANCE PARAMETERS                   set FLAGS.print = 1;
+FLAGS.print = out.tables;
 %
-%TO SAVE DATA TO CSV                                    set excel_FLAG = 1;
-excel_FLAG = out.excel;
+%TO SAVE DATA TO CSV                                    set FLAGS.excel = 1;
+FLAGS.excel = out.excel;
 %
-%TO PRINT INPUT/OUTPUT CORRELATION PLOTS                 set corr_FLAG = 1;
-corr_FLAG = out.corr;
+%TO PRINT INPUT/OUTPUT CORRELATION PLOTS                 set FLAGS.corr = 1;
+FLAGS.corr = out.corr;
 %
-%TO PRINT INPUT/RESIDUALS CORRELATION PLOTS           set rescorr_FLAG = 1;
-rescorr_FLAG = out.rescorr;
+%TO PRINT INPUT/RESIDUALS CORRELATION PLOTS           set FLAGS.rescorr = 1;
+FLAGS.rescorr = out.rescorr;
 %
 %TO PRINT ORDER/RESIDUALS PLOTS                          set rest_FLAG = 1;
-res_FLAG = out.res;
+FLAGS.res = out.res;
 %
-%TO PRINT RESIDUAL HISTOGRAMS                            set hist_FLAG = 1;
-hist_FLAG = out.hist;
+%TO PRINT RESIDUAL HISTOGRAMS                            set FLAGS.hist = 1;
+FLAGS.hist = out.hist;
 %
-%TO SELECT Validation of the Model                     set balVal_FLAG = 1;
-balVal_FLAG = out.valid;
+%TO SELECT Validation of the Model                     set FLAGS.balVal = 1;
+FLAGS.balVal = out.valid;
 %
-%TO SELECT Approximation from Cal Data              set balApprox_FLAG = 1;
-balApprox_FLAG = out.approx;
+%TO SELECT Approximation from Cal Data              set FLAGS.balApprox = 1;
+FLAGS.balApprox = out.approx;
 %
-%TO FLAG POTENTIAL OUTLIERS                            set balOut_FLAG = 1;
-balOut_FLAG = out.outlier;
+%TO FLAG POTENTIAL OUTLIERS                            set FLAGS.balOut = 1;
+FLAGS.balOut = out.outlier;
 numSTD = out.numSTD;  %Number of standard deviations for outlier threshold.
 %
-%TO REMOVE POTENTIAL OUTLIERS                          set zeroed_FLAG = 1;
-zeroed_FLAG = out.zeroed;
+%TO REMOVE POTENTIAL OUTLIERS                          set FLAGS.zeroed = 1;
+FLAGS.zeroed = out.zeroed;
 %
-%TO USE LATIN HYPERCUBE SAMPLING set                          LHS_FLAG = 1;
-LHS_FLAG = out.lhs;
+%TO USE LATIN HYPERCUBE SAMPLING set                          FLAGS.LHS = 1;
+FLAGS.LHS = out.lhs;
 numLHS = out.numLHS; %Number of times to iterate.
 LHSp = out.LHSp; %Percent of data used to create sample.
 %
@@ -86,7 +86,7 @@ nseries0 = length(s_1st0);
 
 % Load the custom equation matrix if using a custom algebraic model
 % SEE: CustomEquationMatrixTemplate.csv
-if model_FLAG == 4
+if FLAGS.model == 4
     customMatrix = out.customMatrix;
     customMatrix = [customMatrix; ones(nseries0,dimFlag)];
 end
@@ -103,7 +103,7 @@ else
 end
 
 % Prints output vs. input and calculates correlations
-if corr_FLAG == 1
+if FLAGS.corr == 1
     figure('Name','Correlation plot','NumberTitle','off');
     correlationPlot(targetMatrix0, excessVec0, loadlist, voltagelist);
 end
@@ -116,7 +116,7 @@ dainputs0 = excessVec0 - ones(numpts0,1)*globalZeros;
 
 % Determines how many terms are in the algebraic model; this will help
 % determine the size of the calibration matrix
-switch model_FLAG
+switch FLAGS.model
     case {1,4}
         % Full Algebraic Model or Custom Algebraic Model
         % The Custom model calculates all terms, and then excludes them in
@@ -132,20 +132,20 @@ end
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
-comIN0 = balCal_algEqns(model_FLAG,dainputs0,series0);
+comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0);
  
-if LHS_FLAG == 0
+if FLAGS.LHS == 0
     numLHS = 1;
 end
 lhs_check = zeros(length(excessVec0),1);
 lhs_ind = 1:length(excessVec0(:,1));
 
-if LHS_FLAG == 1
+if FLAGS.LHS == 1
     fprintf('\nNumber of LHS Iterations Selected: %i\n',numLHS)
 end
 
 fprintf('\nStarting Calculations\n')
-% if approach_FLAG == 1
+% if FLAGS.approach == 1
 %     fprintf('\n\nUsing the Indirect Approach for Calibration');
 % else
 %     fprintf('\n\nUsing the Direct Approach for Calibration');
@@ -155,7 +155,7 @@ fprintf('\nStarting Calculations\n')
 for lhs = 1:numLHS
     
     % Creates an LHS sub-sample of the data.
-    if LHS_FLAG == 1
+    if FLAGS.LHS == 1
         sample = AOX_LHS(series0,excessVec0,LHSp);
         lhs_check(sample) = 1;
         lhs_ind(find(lhs_check-1)); % This line outputs which data points haven't been sampled yet
@@ -175,8 +175,8 @@ for lhs = 1:numLHS
     
     fprintf('\nWorking ...\n')
     % Indirect approach uses the modeled voltage
-%     if approach_FLAG == 1
-%         if balCal_FLAG == 2
+%     if FLAGS.approach == 1
+%         if FLAGS.balCal == 2
 %             excessVec0 = qtaprxINminGZ2 + globalZerosAllPoints;
 %         else
 %             excessVec0 = qtaprxINminGZ + globalZerosAllPoints;
@@ -190,14 +190,14 @@ for lhs = 1:numLHS
     for k = 1:dimFlag
         comIN_k = comIN;
         
-        if model_FLAG == 4
+        if FLAGS.model == 4
             comIN_k(:,customMatrix(:,k)==0) = [];
         end
         
         % SOLUTION
         xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
         
-        if model_FLAG == 4
+        if FLAGS.model == 4
             xcalib(customMatrix(:,k)==1,k) = xcalib_k;
         else
             xcalib(:,k) = xcalib_k;
@@ -205,11 +205,11 @@ for lhs = 1:numLHS
         
     end
     
-    if LHS_FLAG == 1
+    if FLAGS.LHS == 1
         x_all(:,:,lhs) = xcalib;
     end
 end
-if LHS_FLAG == 1
+if FLAGS.LHS == 1
     xcalib = mean(x_all,3);
     xcalib_std = std(x_all,[],3);
 end
@@ -222,7 +222,7 @@ tares = -xcalib(nterms+1:end,:);
 %  Creates Matrix for the volts to loads
 APPROX_AOX_COEFF_MATRIX = coeff;
 xapprox = coeff;
-if excel_FLAG == 1
+if FLAGS.excel == 1
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
     csvwrite(filename,xapprox)
 end
@@ -235,7 +235,7 @@ aprxIN = comIN0*xcalib;
 targetRes = targetMatrix0-aprxIN;
 
 % Prints residual vs. input and calculates correlations
-if rescorr_FLAG == 1
+if FLAGS.rescorr == 1
     figure('Name','Residual correlation plot','NumberTitle','off');
     correlationPlot(excessVec0, targetRes, voltagelist, reslist);
 end
@@ -246,7 +246,7 @@ resSqaure = sum(targetRes.^2);
 %%
 % Identify Outliers After Filtering
 % (Threshold approach) ajm 8/2/17
-if balOut_FLAG == 1
+if FLAGS.balOut == 1
     detect_targetRes = targetRes;
     
     % Use the modeled input for the rest of the calculations
@@ -286,7 +286,7 @@ if balOut_FLAG == 1
     prcnt_outliers = 100.0*num_outliers/numpts;
     
     % Use the reduced input and target files
-    if zeroed_FLAG == 1
+    if FLAGS.zeroed == 1
         fprintf(' ************************************************************************ ');
         fprintf('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
         fprintf(' ************************************************************************ ');
@@ -341,7 +341,7 @@ if balOut_FLAG == 1
         for i=1:dimFlag
             biggee(:,i) = 0;
         end
-        [comIN,comLZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series0,nseries0, dainputs, dalz, biggee);
+        [comIN,comLZ]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numpts,series0,nseries0, dainputs, dalz, biggee);
         
         comINminLZ = comIN-comLZ;
         
@@ -399,7 +399,7 @@ theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
 [~,s_1st,~] = unique(series0);
 
 %OUTPUT HISTOGRAM PLOTS
-if hist_FLAG == 1
+if FLAGS.hist == 1
     figure('Name','Calibration - ALGB','NumberTitle','off')
     for k0=1:length(targetRes(1,:))
         subplot(2,3,k0)
@@ -420,12 +420,12 @@ if hist_FLAG == 1
 end
 
 %START PRINT OUT PERFORMANCE INFORMATION TO THE SCREEN
-if print_FLAG == 1
+if FLAGS.print == 1
     %
     %% END Direct or Indirect Approach to Calibration
     
     %% Identify the Possible Outliers
-    if balOut_FLAG == 1
+    if FLAGS.balOut == 1
         fprintf(' ***** ');
         fprintf(' ');
         fprintf('Number of Outliers =');
@@ -435,7 +435,7 @@ if print_FLAG == 1
     end
     
     % Recalculated Calibration with Reduced Matrices
-    if zeroed_FLAG == 1
+    if FLAGS.zeroed == 1
         fprintf(' ************************************************************************ ');
         fprintf('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
         fprintf(' ************************************************************************ ');
@@ -469,7 +469,7 @@ if print_FLAG == 1
     
 end
 
-if excel_FLAG == 1
+if FLAGS.excel == 1
     % Output results to an excel file
     fprintf('  ');
     fprintf('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
@@ -480,13 +480,13 @@ if excel_FLAG == 1
     csvwrite(filename,aprxINminGZ)
 end
 
-if res_FLAG == 1
+if FLAGS.res == 1
     figure('Name','Algebraic Model Calibration; Residuals of Load Versus Data Point Index','NumberTitle','off')
     plotResPages(series0, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
     %    hold off
 end
 
-if balCal_FLAG == 2
+if FLAGS.balCal == 2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %             VOLTAGE TO LOAD (DIRECT) - RBF SECTION                         %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -579,7 +579,7 @@ if balCal_FLAG == 2
     theminmaxband2 = 100*(abs(maxTargets2 + minTargets2)./loadCapacities);
     
     %***************** ajm 5/12/18
-    if res_FLAG == 1
+    if FLAGS.res == 1
         figure('Name','GRBF + Algebraic Model Calibration; Residuals of Load Versus Data Point Index','NumberTitle','off')
         plotResPages(series0, targetRes2, loadCapacities, stdDevPercentCapacity2, loadlist)
         %    hold off
@@ -589,14 +589,14 @@ if balCal_FLAG == 2
     %
     %justtherbfs = aprxINminGZ2-aprxINminGZ;
     %
-    %if res_FLAG == 1
+    %if FLAGS.res == 1
     %    figure('Name','Looking at GRBF Distribution in Calibration','NumberTitle','off')
     %    plotResPages(series0, justtherbfs, loadCapacities, stdDevPercentCapacity2)
     %    hold off
     %end
     
     %OUTPUT HISTOGRAM PLOTS
-    if hist_FLAG == 1
+    if FLAGS.hist == 1
         figure('Name','Calibration - GRBF','NumberTitle','off')
         for k0=1:length(targetRes2(1,:))
             subplot(2,3,k0)
@@ -616,7 +616,7 @@ if balCal_FLAG == 2
         end
     end
     
-    if excel_FLAG == 1
+    if FLAGS.excel == 1
         fprintf(' ***** ');
         fprintf('  ');
         fprintf('ALG+GRBF CALIBRATION MODEL GLOBAL LOAD APPROXIMATION: Check CALIB_AOX_GLOBAL_GRBF_RESULT.csv file');
@@ -635,7 +635,7 @@ if balCal_FLAG == 2
     end
     
     
-    if print_FLAG == 1
+    if FLAGS.print == 1
         
         fprintf(' ');
         fprintf('Number of GRBFs =');
@@ -661,7 +661,7 @@ if balCal_FLAG == 2
     
 end
 
-if balVal_FLAG == 1
+if FLAGS.balVal == 1
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                       VALIDATION SECTION      AJM 7/1/17                %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -713,21 +713,21 @@ if balVal_FLAG == 1
     % Build the Algebraic Model
     lasttarevalid = seriesvalid(numptsvalid);
     % Full Algebraic Model
-    if model_FLAG == 1
+    if FLAGS.model == 1
         nterms = 2*dimFlag*(dimFlag+2);
     end
     % Truncated Algebraic Model
-    if model_FLAG == 2
+    if FLAGS.model == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
     % Linear Algebraic Model
-    if model_FLAG == 3
+    if FLAGS.model == 3
         nterms = dimFlag;
     end
     
     % Call the Algebraic Subroutine
     comGZvalid = zeros(nterms+1,1);
-    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,nseriesvalid,dainputsvalid,dalzvalid,dagzvalid);
+    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numptsvalid,seriesvalid,nseriesvalid,dainputsvalid,dalzvalid,dagzvalid);
     
     comINminLZvalid = comINvalid-comLZvalid;
     
@@ -780,7 +780,7 @@ if balVal_FLAG == 1
     theminmaxbandvalid = 100*(abs(maxTargetsvalid + minTargetsvalid)./loadCapacitiesvalid);
     
     %OUTPUT HISTOGRAM PLOTS
-    if hist_FLAG == 1
+    if FLAGS.hist == 1
         figure('Name','Validation - ALGB','NumberTitle','off')
         for k0=1:length(targetResvalid(1,:))
             subplot(2,3,k0)
@@ -800,24 +800,24 @@ if balVal_FLAG == 1
         end
     end
     
-    if print_FLAG == 1
+    if FLAGS.print == 1
         %
         % Full Algebraic Model
-        if model_FLAG == 1
+        if FLAGS.model == 1
             fprintf(' ');
             fprintf('%%%%%%%%%%%%%%%%%');
             fprintf(' ');
             fprintf('VALIDATION RESULTS: Full Algebraic Model');
         end
         % Truncated Algebraic Model
-        if model_FLAG == 2
+        if FLAGS.model == 2
             fprintf(' ');
             fprintf('%%%%%%%%%%%%%%%%%');
             fprintf(' ');
             fprintf('VALIDATION RESULTS: Truncated Algebraic Model');
         end
         % Linear Algebraic Model
-        if model_FLAG == 3
+        if FLAGS.model == 3
             fprintf(' ');
             fprintf('%%%%%%%%%%%%%%%%%');
             fprintf(' ');
@@ -845,7 +845,7 @@ if balVal_FLAG == 1
         alg_per_minmaxband_valid = array2table(theminmaxbandvalid,'VariableNames',loadlist(1:dimFlag))
     end
     
-    if excel_FLAG == 1
+    if FLAGS.excel == 1
         %%%%
         fprintf('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
         fprintf(' ');
@@ -854,7 +854,7 @@ if balVal_FLAG == 1
         csvwrite(filename,aprxINminGZvalid)
     end
     
-    if res_FLAG == 1
+    if FLAGS.res == 1
         figure('Name','Algebraic Model Validation; Residuals of Load Versus Data Point Index','NumberTitle','off')
         plotResPages(seriesvalid, targetResvalid, loadCapacities, stdDevPercentCapacityvalid, loadlist)
         %    hold off
@@ -885,7 +885,7 @@ if balVal_FLAG == 1
         dainputscalib(:,k) = excessVec0(:,k) - globalZeros(k);
     end
     
-    if balCal_FLAG == 2
+    if FLAGS.balCal == 2
         etaHistvalid = cell(numBasis,1);
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
@@ -977,7 +977,7 @@ if balVal_FLAG == 1
         theminmaxband2valid = 100*(abs(maxTargets2valid + minTargets2valid)./loadCapacitiesvalid);
         
         %OUTPUT HISTOGRAM PLOTS
-        if hist_FLAG == 1
+        if FLAGS.hist == 1
             figure('Name','Validation - GRBF','NumberTitle','off')
             for k0=1:length(targetRes2valid(1,:))
                 subplot(2,3,k0)
@@ -996,7 +996,7 @@ if balVal_FLAG == 1
                 xlabel(['\Delta',loadlist{k0},'/\sigma']);
             end
         end
-        if print_FLAG == 1
+        if FLAGS.print == 1
             %
             fprintf(' ***** ');
             fprintf(' ');
@@ -1021,7 +1021,7 @@ if balVal_FLAG == 1
             GRBF_minmaxband_per_capacity_valid = array2table(theminmaxband2valid,'VariableNames',loadlist(1:dimFlag))
         end
         
-        if res_FLAG == 1
+        if FLAGS.res == 1
             figure('Name','GRBF + Algebraic Model Validation; Residuals of Load Versus Data Point Index','NumberTitle','off')
             plotResPages(seriesvalid, targetRes2valid, loadCapacities, stdDevPercentCapacity2valid, loadlist)
             %    hold off
@@ -1032,13 +1032,13 @@ if balVal_FLAG == 1
         %
         %%deltatherbfsvalid = justtherbfs - justtherbfsvalid;
         %
-        %if res_FLAG == 1
+        %if FLAGS.res == 1
         %    figure('Name','Looking at GRBF Distribution in Validation','NumberTitle','off')
         %    plotResPages(seriesvalid, justtherbfsvalid, loadCapacities, stdDevPercentCapacity2valid)
         %    hold off
         %end
         
-        if excel_FLAG == 1
+        if FLAGS.excel == 1
             fprintf(' ');
             fprintf('ALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION: Check VALID_AOX_GLOBAL_GRBF_RESULT.csv file');
             fprintf(' ');
@@ -1049,7 +1049,7 @@ if balVal_FLAG == 1
     end
 end
 
-if balApprox_FLAG == 1
+if FLAGS.balApprox == 1
     %
     %
     %
@@ -1098,21 +1098,21 @@ if balApprox_FLAG == 1
     %     n(1) = 2*dimFlag*(dimFlag+2);
     %     n(2) = dimFlag*(dimFlag+3)/2;
     %     n(3) = dimFlag;
-    %     model_FLAG = find(n==size( xapproxer,1)-1);
+    %     FLAGS.model = find(n==size( xapproxer,1)-1);
     
     
     %% Full Algebraic Model
-    if model_FLAG == 1
+    if FLAGS.model == 1
         nterms = 2*dimFlag*(dimFlag+2);
     end
     
     %% Truncated Algebraic Model
-    if model_FLAG == 2
+    if FLAGS.model == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
     
     %% Linear Algebraic Model
-    if model_FLAG == 3
+    if FLAGS.model == 3
         nterms = dimFlag;
     end
     
@@ -1128,9 +1128,9 @@ if balApprox_FLAG == 1
         biggee(:,i) = 0;
     end
     
-    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsapprox,0,0,dainputsapprox,dalzapprox,biggee);
+    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numptsapprox,0,0,dainputsapprox,dalzapprox,biggee);
     
-    %model_FLAG
+    %FLAGS.model
     %nterms
     %dimFlag
     %numptsapprox
@@ -1153,7 +1153,7 @@ if balApprox_FLAG == 1
     %%
     
     %%%%%%
-    if excel_FLAG == 1
+    if FLAGS.excel == 1
         fprintf(' ');
         fprintf('%%%%%%%%%%%%%%%%%');
         fprintf(' ');
@@ -1194,7 +1194,7 @@ if balApprox_FLAG == 1
     
     %%
     
-    if balCal_FLAG == 2
+    if FLAGS.balCal == 2
         
         etaHistapprox = cell(numBasis,1);
         aprxINminGZ_Histapprox = cell(numBasis,1);
@@ -1240,7 +1240,7 @@ if balApprox_FLAG == 1
         
         
         
-        if excel_FLAG == 1
+        if FLAGS.excel == 1
             fprintf(' ');
             fprintf('%%%%%%%%%%%%%%%%%');
             fprintf(' ');
