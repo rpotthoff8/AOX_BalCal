@@ -192,56 +192,13 @@ if LHS_FLAG == 1
     xcalib_std = std(x_all,[],3);
 end
 
-if Uncert_Flag==1 %Start uncertainty section
-    if Boot_Flag==1
-        %%start bootstrapfunction
-        bootalpha=.05;
-        f=@calc_xcalib;
-        xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix});
-    else
-        xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
-    end
-    % END: bootstrap section
-    
-    if Volt_Flag==1
-        %uncertainty due to uncertainty in volt readings
-        uncert_comIN=balCal_algEquations_partialdiff(model_FLAG, dimFlag, dainputs0);
-    else
-        uncert_comIN=zeros(nterms,numpts0,dimFlag);
-    end
-    
-    [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,Boot_Flag,Volt_Flag);
-end %end uncertainty section
-
 %%
-% Splits xcalib into Coefficients and Intercepts (which are negative Tares)
-coeff = xcalib(1:nterms,:);
-tares = -xcalib(nterms+1:end,:);
-intercepts=-tares;
-taretal=tares(series0,:); %create matrix with tares for each row of input data
-
-%  Creates Matrix for the volts to loads
-APPROX_AOX_COEFF_MATRIX = coeff;
-if excel_FLAG == 1
-    filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-    csvwrite(filename,coeff)
-end
-
 % APPROXIMATION
 % define the approximation for inputs minus global zeros
 aprxIN = comIN0*xcalib;
 
 % RESIDUAL
 targetRes = targetMatrix0-aprxIN;
-
-% Prints residual vs. input and calculates correlations
-if rescorr_FLAG == 1
-    figure('Name','Residual correlation plot','NumberTitle','off');
-    correlationPlot(excessVec0, targetRes, voltagelist, reslist);
-end
-
-% Calculates the Sum of Squares of the residual
-resSquare = sum(targetRes.^2);
 
 %%
 % Identify Outliers After Filtering
@@ -253,9 +210,6 @@ if balOut_FLAG == 1
     
     % Use the reduced input and target files
     if zeroed_FLAG == 1
-        fprintf(' ************************************************************************ ');
-        fprintf('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
-        fprintf(' ************************************************************************ ');
         
         % Remove outlier rows for recalculation and all future calculations:
         numpts0 =  numpts0 - num_outliers;
@@ -279,8 +233,52 @@ if balOut_FLAG == 1
     end
 end
 
+% Splits xcalib into Coefficients and Intercepts (which are negative Tares)
+coeff = xcalib(1:nterms,:);
+tares = -xcalib(nterms+1:end,:);
+intercepts=-tares;
+taretal=tares(series,:);
+aprxINminGZ=aprxIN+taretal; %QUESTION: 29 MAR 2019: JRP
+
+if Uncert_Flag==1 %Start uncertainty section
+    if Boot_Flag==1
+        %%start bootstrapfunction
+        bootalpha=.05;
+        f=@calc_xcalib;
+        xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix});
+    else
+        xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
+    end
+    % END: bootstrap section
+    
+    if Volt_Flag==1
+        %uncertainty due to uncertainty in volt readings
+        uncert_comIN=balCal_algEquations_partialdiff(model_FLAG, dimFlag, dainputs0);
+    else
+        uncert_comIN=zeros(nterms,numpts0,dimFlag);
+    end
+    
+    [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,Boot_Flag,Volt_Flag);
+end %end uncertainty section
+
+%  Creates Matrix for the volts to loads
+APPROX_AOX_COEFF_MATRIX = coeff;
+if excel_FLAG == 1
+    filename = 'APPROX_AOX_COEFF_MATRIX.csv';
+    csvwrite(filename,coeff)
+end
+
+% Prints residual vs. input and calculates correlations
+if rescorr_FLAG == 1
+    figure('Name','Residual correlation plot','NumberTitle','off');
+    correlationPlot(excessVec0, targetRes, voltagelist, reslist);
+end
+
+% Calculates the Sum of Squares of the residual
+resSquare = sum(targetRes.^2);
+
 %find the sum of squares of the residual using the dot product
-resSquare = dot(targetRes,targetRes)';
+% resSquare = dot(targetRes,targetRes)';
 %AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
 
 %OUTPUTS FOR ALGEBRAIC SECTION
@@ -302,8 +300,6 @@ ratioGoop(isnan(ratioGoop)) = realmin;
 
 %    theminmaxband = abs(maxTargets + minTargets);
 theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
-
-[~,s_1st,~] = unique(series0);
 
 %OUTPUT HISTOGRAM PLOTS
 if hist_FLAG == 1
@@ -328,8 +324,6 @@ end
 
 %START PRINT OUT PERFORMANCE INFORMATION TO THE SCREEN
 if print_FLAG == 1
-    %
-    %% END Direct or Indirect Approach to Calibration
     
     %% Identify the Possible Outliers
     if balOut_FLAG == 1
@@ -348,7 +342,6 @@ if print_FLAG == 1
         fprintf(' ************************************************************************ ');
     end
     
-    
     %%%%%%% 6_14_18 ajm
     calib_twoSigmaALGB = standardDev'.*2;
     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
@@ -363,7 +356,7 @@ if print_FLAG == 1
     numCombinName = cellstr(num2str(numCombin'));
     numCombinName(nterms+nseries0+1) = cellstr('Intercept');
     
-    calib_mean_algebraic_Resids_sqrd = array2table(resSquare'./numpts0,'VariableNames',loadlist(1:dimFlag))
+    calib_mean_algebraic_Resids_sqrd = array2table((resSquare'./numpts0)','VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop,'VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Std_Dev_pcnt = array2table(stdDevPercentCapacity,'VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Max_Load_Resids = array2table(maxTargets,'VariableNames',loadlist(1:dimFlag))
@@ -459,7 +452,7 @@ if balCal_FLAG == 2
         % SOLVE FOR TARES BY TAKING THE MEAN
         taresAllPointsGRBF = meantare(series0,aprxINminGZ2-targetMatrix0);
         
-        taresGRBF = taresAllPointsGRBF(s_1st,:);
+        taresGRBF = taresAllPointsGRBF(s_1st0,:);
         
         tareGRBFHist{u} = taresGRBF;
         
@@ -581,10 +574,9 @@ if balVal_FLAG == 1
     %     targetMatrixvalid =      csvread(inputFile_balCal,19,4,'E20..L139');
     %     excessVecvalid =         csvread(inputFile_balCal,19,12,'M20..T139');
     load(out.savePathval,'-mat');
-    [~,s_1st,s_id] = unique(seriesvalid);
-    xvalid = xcalib;
+    [validSeries,s_1stV,~] = unique(seriesvalid);
+    xvalid=[coeff;tares(validSeries,:)]; %QUESTION: 29 March 2019; JRP
     
-    excessVecvalid0 = excessVecvalid;
     % num of data points
     numptsvalid = length(seriesvalid);
     dimFlagvalid = length(excessVecvalid(1,:));
@@ -601,20 +593,19 @@ if balVal_FLAG == 1
     %find zero points of each series0 and number of points in a series0
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
     %section
-    [localZerosvalid,localZerosAllPointsvalid] = localzeros(seriesvalid,excessVecvalid0);
+    [localZerosvalid,localZerosAllPointsvalid] = localzeros(seriesvalid,excessVecvalid);
     globalZerosAllPointsvalid = ones(numptsvalid,1)*globalZerosvalid;
     
     % Subtract the Global Zeros from the Inputs and Local Zeros
-    
     for k=1:dimFlagvalid
-        dainputsvalid(:,k) = excessVecvalid0(:,k)-globalZerosvalid(k);
+        dainputsvalid(:,k) = excessVecvalid(:,k)-globalZerosvalid(k);
         dalzvalid(:,k) = localZerosAllPointsvalid(:,k)-globalZerosvalid(k);
         dagzvalid(:,k) = 0;
     end
     
     %%% 5/16/18
     %Remember that  excessVec0 = excessVec0_complete - globalZerosAllPoints;
-    excessVecvalidkeep = excessVecvalid0  - globalZerosAllPointsvalid;
+    excessVecvalidkeep = excessVecvalid  - globalZerosAllPointsvalid;
     %%%
     
     % Build the Algebraic Model
@@ -657,7 +648,7 @@ if balVal_FLAG == 1
     
     % SOLVE FOR TARES BY TAKING THE MEAN
     taresAllPointsvalid = meantare(seriesvalid,checkitvalid);
-    zapvalid     = taresAllPointsvalid(s_1st,:);
+    zapvalid     = taresAllPointsvalid(s_1stV,:);
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
     
@@ -736,7 +727,7 @@ if balVal_FLAG == 1
         fprintf(out.savePathval);
         fprintf('  ');
         fprintf('Number of validation data points =');
-        fprintf(numptsvalid);
+        fprintf(string(numptsvalid));
         fprintf('  ');
         
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag))
@@ -783,7 +774,7 @@ if balVal_FLAG == 1
     
     % Subtract the Global Zeros from the Inputs and Local Zeros
     for k=1:dimFlagvalid
-        dainputsvalid(:,k) = excessVecvalid0(:,k)-globalZerosvalid(k);
+        dainputsvalid(:,k) = excessVecvalid(:,k)-globalZerosvalid(k);
         dalzvalid(:,k) = localZerosAllPointsvalid(:,k)-globalZerosvalid(k);
         dagzvalid(:,k) = 0;
     end
