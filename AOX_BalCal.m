@@ -218,6 +218,7 @@ end
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
 coeff = xcalib(1:nterms,:);
 tares = -xcalib(nterms+1:end,:);
+intercepts=-tares;
 
 %  Creates Matrix for the volts to loads
 APPROX_AOX_COEFF_MATRIX = coeff;
@@ -230,7 +231,7 @@ end
 % APPROXIMATION
 % define the approximation for inputs minus global zeros
 aprxIN = comIN0*xcalib;
-
+aprxINminGZ=aprxIN; %JRP 26 March
 % RESIDUAL
 targetRes = targetMatrix0-aprxIN;
 
@@ -271,7 +272,7 @@ if FLAGS.balOut == 1
     
     % ID outlier rows :
     zero_counter = 1;
-    for k1 = 1:numpts
+    for k1 = 1:numpts0
         for k4 = 1:dimFlag
             if outlierIndices(k1,k4) == 1
                 outlier_values(zero_counter,1) = k1;
@@ -283,7 +284,7 @@ if FLAGS.balOut == 1
     OUTLIER_ROWS = unique(outlier_values,'rows');
     
     num_outliers = length(OUTLIER_ROWS);
-    prcnt_outliers = 100.0*num_outliers/numpts;
+    prcnt_outliers = 100.0*num_outliers/numpts0;
     
     % Use the reduced input and target files
     if FLAGS.zeroed == 1
@@ -295,7 +296,7 @@ if FLAGS.balOut == 1
         zeroed_targetMatrix = targetMatrix0;
         zeroed_excessVec = excessVec0;
         zeroed_series = series0;
-        zeroed_numpts = numpts;
+        zeroed_numpts = numpts0;
         
         zeroed_targetMatrix(OUTLIER_ROWS,:) = [];
         zeroed_excessVec(OUTLIER_ROWS,:) = [];
@@ -305,32 +306,32 @@ if FLAGS.balOut == 1
         
         zeroed_series(OUTLIER_ROWS) = [];
         
-        numpts =  zeroed_numpts - num_outliers;
+        numpts0 =  zeroed_numpts - num_outliers;
         
         targetMatrix0 = zeroed_targetMatrix;
         excessVec0 = zeroed_excessVec;
         series0 = zeroed_series;
         
-        dainputs = zeros(numpts,dimFlag);
-        dalz = zeros(numpts,dimFlag);
-        localZerosAllPoints = zeros(numpts,dimFlag);
-        aprxINminGZ = zeros(numpts,dimFlag);
-        aprxLZminGZ = zeros(numpts,dimFlag);
-        zeroed_checkit = zeros(numpts,dimFlag);
-        taresAllPoints = zeros(numpts,dimFlag);
-        globalZerosAllPoints = zeros(numpts,dimFlag);
-        eta = zeros(numpts,dimFlag);
-        zeroed_zoop = zeros(numpts,dimFlag);
+        dainputs = zeros(numpts0,dimFlag);
+        dalz = zeros(numpts0,dimFlag);
+        localZerosAllPoints = zeros(numpts0,dimFlag);
+        aprxINminGZ = zeros(numpts0,dimFlag);
+        aprxLZminGZ = zeros(numpts0,dimFlag);
+        zeroed_checkit = zeros(numpts0,dimFlag);
+        taresAllPoints = zeros(numpts0,dimFlag);
+        globalZerosAllPoints = zeros(numpts0,dimFlag);
+        eta = zeros(numpts0,dimFlag);
+        zeroed_zoop = zeros(numpts0,dimFlag);
         
-        rbfc_INminLZ = zeros(numpts,dimFlag);
-        rbfc_INminGZ = zeros(numpts,dimFlag);
-        rbfc_LZminGZ = zeros(numpts,dimFlag);
-        rbfINminLZ = zeros(numpts,dimFlag);
-        rbfINminGZ = zeros(numpts,dimFlag);
-        rbfLZminGZ = zeros(numpts,dimFlag);
+        rbfc_INminLZ = zeros(numpts0,dimFlag);
+        rbfc_INminGZ = zeros(numpts0,dimFlag);
+        rbfc_LZminGZ = zeros(numpts0,dimFlag);
+        rbfINminLZ = zeros(numpts0,dimFlag);
+        rbfINminGZ = zeros(numpts0,dimFlag);
+        rbfLZminGZ = zeros(numpts0,dimFlag);
         
         [localZeros,localZerosAllPoints] = localzeros(series0,excessVec0);
-        globalZerosAllPoints = ones(numpts,1)*globalZeros;
+        globalZerosAllPoints = ones(numpts0,1)*globalZeros;
         
         % Subtract the Global Zeros from the Inputs and Local Zeros
         for i=1:dimFlag
@@ -341,7 +342,7 @@ if FLAGS.balOut == 1
         for i=1:dimFlag
             biggee(:,i) = 0;
         end
-        [comIN,comLZ]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numpts,series0,nseries0, dainputs, dalz, biggee);
+        [comIN,comLZ]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numpts0,series0,nseries0, dainputs, dalz, biggee);
         
         comINminLZ = comIN-comLZ;
         
@@ -456,7 +457,7 @@ if FLAGS.print == 1
     numCombinName = cellstr(num2str(numCombin'));
     numCombinName(nterms+nseries0+1) = cellstr('Intercept');
     
-    calib_mean_algebraic_Resids_sqrd = array2table(resSquare'./numpts,'VariableNames',loadlist(1:dimFlag))
+    calib_mean_algebraic_Resids_sqrd = array2table(resSquare'./numpts0,'VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop,'VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Std_Dev_pcnt = array2table(stdDevPercentCapacity,'VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Max_Load_Resids = array2table(maxTargets,'VariableNames',loadlist(1:dimFlag))
@@ -506,7 +507,7 @@ if FLAGS.balCal == 2
     etaHist = cell(numBasis,1);
     aprxINminGZ_Hist = cell(numBasis,1);
     tareHist = cell(numBasis,1);
-    
+     localZerosAllPoints=tares(series0,:);
     for i=1:dimFlag
         dainputscalib(:,i) = excessVec0(:,i)-globalZeros(i);
         dalzcalib(:,i) = localZerosAllPoints(:,i)-globalZeros(i);
@@ -533,15 +534,15 @@ if FLAGS.balCal == 2
             rbfINminGZ(:,s)=exp(eta(:,s)*log(abs(w(s))));
             rbfLZminGZ(:,s)=exp(etaLZ(:,s)*log(abs(w(s))));%to find tares AAM042016
             
-            coeff(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
+            coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
             
-            rbfc_INminLZ(:,s) = coeff(s)*rbfINminLZ(:,s);
-            rbfc_INminGZ(:,s) = coeff(s)*rbfINminGZ(:,s);
-            rbfc_LZminGZ(:,s) = coeff(s)*rbfLZminGZ(:,s); %to find tares AAM042016
+            rbfc_INminLZ(:,s) = coeffRBF(s)*rbfINminLZ(:,s);
+            rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
+            rbfc_LZminGZ(:,s) = coeffRBF(s)*rbfLZminGZ(:,s); %to find tares AAM042016
         end
         
         wHist(u,:) = w;
-        cHist(u,:) = coeff;
+        cHist(u,:) = coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
         etaHist{u} = eta;
         
@@ -639,7 +640,7 @@ if FLAGS.balCal == 2
         
         fprintf(' ');
         fprintf('Number of GRBFs =');
-        fprintf(numBasis);
+        fprintf(string(numBasis));
         fprintf(' ');
         
         twoSigmaGRBF = standardDev'.*2;
@@ -648,7 +649,7 @@ if FLAGS.balCal == 2
         %Should I use strtrim()  ? -AAM 042116
         calib_GRBF_Tares = array2table(taresGRBF,'VariableNames',loadlist(1:dimFlag))
         
-        calib_mean_GRBF_Resids_sqrd = array2table(resSquare2'./numpts,'VariableNames',loadlist(1:dimFlag))
+        calib_mean_GRBF_Resids_sqrd = array2table(resSquare2'./numpts0,'VariableNames',loadlist(1:dimFlag))
         calib_GRBF_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop2,'VariableNames',loadlist(1:dimFlag))
         calib_GRBF_Std_Dev_pcnt = array2table(stdDevPercentCapacity2,'VariableNames',loadlist(1:dimFlag))
         calib_GRBF_Max_Load_Resids = array2table(maxTargets2,'VariableNames',loadlist(1:dimFlag))
