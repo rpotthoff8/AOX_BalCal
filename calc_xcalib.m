@@ -32,7 +32,7 @@ targetMatrix=targetMatrix(sortI,:);
         
         % SOLUTION
         xcalib_k = comIN_k\targetMatrix(:,k);
-        
+%         xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
         if model_FLAG == 4
             xcalib(customMatrix(:,k)==1,k) = xcalib_k;
         else
