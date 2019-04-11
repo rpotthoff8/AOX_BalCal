@@ -167,6 +167,13 @@ if exist(fileName,'file')
         set(handles.numLHS,'String',default.numLHS);
         set(handles.LHSp,'String',default.LHSp);
         LHS_FLAGcheck_Callback(handles.LHS_FLAGcheck, eventdata, handles);
+    
+        set(handles.Uncert_FLAGcheck,'Value',default.Uncert_FLAGcheck);
+        set(handles.Volt_FLAGcheck,'Value',default.Volt_FLAGcheck);
+        set(handles.Boot_FLAGcheck,'Value',default.Boot_FLAGcheck);
+        set(handles.voltTrust,'String',default.voltTrust);
+        set(handles.numBoot,'String',default.numBoot);
+        Uncert_FLAGcheck_Callback(handles.Uncert_FLAGcheck, eventdata, handles);
     end
 end
 
@@ -1220,6 +1227,12 @@ default.LHSp = get(handles.LHSp,'String');
 default.direct = get(handles.direct,'Value');
 default.indirect = get(handles.indirect,'Value');
 
+default.Uncert_FLAGcheck=get(handles.Uncert_FLAGcheck,'Value');
+default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
+default.Boot_FLAGcheck=get(handles.Boot_FLAGcheck,'Value');
+default.voltTrust=get(handles.voltTrust,'String');
+default.numBoot=get(handles.numBoot,'String');
+
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
 save(fileName,'default');
@@ -1888,7 +1901,11 @@ function Boot_FLAGcheck_Callback(hObject, eventdata, handles)
 % hObject    handle to Boot_FLAGcheck (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+if get(hObject,'Value') == 1  
+    set(handles.numBoot,'Enable','on');
+else
+    set(handles.numBoot,'Enable','off');
+end
 % Hint: get(hObject,'Value') returns toggle state of Boot_FLAGcheck
 
 
@@ -1897,7 +1914,11 @@ function Volt_FLAGcheck_Callback(hObject, eventdata, handles)
 % hObject    handle to Volt_FLAGcheck (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+if get(hObject,'Value') == 1  
+    set(handles.voltTrust,'Enable','on');
+else
+    set(handles.voltTrust,'Enable','off');
+end
 % Hint: get(hObject,'Value') returns toggle state of Volt_FLAGcheck
 
 
@@ -1911,16 +1932,12 @@ if get(hObject,'Value') == 1
     set(handles.voltTrust,'Enable','on');
     set(handles.Boot_FLAGcheck,'Enable','on');
     set(handles.Volt_FLAGcheck,'Enable','on');
-     set(handles.Boot_FLAGcheck,'Value',1);
-    set(handles.Volt_FLAGcheck,'Value',1);
-    
+    Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
+    Boot_FLAGcheck_Callback(handles.Boot_FLAGcheck, eventdata, handles);    
 else
     set(handles.numBoot,'Enable','off');
     set(handles.voltTrust,'Enable','off');
     set(handles.Boot_FLAGcheck,'Enable','off');
-    set(handles.Volt_FLAGcheck,'Enable','off');
-    set(handles.Boot_FLAGcheck,'Value',0);
-    set(handles.Volt_FLAGcheck,'Value',0);
-    
+    set(handles.Volt_FLAGcheck,'Enable','off');    
 end
 % Hint: get(hObject,'Value') returns toggle state of Uncert_FLAGcheck
