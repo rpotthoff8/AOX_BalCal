@@ -1,7 +1,7 @@
 function xcalib=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix)
 %Function calculates coefficient matrix (xcalib)
 
-%Orders data by series
+%Orders data by series (needed for bootstrap)
 [series,sortI]=sort(series);
 comIN=comIN(sortI,:);
 targetMatrix=targetMatrix(sortI,:);

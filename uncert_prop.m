@@ -1,4 +1,4 @@
-function [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix,series,voltTrust,Boot_Flag,Volt_Flag)
+function [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix,series,voltTrust,Boot_Flag,Volt_Flag)
 %Function calculates uncertainty in load from uncertainty in coefficients and input voltages
 
 %Inputs:
@@ -33,11 +33,14 @@ for i=1:size(xcalib,1)
         for k=1:2
             error(k,i,j)=abs(fxcalib_ci(k,i,j)-xcalib(i,j));
         end
+        xcalib_ci_product(i,j)=fxcalib_ci(1,i,j)*fxcalib_ci(2,i,j);
         xcalib_error(i,j)=max(error(:,i,j));
     end
 end
+    xcalibCI_includeZero=(xcalib_ci_product<=0);
 else
     xcalib_error=zeros(size(xcalib,1),size(xcalib,2));
+    xcalibCI_includeZero=zeros(size(xcalib,1),size(xcalib,2));
 end
 comIN_square=comIN.^2; %Square input matrix
 xcalib_error_square=xcalib_error.^2; %square error matrix

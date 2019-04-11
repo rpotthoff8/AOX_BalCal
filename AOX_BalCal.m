@@ -258,7 +258,7 @@ if Uncert_Flag==1 %Start uncertainty section
         uncert_comIN=zeros(nterms,numpts0,dimFlag);
     end
     
-    [combined_uncert,tare_uncert, FL_uncert]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,Boot_Flag,Volt_Flag);
+    [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,Boot_Flag,Volt_Flag);
 end %end uncertainty section
 
 %  Creates Matrix for the volts to loads
