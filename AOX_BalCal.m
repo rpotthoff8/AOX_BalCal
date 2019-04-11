@@ -195,7 +195,7 @@ for lhs = 1:numLHS
         end
         
         % SOLUTION
-        xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
+        xcalib_k = comIN_k\targetMatrix(:,k);
         
         if FLAGS.model == 4
             xcalib(customMatrix(:,k)==1,k) = xcalib_k;
@@ -347,7 +347,7 @@ if FLAGS.balOut == 1
         comINminLZ = comIN-comLZ;
         
         %SOLUTION
-        xcalib = pinv(comINminLZ')*targetMatrix0;
+        xcalib = comINminLZ\targetMatrix0;
         
         %APPROXIMATION
         %define the approximation for inputs minus local zeros
