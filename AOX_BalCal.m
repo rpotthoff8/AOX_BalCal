@@ -82,6 +82,7 @@ series0 = series;
 
 % 6_14_18 ajm
 warning('off','all');
+%    format long 
 %
 
 disp('Starting Calculations')
@@ -142,6 +143,8 @@ for lhs = 1:numLHS
     [~,s_1st,s_id] = unique(series);
     %find number of series; this will tell us the number of tares
     nseries = length(s_1st);
+
+    
     
     %find zero points of each series and number of points in a series
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
@@ -198,6 +201,7 @@ for lhs = 1:numLHS
     % Call the Algebraic Subroutine
     comIN = balCal_algEqns(model_FLAG,dainputs);
     [comIN,comLZ,comGZ]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numpts,series,lasttare,dainputs,dalz,biggee);
+
     
     % Effectively removes the original tare values so we can calculate the averages
     for i=1:lasttare
@@ -224,14 +228,17 @@ for lhs = 1:numLHS
     
     %  Creates Matrix for the volts to loads
     %  ajm for the users to view 5/11/18
-    APPROX_AOX_COEFF_MATRIX = xcalib;
+%    APPROX_AOX_COEFF_MATRIX = xcalib;
     
-    xapproxer = xcalib(1:nterms,:);
+    xapproxer = xcalib(1:nterms,:); 
     xapproxer(end+1,:)  = zeros(1,dimFlag); 
     
     if excel_FLAG == 1
         filename = 'APPROX_AOX_COEFF_MATRIX.csv';
         csvwrite(filename,xapproxer)
+
+dlmwrite('APPROX_AOX_COEFF_MATRIX.txt',xapproxer,'precision','%.16f');
+        
     end
     
     if LHS_Flag == 1
@@ -292,7 +299,10 @@ for m=1:length(aprxIN)
     checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
 end
 
-taretal = meantare(series,checkit);
+[taretal,tarestdev] = meantare(series,checkit);
+
+
+
 %RESIDUAL
 targetRes = targetMatrix+taretal-aprxINminGZ;      %0=b-Ax
 
@@ -426,10 +436,11 @@ if balOut_FLAG == 1
             
             %subtracts the targets from the global approx
             %This will be averaged over the individual series to give the tares
-            checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);
+            checkit(m,:) = aprxINminGZ(m,:)-targetMatrix(m,:);      
         end
         
-        taretal = meantare(series,checkit);
+[taretal,tarestdev] = meantare(series,checkit);
+
         %RESIDUAL
         targetRes = targetMatrix+taretal-aprxINminGZ;      %0=b-Ax
     end
@@ -461,6 +472,8 @@ theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
 
 [~,s_1st,~] = unique(series);
 taresALGB = taretal(s_1st,:);
+taresALGBSTDEV = tarestdev(s_1st,:);
+
 
 %OUTPUT HISTOGRAM PLOTS
 if hist_FLAG == 1
@@ -614,9 +627,10 @@ if balCal_FLAG == 2
         aprxINminGZ_Hist{u} = aprxINminGZ2;
         
         % SOLVE FOR TARES BY TAKING THE MEAN
-        taretalGRBF = meantare(series,aprxINminGZ2-targetMatrix);
+        [taretalGRBF,taretalGRBFSTDEV] = meantare(series,aprxINminGZ2-targetMatrix);
         
         taresGRBF = taretalGRBF(s_1st,:);
+        taresGRBFSTDEV = taretalGRBFSTDEV(s_1st,:); 
         
         tareGRBFHist{u} = taresGRBF;
         
@@ -790,17 +804,20 @@ if balVal_FLAG == 1
     
     % Call the Algebraic Subroutine
     comGZvalid = zeros(nterms+1,1);
-    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid,1, dainputsvalid,dalzvalid,dagzvalid);
     
+[comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(model_FLAG,nterms,dimFlag,numptsvalid,seriesvalid, 1, dainputsvalid,dalzvalid,dagzvalid);
+        
     comINminLZvalid = comINvalid-comLZvalid;
     
     %VALIDATION APPROXIMATION
     %define the approximation for inputs minus global zeros
     %    interceptsvalid = -(comGZvalid'*xvalid);  % ajm 5/17/18
-    aprxINvalid = (xvalid'*comINvalid)';        %to find approximation AJM111516
-    aprxLZvalid = (xvalid'*comLZvalid)';       %to find tares AAM042016
+    
+    aprxINvalid = comINvalid'*xvalid;        %to find approximation AJM111516
+    aprxLZvalid = comLZvalid'*xvalid;       %to find tares AAM042016
     
     aprxINminLZvalid = comINminLZvalid'*xvalid;
+
     
     for m=1:length(aprxINvalid(:,1))
         %%%%% 3/23/17 Zap intercepts %%%
@@ -812,8 +829,13 @@ if balVal_FLAG == 1
     end
     
     % SOLVE FOR TARES BY TAKING THE MEAN
-    taretalvalid = meantare(seriesvalid,checkitvalid);
-    zapvalid     = taretalvalid(s_1st,:);
+ 
+               [taretalvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
+        
+        zapvalid =taretalvalid(s_1st,:);
+        zapSTDEVvalid = taretalstdvalid(s_1st,:);
+        
+    
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taretalvalid;
     
@@ -993,13 +1015,16 @@ if balVal_FLAG == 1
             
             % SOLVE FOR TARES BY TAKING THE MEAN
             [~,s_1st,~] = unique(seriesvalid);
-            taretalvalid2 = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid)
-            
-            taresGRBFvalid = taretalvalid2(s_1st,:);
+
+           [taretalvalid2,taretalstdvalid2] =  meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid);
+        
+        taresGRBFvalid =taretalvalid2(s_1st,:);
+        taresGRBFSTDEVvalid = taretalstdvalid2(s_1st,:);
+        
             tareHistvalid{u} = taresGRBFvalid;
             
             targetRes2valid = targetMatrixvalid+taretalvalid2-aprxINminGZ2valid;      %0=b-Ax
-            targetMatrixGlobalGRBFvalid = targetMatrixvalid+taretalvalid2;  % temp for ajm 6_7_18
+            targetMatrixGlobalGRBFvalid = targetMatrixvalid+taretalvalid2;  % temp for ajm 4_10_19
             
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
@@ -1126,6 +1151,11 @@ if balApprox_FLAG == 1
 
     load(out.savePathapp,'-mat');
     %
+    
+    %% increased precision for written files  ajm 3/16/19 
+%    format long g
+%    format long 
+    %%    
     
     % num of data points
     numptsapprox = length(excessVecapprox);
