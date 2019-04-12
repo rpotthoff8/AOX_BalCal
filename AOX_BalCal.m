@@ -72,10 +72,10 @@ numLHS = out.numLHS; %Number of times to iterate.
 LHSp = out.LHSp; %Percent of data used to create sample.
 %
 %Uncertainty button outputs
-Uncert_Flag=out.uncertFlag;
+FLAGS.uncert=out.uncertFlag;
 numBoot=out.numBoot;
-Boot_Flag=out.bootFlag;
-Volt_Flag=out.voltFlag;
+FLAGS.boot=out.bootFlag;
+FLAGS.volt=out.voltFlag;
 voltTrust=out.voltTrust;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -238,36 +238,36 @@ intercepts=-tares;
 taretal=tares(series,:);
 aprxINminGZ=aprxIN+taretal; %QUESTION: 29 MAR 2019: JRP
 
-if Uncert_Flag==1 %Start uncertainty section
-    if Boot_Flag==1
+if FLAGS.uncert==1 %Start uncertainty section
+    if FLAGS.boot==1
         %%start bootstrapfunction
         bootalpha=.05;
         f=@calc_xcalib;
-        xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix});
+        xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix});
     else
         xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
     end
     % END: bootstrap section
 
-    if Volt_Flag==1
+    if FLAGS.volt==1
         %uncertainty due to uncertainty in volt readings
-        uncert_comIN=balCal_algEquations_partialdiff(model_FLAG, dimFlag, dainputs0);
+        uncert_comIN=balCal_algEquations_partialdiff(FLAGS.model, dimFlag, dainputs0);
     else
         uncert_comIN=zeros(nterms,numpts0,dimFlag);
     end
 
-    [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,Boot_Flag,Volt_Flag);
+    [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
 end %end uncertainty section
 
 %  Creates Matrix for the volts to loads
 APPROX_AOX_COEFF_MATRIX = coeff;
-if excel_FLAG == 1
+if FLAGS.excel == 1
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
     csvwrite(filename,coeff)
 end
 
 % Prints residual vs. input and calculates correlations
-if rescorr_FLAG == 1
+if FLAGS.rescorr == 1
     figure('Name','Residual correlation plot','NumberTitle','off');
     correlationPlot(excessVec0, targetRes, voltagelist, reslist);
 end
