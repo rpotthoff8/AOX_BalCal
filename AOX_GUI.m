@@ -414,16 +414,19 @@ if strcmp(ext,'.csv')
     set(handles.c52, 'Enable', 'on');
 else
     %set(handles.calSave, 'Enable', 'off');
-    set(handles.c11, 'Enable', 'off');
-    set(handles.c12, 'Enable', 'off');
-    set(handles.c21, 'Enable', 'off');
-    set(handles.c22, 'Enable', 'off');
-    set(handles.c31, 'Enable', 'off');
-    set(handles.c32, 'Enable', 'off');
-    set(handles.c41, 'Enable', 'off');
-    set(handles.c42, 'Enable', 'off');
-    set(handles.c51, 'Enable', 'off');
-    set(handles.c52, 'Enable', 'off');
+    load(get(hObject,'String'), '-mat', 'cal');
+    splitrange = split(cal.Range,'..');
+    
+    set(handles.c11, 'Enable', 'off', 'String', splitrange{1,1,1});
+    set(handles.c12, 'Enable', 'off', 'String', splitrange{1,1,2});
+    set(handles.c21, 'Enable', 'off', 'String', splitrange{1,2,1});
+    set(handles.c22, 'Enable', 'off', 'String', splitrange{1,2,2});
+    set(handles.c31, 'Enable', 'off', 'String', splitrange{1,3,1});
+    set(handles.c32, 'Enable', 'off', 'String', splitrange{1,3,2});
+    set(handles.c41, 'Enable', 'off', 'String', splitrange{1,4,1});
+    set(handles.c42, 'Enable', 'off', 'String', splitrange{1,4,2});
+    set(handles.c51, 'Enable', 'off', 'String', splitrange{1,5,1});
+    set(handles.c52, 'Enable', 'off', 'String', splitrange{1,5,2});
 end
 
 
@@ -481,16 +484,19 @@ if strcmp(ext,'.csv')
     set(handles.v52, 'Enable', 'on');
 else
     %set(handles.valSave, 'Enable', 'off');
-    set(handles.v11, 'Enable', 'off');
-    set(handles.v12, 'Enable', 'off');
-    set(handles.v21, 'Enable', 'off');
-    set(handles.v22, 'Enable', 'off');
-    set(handles.v31, 'Enable', 'off');
-    set(handles.v32, 'Enable', 'off');
-    set(handles.v41, 'Enable', 'off');
-    set(handles.v42, 'Enable', 'off');
-    set(handles.v51, 'Enable', 'off');
-    set(handles.v52, 'Enable', 'off');
+    load(get(hObject,'String'), '-mat', 'val');
+    splitrange = split(val.Range,'..');
+    
+    set(handles.v11, 'Enable', 'off', 'String', splitrange{1,1,1});
+    set(handles.v12, 'Enable', 'off', 'String', splitrange{1,1,2});
+    set(handles.v21, 'Enable', 'off', 'String', splitrange{1,2,1});
+    set(handles.v22, 'Enable', 'off', 'String', splitrange{1,2,2});
+    set(handles.v31, 'Enable', 'off', 'String', splitrange{1,3,1});
+    set(handles.v32, 'Enable', 'off', 'String', splitrange{1,3,2});
+    set(handles.v41, 'Enable', 'off', 'String', splitrange{1,4,1});
+    set(handles.v42, 'Enable', 'off', 'String', splitrange{1,4,2});
+    set(handles.v51, 'Enable', 'off', 'String', splitrange{1,5,1});
+    set(handles.v52, 'Enable', 'off', 'String', splitrange{1,5,2});
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -1339,14 +1345,17 @@ if strcmp(ext,'.csv')
     set(handles.a42, 'Enable', 'on');
 else
     %set(handles.appSave, 'Enable', 'off');
-    set(handles.a11, 'Enable', 'off');
-    set(handles.a12, 'Enable', 'off');
-    set(handles.a21, 'Enable', 'off');
-    set(handles.a22, 'Enable', 'off');
-    set(handles.a31, 'Enable', 'off');
-    set(handles.a32, 'Enable', 'off');
-    set(handles.a41, 'Enable', 'off');
-    set(handles.a42, 'Enable', 'off');
+    load(get(hObject,'String'), '-mat', 'val');
+    splitrange = split(val.Range,'..');
+    
+    set(handles.a11, 'Enable', 'off', 'String', splitrange{1,1,1});
+    set(handles.a12, 'Enable', 'off', 'String', splitrange{1,1,2});
+    set(handles.a21, 'Enable', 'off', 'String', splitrange{1,2,1});
+    set(handles.a22, 'Enable', 'off', 'String', splitrange{1,2,2});
+    set(handles.a31, 'Enable', 'off', 'String', splitrange{1,3,1});
+    set(handles.a32, 'Enable', 'off', 'String', splitrange{1,3,2});
+    set(handles.a41, 'Enable', 'off', 'String', splitrange{1,4,1});
+    set(handles.a42, 'Enable', 'off', 'String', splitrange{1,4,2});
 end
 
 % --- Executes during object creation, after setting all properties.
