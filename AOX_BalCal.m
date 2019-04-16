@@ -1060,42 +1060,26 @@ if FLAGS.balVal == 1
 end
 
 if FLAGS.balApprox == 1
-    %
-    %
-    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                        APPROXIMATION SECTION      AJM 6/29/17           %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
     %DEFINE THE PRODUCTION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
-    %
     
-    load(out.savePathapp,'-mat');
-    %
-    
-    %% increased precision for written files  ajm 3/16/19 
-%    format long g
-%    format long 
-    %%    
+    load(out.savePathapp,'-mat');  
     
     % num of data points
     numptsapprox = length(excessVecapprox);
-    %
-    
     
     %natural zeros (also called global zeros)
     globalZerosapprox = mean(natzerosapprox);
     
-    %%% make an array out of the globalZerosapprox vector
+    % make an array out of the globalZerosapprox vector
     for i=1:numptsapprox
         globalZerosAllPointsapprox(i,:) = globalZerosapprox;
     end
-    %%%
     
-    
-    
-    %% Subtract the Global Zeros from the Inputs %%%%%%%%%%
-    
+    % Subtract the Global Zeros from the Inputs 
     for k=1:dimFlag
         
         dainputsapprox(:,k) = excessVecapprox(:,k)-globalZerosAllPointsapprox(:,k);
@@ -1103,39 +1087,25 @@ if FLAGS.balApprox == 1
         dalzapprox(:,k) = globalZerosAllPointsapprox(:,k)-globalZerosAllPointsapprox(:,k);
         
     end
-    %%%%%%%%%%%%
     
-    
-    %%
     %% Build the Algebraic Model
-    %%
     
-    %     n(1) = 2*dimFlag*(dimFlag+2);
-    %     n(2) = dimFlag*(dimFlag+3)/2;
-    %     n(3) = dimFlag;
-    %     FLAGS.model = find(n==size( xapproxer,1)-1);
-    
-    
-    %% Full Algebraic Model
+    % Full Algebraic Model
     if FLAGS.model == 1
         nterms = 2*dimFlag*(dimFlag+2);
     end
     
-    %% Truncated Algebraic Model
+    % Truncated Algebraic Model
     if FLAGS.model == 2
         nterms = dimFlag*(dimFlag+3)/2;
     end
     
-    %% Linear Algebraic Model
+    % Linear Algebraic Model
     if FLAGS.model == 3
         nterms = dimFlag;
     end
     
-    
-    
     % Call the Algebraic Subroutine
-    %
-    
     comGZapprox= zeros(nterms,1);
     
     
@@ -1145,29 +1115,15 @@ if FLAGS.balApprox == 1
     
     [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numptsapprox,0,0,dainputsapprox,dalzapprox,biggee);
     
-    %FLAGS.model
-    %nterms
-    %dimFlag
-    %numptsapprox
-    
-    
-    %%
-    %%
-    
-    
     %LOAD APPROXIMATION
     %define the approximation for inputs minus global zeros
     interceptsapprox = -(comGZapprox'*xapprox);
     aprxINapprox = ( xapprox'*comINapprox)';        %to find ?? AJM111516
-    %%
-    %%
+    
     for m=1:length(aprxINapprox)
         aprxINminGZapprox(m,:) = aprxINapprox(m,:);
     end
-    %%
-    %%
     
-    %%%%%%
     if FLAGS.excel == 1
         fprintf(' ');
         fprintf('%%%%%%%%%%%%%%%%%');
@@ -1184,36 +1140,19 @@ if FLAGS.balApprox == 1
         fprintf(' ');
         fprintf('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
     end
-    %%%%%%
     
-    
-    
-    
-    %
-    
-    
-    %
-    %
-    %
-    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                    RBF SECTION FOR APPROXIMATION     AJM 6/29/17                         %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %goal to use centers, width and coefficients to approxate parameters against
     %independent data
     
-    %%
-    
     aprxINminGZ2approx = aprxINminGZapprox;
-    
-    
-    %%
     
     if FLAGS.balCal == 2
         
         etaHistapprox = cell(numBasis,1);
         aprxINminGZ_Histapprox = cell(numBasis,1);
-        
         
         etaGZapprox = dot(globalZerosAllPointsapprox-excessVecapprox,globalZerosAllPointsapprox-excessVecapprox);
         
@@ -1228,7 +1167,6 @@ if FLAGS.balApprox == 1
                 
                 w(s) = wHist(u,s); % Have to use the history or it gets overwritten
                 
-                
                 rbfINminGZapprox(:,s)=exp(etaapprox(:,s)*log(abs(w(s))));
                 coeffapprox(s) = cHist(u,s); %Have to use the history or it gets overwritten
                 
@@ -1237,23 +1175,17 @@ if FLAGS.balApprox == 1
                 
             end
             
-            
-            
             wHistapprox(u,:) = w;
             cHistapprox(u,:) = coeffapprox;
             centerIndexHist(u,:) = centerIndexLoop;
             etaHistapprox{u} = etaapprox;
             
             %UPDATE THE RESIDUAL
-            
             %update the approximation
-            
             aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
             aprxINminGZ_Histapprox{u} = aprxINminGZ2approx;
             
         end
-        
-        
         
         if FLAGS.excel == 1
             fprintf(' ');
@@ -1276,8 +1208,3 @@ end
 
 fprintf('  ')
 fprintf('Calculations Complete.')
-
-%
-%
-
-%toc
