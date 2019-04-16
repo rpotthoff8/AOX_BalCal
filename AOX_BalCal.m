@@ -228,7 +228,7 @@ xapprox = coeff;
 if FLAGS.excel == 1
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
     csvwrite(filename,xapprox)
-    dlmwrite('APPROX_AOX_COEFF_MATRIX.txt',xapproxer,'precision','%.16f');
+    dlmwrite('APPROX_AOX_COEFF_MATRIX.txt',xapprox,'precision','%.16f');
 end
 
 % APPROXIMATION
