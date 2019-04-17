@@ -414,8 +414,12 @@ if strcmp(ext,'.csv')
     set(handles.c52, 'Enable', 'on');
 else
     %set(handles.calSave, 'Enable', 'off');
-    load(get(hObject,'String'), '-mat', 'cal');
-    splitrange = split(cal.Range,'..');
+    if strcmp(ext,'.cal')
+        load(get(hObject,'String'), '-mat', 'cal');
+        splitrange = split(cal.Range,'..');
+    else
+        splitrange=cell(1,5,2);
+    end
     
     set(handles.c11, 'Enable', 'off', 'String', splitrange{1,1,1});
     set(handles.c12, 'Enable', 'off', 'String', splitrange{1,1,2});
@@ -484,8 +488,12 @@ if strcmp(ext,'.csv')
     set(handles.v52, 'Enable', 'on');
 else
     %set(handles.valSave, 'Enable', 'off');
-    load(get(hObject,'String'), '-mat', 'val');
-    splitrange = split(val.Range,'..');
+    if strcmp(ext,'.val')
+        load(get(hObject,'String'), '-mat', 'val');
+        splitrange = split(val.Range,'..');
+    else
+        splitrange=cell(1,5,2);
+    end
     
     set(handles.v11, 'Enable', 'off', 'String', splitrange{1,1,1});
     set(handles.v12, 'Enable', 'off', 'String', splitrange{1,1,2});
@@ -1345,8 +1353,12 @@ if strcmp(ext,'.csv')
     set(handles.a42, 'Enable', 'on');
 else
     %set(handles.appSave, 'Enable', 'off');
-    load(get(hObject,'String'), '-mat', 'val');
-    splitrange = split(val.Range,'..');
+    if strcmp(ext,'.app')
+        load(get(hObject,'String'), '-mat', 'app');
+        splitrange = split(app.Range,'..');
+    else
+        splitrange=cell(1,4,2);
+    end
     
     set(handles.a11, 'Enable', 'off', 'String', splitrange{1,1,1});
     set(handles.a12, 'Enable', 'off', 'String', splitrange{1,1,2});
