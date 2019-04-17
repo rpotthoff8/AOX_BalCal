@@ -4,7 +4,7 @@
 % really even functions, but scripts that hold different statistical
 % analysis equations.
 
-% A breakpoint can be included in AOX_BalCal.m at approximately line 198,
+% A breakpoint can be included in AOX_BalCal.m at approximately line 200,
 % (right before xcalib_k is calculated). The scripts in this file will work
 % once the workspace has been populated to that point.
 % (For notation convenience, we'll store the loop iteration variable in
@@ -98,4 +98,63 @@ sig = ~((T<T_cr) & (T>-T_cr));
 % different results depending on which all terms were included in the
 % regression. Obviously multicollinearity will greatly affect how
 % statistically significant or insignificant a term appears to be, given
-% differen data sets.
+% different data sets.
+
+%% Confidence Intervals
+
+% The confidence intervals for the coefficients are calculated as
+beta_CI = T_cr.*se;
+
+% confidence interval for the predicted values, must be calculated one data
+% point at a time
+for j = 1:n
+    y_hat_CI(j,1) = T_cr*sqrt(sigma_hat_sq*X(j,:)*inv(X'*X)*X(j,:)');
+end
+
+%% Prediction Intervals
+% Prediction intervals are different from confidence intervals. Confidence
+% intervals are about how well we believe we regressed the given
+% (calibration) data, prediction intervals would be giving a confidence
+% interval for a new prediction, given new data.
+
+for j = 1:n
+    y_hat_PI(j,1) = T_cr*sqrt(sigma_hat_sq*(1+(X(j,:)*inv(X'*X)*X(j,:)')));
+end
+
+%% Measures of Model Adequacy
+% Including R^2, adjusted R^2, PRESS, and PRESS R^2
+
+% R^2 is calculated as the ratio of SSR to SST, or 1 - (SSE/SST), in either
+% case, we'll need SST, which is just SSE + SSR;
+SST = SSE + SSR;
+
+% This bit has been commented out because it's no longer necessary.
+% % to verify, we'll also calcualte SST the long way.
+% SST_v = sum((y - y_bar).^2);
+% % In the data set I used, I got a difference of O(e-5), so good enough.
+
+R_sq = 1 - SSE/SST;
+
+% Since R_sq increases as more terms are added to the model, adjusted R_sq
+% takes degrees of freedom into account. = 1 - MSE/MST
+dof_t = n-1;
+MST = SST/dof_t;
+R_sq_adj = 1 - MSE/MST;
+
+% The PRESS residuals can be obtained using the diagonal elements of the
+% hat matrix.
+e_p = e./(1-diag(H));
+PRESS = sum(e_p.^2);
+
+% PRESS R_sq
+R_sq_p = 1 - (PRESS/SST);
+
+%% Coded values for polynomial regressions
+% Values of the variables are coded by centering or expressing the levels
+% of the variable as deviations from the mean value of the variable and
+% then scaling or dividing the deviations obtained by half the range of the
+% variable. The reason for using coded predictor variables is that many
+% times x and x^2 are highly correlated and, if uncoded values are used,
+% there may be computational difficulties while calculating the (X'X)^-1
+% matrix to obtain the estimates, beta, of the regression coefficients
+% using the equation for the F distribution.
