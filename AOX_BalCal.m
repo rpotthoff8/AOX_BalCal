@@ -451,7 +451,9 @@ if FLAGS.print == 1
     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
     
     %Should I use strtrim()  ? -AAM 042116
-    calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag))
+    series_table = table([1:nseries]','VariableNames',{'Series'})
+    calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag));
+    calib_algebraic_Tares = [series_table, calib_algebraic_Tares]
     
     coefficientsALGB = [xcalib;intercepts];
     for coeffCount=1:size(coefficientsALGB(:,1),1)
