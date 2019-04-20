@@ -1,7 +1,7 @@
 % Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.
 %
 %balanceCalibration_with_RBF_8D.m
-%requires "balCal_meritFunction.m" to run
+%requires "balCal_meritFunction.m" to run 
 %input file: "BuffetBalance-CalDataOfOct2015-3F3M.csv"
 %output file: "balCal_output_ALGB.xls"
 %output file: "balCal_output_GRBF.xls"
@@ -222,13 +222,22 @@ coeff = xcalib(1:nterms,:);
 tares = -xcalib(nterms+1:end,:);
 intercepts=-tares;
 
+    
+    % Temp for Tares AJM 4_20_19
+    filename = 'Tares_Double_Precision.csv';
+    dlmwrite(filename,tares,'precision','%.16f');          
+     %%%%%
+
 %  Creates Matrix for the volts to loads
-APPROX_AOX_COEFF_MATRIX = coeff;
-xapprox = coeff;
+%APPROX_AOX_COEFF_MATRIX = coeff;  AJM 4_19_19
+
+    xapprox = xcalib(1:nterms,:);
+    coeff (end+1,:)  = zeros(1,dimFlag); 
+    
+%xapprox = coeff;
 if FLAGS.excel == 1
-    filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-    csvwrite(filename,xapprox)
-    dlmwrite('APPROX_AOX_COEFF_MATRIX.csv',xapprox,'precision','%.16f');
+        filename = 'APPROX_AOX_COEFF_MATRIX.csv';
+    dlmwrite(filename,coeff,'precision','%.16f'); % AJM 4_18_19
 end
 
 % APPROXIMATION
@@ -237,6 +246,7 @@ aprxIN = comIN0*xcalib;
 aprxINminGZ=aprxIN; %JRP 26 March
 % RESIDUAL
 targetRes = targetMatrix0-aprxIN;
+
 
 % Prints residual vs. input and calculates correlations
 if FLAGS.rescorr == 1
@@ -371,6 +381,11 @@ if FLAGS.balOut == 1
         end
         
         [taresAllPoints,tarestdev] = meantare(series0,checkit);
+        
+[~,s_1st,~] = unique(series0);
+taresALGB = taresAllPoints(s_1st,:); 
+taresALGBSTDEV = tarestdev(s_1st,:);        
+        
         %RESIDUAL
         targetRes = targetMatrix0+taresAllPoints-aprxINminGZ;      %0=b-Ax
     end
@@ -400,7 +415,10 @@ ratioGoop(isnan(ratioGoop)) = realmin;
 %    theminmaxband = abs(maxTargets + minTargets);
 theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
 
-[~,s_1st,~] = unique(series0);
+        
+%[~,s_1st,~] = unique(series0);
+%taresALGB = taresAllPoints(s_1st,:);
+%taresALGBSTDEV = tarestdev(s_1st,:);
 
 %OUTPUT HISTOGRAM PLOTS
 if FLAGS.hist == 1
@@ -451,7 +469,7 @@ if FLAGS.print == 1
     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
     
     %Should I use strtrim()  ? -AAM 042116
-    series_table = table([1:nseries]','VariableNames',{'Series1'})
+    series_table = table([1:nseries]','VariableNames',{'Series1'});
     calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag));
     calib_algebraic_Tares = [series_table, calib_algebraic_Tares]
     
@@ -478,12 +496,12 @@ end
 if FLAGS.excel == 1
     % Output results to an excel file
     fprintf('  ');
-    fprintf('ALG CALIBRATION MODEL GLOBAL LOAD APPROXIMATION FILE: CALIB_AOX_GLOBAL_ALG_RESULT.csv');
-    % CALIB_AOX_GLOBAL_ALG_RESULT = aprxINminGZ;
+    fprintf('ALG CALIBRATION MODEL LOAD APPROXIMATION FILE: CALIB_AOX_ALG_RESULT.csv'); % AJM 4_19_19
     fprintf(' ');
     
-    filename = 'CALIB_AOX_GLOBAL_ALG_RESULT.csv';
-    csvwrite(filename,aprxINminGZ)
+    filename = 'CALIB_AOX_ALG_RESULT.csv';
+%    csvwrite(filename,aprxINminGZ) AJM 4_19_19
+    dlmwrite(filename,aprxIN,'precision','%.16f');    
 end
 
 if FLAGS.res == 1
@@ -559,7 +577,7 @@ if FLAGS.balCal == 2
         [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
         
         taresGRBF = taresAllPointsGRBF(s_1st,:);
-        taresGRBFSTDEV = taretalGRBFSTDEV(s_1st,:);
+        taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st,:);
         
         tareGRBFHist{u} = taresGRBF;
         
@@ -626,34 +644,48 @@ if FLAGS.balCal == 2
     if FLAGS.excel == 1
         fprintf(' ***** ');
         fprintf('  ');
-        fprintf('ALG+GRBF CALIBRATION MODEL GLOBAL LOAD APPROXIMATION: Check CALIB_AOX_GLOBAL_GRBF_RESULT.csv file');
+        fprintf('ALG+GRBF CALIBRATION MODEL LOAD APPROXIMATION: Check CALIB_AOX_GRBF_RESULT.csv file'); %AJM 4_19_19
         
-        filename = 'CALIB_AOX_GLOBAL_GRBF_RESULT.csv';
-        csvwrite(filename,aprxINminGZ2)
+        filename = 'CALIB_AOX_GRBF_RESULT.csv';
+%        csvwrite(filename,aprxINminGZ2)
+    dlmwrite(filename,aprxINminGZ2,'precision','%.16f'); % Note that aprxINminGZ2 is actually aprxIN2
         
         filename = 'APPROX_AOX_GRBF_ws.csv';
-        csvwrite(filename,wHist)
+%        csvwrite(filename,wHist)
+    dlmwrite(filename,wHist,'precision','%.16f');        
         
         filename = 'APPROX_AOX_GRBF_coeffs.csv';
-        csvwrite(filename,cHist)
+%        csvwrite(filename,cHist)
+    dlmwrite(filename,cHist,'precision','%.16f');        
         
         filename = 'APPROX_AOX_GRBF_Centers.csv';
-        csvwrite(filename,centerIndexHist)
+%        csvwrite(filename,centerIndexHist)
+    dlmwrite(filename,centerIndexHist,'precision','%.16f');        
     end
     
     
     if FLAGS.print == 1
         
         fprintf(' ');
-        fprintf('Number of GRBFs =');
-        fprintf(string(numBasis));
+%        fprintf('Number of GRBFs =');
+%        fprintf(string(numBasis));
+        fprintf('\nNumber of GRBFs: %i\n',numBasis);                     
         fprintf(' ');
         
         twoSigmaGRBF = standardDev'.*2;
         calib_GRBF_2Sigma = array2table(twoSigmaGRBF,'VariableNames',loadlist(1:dimFlag))
         
         %Should I use strtrim()  ? -AAM 042116
-        calib_GRBF_Tares = array2table(taresGRBF,'VariableNames',loadlist(1:dimFlag))
+%        calib_GRBF_Tares = array2table(taresGRBF,'VariableNames',loadlist(1:dimFlag))
+        
+        
+% AJM 4_18_19        
+taresGRBFactual = taresGRBF + tares; 
+    series_table = table([1:nseries]','VariableNames',{'Series1'});
+     calib_GRBF_Tares = array2table(taresGRBFactual,'VariableNames',loadlist(1:dimFlag));
+     calib_GRBF_Tares = [series_table, calib_GRBF_Tares]        
+% AJM 4_18_19     
+        
         
         calib_mean_GRBF_Resids_sqrd = array2table(resSquare2'./numpts0,'VariableNames',loadlist(1:dimFlag))
         calib_GRBF_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop2,'VariableNames',loadlist(1:dimFlag))
@@ -839,11 +871,15 @@ if FLAGS.balVal == 1
         fprintf('Validation data file read =');
         fprintf(out.savePathval);
         fprintf('  ');
-        fprintf('Number of validation data points =');
-        fprintf(numptsvalid);
+%        fprintf('Number of validation data points =');
+        fprintf('\nNumber of validation data points: %i\n',numptsvalid); 
+%        fprintf(numptsvalid);
         fprintf('  ');
         
-        alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag))
+        
+     series_table_valid = table([1:nseriesvalid]','VariableNames',{'Series1'});
+        alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag));
+        alg_Tares_valid = [series_table_valid, alg_Tares_valid]      
         
         mean_alg_Resids_sqrd_valid = array2table(resSquarevalid'./numptsvalid,'VariableNames',loadlist(1:dimFlag))
         alg_Pcnt_Capacity_Max_Mag_Load_Resids_valid = array2table(perGoopvalid,'VariableNames',loadlist(1:dimFlag))
@@ -862,7 +898,8 @@ if FLAGS.balVal == 1
         fprintf(' ');
         
         filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
-        csvwrite(filename,aprxINminGZvalid)
+%        csvwrite(filename,aprxINminGZvalid)
+    dlmwrite(filename,aprxINminGZvalid,'precision','%.16f');
     end
     
     if FLAGS.res == 1
@@ -941,7 +978,7 @@ if FLAGS.balVal == 1
             
             % SOLVE FOR TARES BY TAKING THE MEAN
             [~,s_1st,~] = unique(seriesvalid);
-            [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid)
+            [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid); 
             
             taresGRBFvalid = taresAllPointsvalid2(s_1st,:);
             taresGRBFSTDEVvalid = taretalstdvalid2(s_1st,:);
@@ -1012,15 +1049,17 @@ if FLAGS.balVal == 1
             %
             fprintf(' ***** ');
             fprintf(' ');
-            fprintf('Number of GRBFs =');
-            fprintf(numBasis);
-            
+%            fprintf('Number of GRBFs ='); AJM 4_19_19
+%            fprintf(numBasis);
+        fprintf('\nNumber of GRBFs: %i\n',numBasis);             
             
             twoSigmaGRBFvalid = standardDevvalid'.*2;
             GRBF_2Sigmavalid = array2table(twoSigmaGRBFvalid,'VariableNames',loadlist(1:dimFlag))
             
             %Should I use strtrim()  ? -AAM 042116
-            GRBF_Taresvalid = array2table(taresGRBFvalid,'VariableNames',loadlist(1:dimFlag))
+     series_table_valid = table([1:nseriesvalid]','VariableNames',{'Series1'});
+     GRBF_Taresvalid = array2table(taresGRBFvalid,'VariableNames',loadlist(1:dimFlag));
+     GRBF_Taresvalid = [series_table_valid, GRBF_Taresvalid]          
             
             mean_GRBF_Resids_sqrdvalid = array2table(resSquare2valid'./numptsvalid,'VariableNames',loadlist(1:dimFlag))
             GRBF_Pcnt_Capacity_Max_Mag_Load_Resid_valid = array2table(perGoop2valid,'VariableNames',loadlist(1:dimFlag))
@@ -1057,6 +1096,8 @@ if FLAGS.balVal == 1
             
             filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
             csvwrite(filename,aprxINminGZ2valid)
+    dlmwrite(filename,aprxINminGZ2valid,'precision','%.16f');
+                
         end
     end
 end
@@ -1130,10 +1171,11 @@ if FLAGS.balApprox == 1
         fprintf(' ');
         fprintf('%%%%%%%%%%%%%%%%%');
         fprintf(' ');
-        fprintf('ALG MODEL APPROXIMATION RESULTS: Check Global_ALG_Approx.csv in file');
+        fprintf('ALG MODEL APPROXIMATION RESULTS: Check GLOBAL_ALG_APPROX.csv in file');
         
-        filename = 'Global_ALG_Approx.csv';
+        filename = 'GLOBAL_ALG_APPROX.csv';
         csvwrite(filename,aprxINminGZapprox)
+    dlmwrite(filename,aprxINminGZapprox,'precision','%.16f');   
         
     else
         
@@ -1142,6 +1184,10 @@ if FLAGS.balApprox == 1
         fprintf(' ');
         fprintf('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
     end
+    
+
+%%%%%%
+
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                    RBF SECTION FOR APPROXIMATION     AJM 6/29/17                         %
@@ -1193,10 +1239,11 @@ if FLAGS.balApprox == 1
             fprintf(' ');
             fprintf('%%%%%%%%%%%%%%%%%');
             fprintf(' ');
-            fprintf('ALG + GRBF MODEL APPROXIMATION RESULTS: Check Global_ALG+GRBF_Approx.csv in file');
+            fprintf('ALG + GRBF MODEL APPROXIMATION RESULTS: Check GLOBAL_ALG+GRBF_APPROX.csv in file');
             
-            filename = 'Global_ALG+GRBF_Approx.csv';
+            filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
             csvwrite(filename,aprxINminGZ2approx)
+    dlmwrite(filename,aprxINminGZ2approx,'precision','%.16f');             
         else
             fprintf(' ');
             fprintf('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
@@ -1208,5 +1255,7 @@ if FLAGS.balApprox == 1
     %End Approximation Option
 end
 
-fprintf('  ')
-fprintf('Calculations Complete.')
+fprintf('  ');
+fprintf('Calculations Complete.');
+fprintf('  ');
+
