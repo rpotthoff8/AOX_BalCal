@@ -1454,20 +1454,19 @@ switch cva.type
         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
         targetMatrix0 =      csvread(cal.Path,cal.CSV(4,1),cal.CSV(4,2),cal.Range{4});
         excessVec0 =         csvread(cal.Path,cal.CSV(5,1),cal.CSV(5,2),cal.Range{5});
-                    
-        ndim = size(loadCapacities,2);
-        row = cal.CSV(1,1)-4;
-        load_col = cal.CSV(1,2);
-        volt_col = cal.CSV(2,2);
-        fileID = fopen(cal.Path);
-        tline = fgetl(fileID); %reads the first row, NOTE: Causes textscan to start reading from second row
-        parse_row = regexp(tline,',','split');
-        ncol = size(parse_row,2); %to know how many columns in this data file
-        C = textscan(fileID,[repmat('%s',[1,ncol])],'Delimiter',',');
-        fclose(fileID);
-        for k = 1:ndim
-            loadlabels{k} = C{load_col+k}{row};
-            voltlabels{k} = C{volt_col+k}{row};
+        
+        try
+            l_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(1,2)]);
+            l_label2         = rc2a1([cal.CSV(1,1)-4, cal.loadend(2)]);
+%            [~,loadlabels,~] = xlsread(cal.Path,[l_label1,':',l_label2]);  %AJM 4_20_19
+            [~,loadlabels,~] = csvread(cal.Path,[l_label1,':',l_label2]);            
+
+            v_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(2,2)]);
+            v_label2         = rc2a1([cal.CSV(1,1)-4, cal.voltend(2)]);
+%            [~,voltlabels,~] = xlsread(cal.Path,[v_label1,':',v_label2]);  %AJM 4_20_19
+            [~,voltlabels,~] = csvread(cal.Path,[v_label1,':',v_label2]);            
+            
+            clear l_label1 l_label2 v_label1 v_label2
         end
         
         [~,calName,~] = fileparts(cal.Path);
@@ -1475,8 +1474,7 @@ switch cva.type
         [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
         savePath = [CurrentPath,filesep,fileName];
         
-        clear cva calName CurrentPath ndim row load_col volt_col fileID...
-            tline parse_row ncol C
+        clear cva calName CurrentPath
         save(savePath);
     case 'validate'
         val = cva;
