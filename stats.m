@@ -4,7 +4,7 @@
 % really even functions, but scripts that hold different statistical
 % analysis equations.
 
-% A breakpoint can be included in AOX_BalCal.m at approximately line 200,
+% A breakpoint can be included in calc_xcalib.m at approximately line 34,
 % (right before xcalib_k is calculated). The scripts in this file will work
 % once the workspace has been populated to that point.
 % (For notation convenience, we'll store the loop iteration variable in
@@ -93,7 +93,7 @@ T_cr = tinv(0.975,dof_e);
 sig = ~((T<T_cr) & (T>-T_cr));
 % If sig == 1, then that coefficient rejects the null hypothesis that b =
 % 0, so the data suggests that the terms matters to this regression.
-% NOTE: This is a test of statistical significant of a term IN A
+% NOTE: This is a test of statistical significance of a term IN A
 % MODEL THAT INCLUDES ALL THE TERMS. In other words, the t-test might have
 % different results depending on which all terms were included in the
 % regression. Obviously multicollinearity will greatly affect how
@@ -148,6 +148,25 @@ PRESS = sum(e_p.^2);
 
 % PRESS R_sq
 R_sq_p = 1 - (PRESS/SST);
+
+%% Multicollinearity detection / VIF calcualtion
+
+R_sq_vif = zeros(k,1);
+VIF = zeros(k,1);
+for j = 1:k
+    y_vif = X(:,j);
+    X_vif = X; X_vif(:,j) = []; %x_vif = [ones(n_data,1),x_vif];
+    H_vif = X_vif*inv(X_vif'*X_vif)*X_vif';
+    
+    y_bar_vif = mean(y_vif);
+    y_hat_vif = H_vif*y_vif;
+    
+    SSE_vif = sum((y_vif-y_hat_vif).^2);
+    SST_vif = sum((y_vif-y_bar_vif).^2);
+    
+    R_sq_vif(j,1) = 1 - SSE_vif/SST_vif;
+    VIF(j,1) = 1/(1-R_sq_vif(j));
+end
 
 %% Coded values for polynomial regressions
 % Values of the variables are coded by centering or expressing the levels
