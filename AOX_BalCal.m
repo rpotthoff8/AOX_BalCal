@@ -72,7 +72,6 @@ numLHS = out.numLHS; %Number of times to iterate.
 LHSp = out.LHSp; %Percent of data used to create sample.
 %
 %Uncertainty button outputs
-FLAGS.uncert=out.uncertFlag;
 numBoot=out.numBoot;
 FLAGS.boot=out.bootFlag;
 FLAGS.volt=out.voltFlag;
@@ -239,26 +238,26 @@ intercepts=-tares;
 taretal=tares(series,:);
 aprxINminGZ=aprxIN+taretal; %QUESTION: 29 MAR 2019: JRP
 
-if FLAGS.uncert==1 %Start uncertainty section
-    if FLAGS.boot==1
-        %%start bootstrapfunction
-        bootalpha=.05;
-        f=@calc_xcalib;
-        xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix});
-    else
-        xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
-    end
-    % END: bootstrap section
-    
-    if FLAGS.volt==1
-        %uncertainty due to uncertainty in volt readings
-        uncert_comIN=balCal_algEquations_partialdiff(FLAGS.model, dimFlag, dainputs0);
-    else
-        uncert_comIN=zeros(nterms,numpts0,dimFlag);
-    end
-    
-    [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
-end %end uncertainty section
+%Start uncertainty section
+if FLAGS.boot==1
+    %%start bootstrapfunction
+    bootalpha=.05;
+    f=@calc_xcalib;
+    xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix});
+else
+    xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
+end
+% END: bootstrap section
+
+if FLAGS.volt==1
+    %uncertainty due to uncertainty in volt readings
+    uncert_comIN=balCal_algEquations_partialdiff(FLAGS.model, dimFlag, dainputs0);
+else
+    uncert_comIN=zeros(nterms,numpts0,dimFlag);
+end
+
+[combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
+%end uncertainty section
 
 
 % Temp for Tares AJM 4_20_19

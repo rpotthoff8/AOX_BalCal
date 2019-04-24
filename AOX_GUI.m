@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 28-Mar-2019 12:26:56
+% Last Modified by GUIDE v2.5 24-Apr-2019 11:35:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -77,7 +77,6 @@ guidata(hObject, handles);
 fileName = [CurrentPath,filesep,'default.ini'];
 if exist(fileName,'file')
     try
-        
         load(fileName,'-mat');
         
         versionCheck(default);
@@ -168,12 +167,14 @@ if exist(fileName,'file')
         set(handles.LHSp,'String',default.LHSp);
         LHS_FLAGcheck_Callback(handles.LHS_FLAGcheck, eventdata, handles);
     
-        set(handles.Uncert_FLAGcheck,'Value',default.Uncert_FLAGcheck);
         set(handles.Volt_FLAGcheck,'Value',default.Volt_FLAGcheck);
         set(handles.Boot_FLAGcheck,'Value',default.Boot_FLAGcheck);
         set(handles.voltTrust,'String',default.voltTrust);
         set(handles.numBoot,'String',default.numBoot);
-        Uncert_FLAGcheck_Callback(handles.Uncert_FLAGcheck, eventdata, handles);
+        Boot_FLAGcheck_Callback(handles.Boot_FLAGcheck, eventdata, handles);
+        Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
+    catch
+        disp('local default.ini may be outdated or incompatible with GUI.');
     end
 end
 
@@ -280,7 +281,7 @@ outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 outStruct.lhs = get(handles.LHS_FLAGcheck,'Value');
 outStruct.numLHS = str2num(get(handles.numLHS,'String'));
 outStruct.LHSp = str2num(get(handles.LHSp,'String'))/100;
-outStruct.uncertFlag = get(handles.Uncert_FLAGcheck,'Value');
+
 outStruct.bootFlag = get(handles.Boot_FLAGcheck,'Value');
 outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
 outStruct.numBoot = str2num(get(handles.numBoot,'String'));
@@ -1241,7 +1242,6 @@ default.LHSp = get(handles.LHSp,'String');
 default.direct = get(handles.direct,'Value');
 default.indirect = get(handles.indirect,'Value');
 
-default.Uncert_FLAGcheck=get(handles.Uncert_FLAGcheck,'Value');
 default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
 default.Boot_FLAGcheck=get(handles.Boot_FLAGcheck,'Value');
 default.voltTrust=get(handles.voltTrust,'String');
@@ -1936,24 +1936,3 @@ else
     set(handles.voltTrust,'Enable','off');
 end
 % Hint: get(hObject,'Value') returns toggle state of Volt_FLAGcheck
-
-
-% --- Executes on button press in Uncert_FLAGcheck.
-function Uncert_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to Uncert_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value') == 1
-    set(handles.numBoot,'Enable','on');
-    set(handles.voltTrust,'Enable','on');
-    set(handles.Boot_FLAGcheck,'Enable','on');
-    set(handles.Volt_FLAGcheck,'Enable','on');
-    Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
-    Boot_FLAGcheck_Callback(handles.Boot_FLAGcheck, eventdata, handles);    
-else
-    set(handles.numBoot,'Enable','off');
-    set(handles.voltTrust,'Enable','off');
-    set(handles.Boot_FLAGcheck,'Enable','off');
-    set(handles.Volt_FLAGcheck,'Enable','off');    
-end
-% Hint: get(hObject,'Value') returns toggle state of Uncert_FLAGcheck
