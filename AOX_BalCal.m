@@ -899,7 +899,7 @@ if FLAGS.balVal == 1
             fprintf(' ***** ');
             fprintf(' ');
             fprintf('Number of GRBFs =');
-            fprintf(numBasis);
+            fprintf(string(numBasis));
 
 
             twoSigmaGRBFvalid = standardDevvalid'.*2;
