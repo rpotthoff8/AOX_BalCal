@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 28-Mar-2019 12:26:56
+% Last Modified by GUIDE v2.5 24-Apr-2019 11:35:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -77,7 +77,6 @@ guidata(hObject, handles);
 fileName = [CurrentPath,filesep,'default.ini'];
 if exist(fileName,'file')
     try
-        
         load(fileName,'-mat');
         
         versionCheck(default);
@@ -168,12 +167,14 @@ if exist(fileName,'file')
         set(handles.LHSp,'String',default.LHSp);
         LHS_FLAGcheck_Callback(handles.LHS_FLAGcheck, eventdata, handles);
     
-        set(handles.Uncert_FLAGcheck,'Value',default.Uncert_FLAGcheck);
         set(handles.Volt_FLAGcheck,'Value',default.Volt_FLAGcheck);
         set(handles.Boot_FLAGcheck,'Value',default.Boot_FLAGcheck);
         set(handles.voltTrust,'String',default.voltTrust);
         set(handles.numBoot,'String',default.numBoot);
-        Uncert_FLAGcheck_Callback(handles.Uncert_FLAGcheck, eventdata, handles);
+        Boot_FLAGcheck_Callback(handles.Boot_FLAGcheck, eventdata, handles);
+        Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
+    catch
+        disp('local default.ini may be outdated or incompatible with GUI.');
     end
 end
 
@@ -280,7 +281,7 @@ outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 outStruct.lhs = get(handles.LHS_FLAGcheck,'Value');
 outStruct.numLHS = str2num(get(handles.numLHS,'String'));
 outStruct.LHSp = str2num(get(handles.LHSp,'String'))/100;
-outStruct.uncertFlag = get(handles.Uncert_FLAGcheck,'Value');
+
 outStruct.bootFlag = get(handles.Boot_FLAGcheck,'Value');
 outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
 outStruct.numBoot = str2num(get(handles.numBoot,'String'));
@@ -426,16 +427,23 @@ if strcmp(ext,'.csv')
     set(handles.c52, 'Enable', 'on');
 else
     %set(handles.calSave, 'Enable', 'off');
-    set(handles.c11, 'Enable', 'off');
-    set(handles.c12, 'Enable', 'off');
-    set(handles.c21, 'Enable', 'off');
-    set(handles.c22, 'Enable', 'off');
-    set(handles.c31, 'Enable', 'off');
-    set(handles.c32, 'Enable', 'off');
-    set(handles.c41, 'Enable', 'off');
-    set(handles.c42, 'Enable', 'off');
-    set(handles.c51, 'Enable', 'off');
-    set(handles.c52, 'Enable', 'off');
+    if strcmp(ext,'.cal')
+        load(get(hObject,'String'), '-mat', 'cal');
+        splitrange = split(cal.Range,'..');
+    else
+        splitrange=cell(1,5,2);
+    end
+    
+    set(handles.c11, 'Enable', 'off', 'String', splitrange{1,1,1});
+    set(handles.c12, 'Enable', 'off', 'String', splitrange{1,1,2});
+    set(handles.c21, 'Enable', 'off', 'String', splitrange{1,2,1});
+    set(handles.c22, 'Enable', 'off', 'String', splitrange{1,2,2});
+    set(handles.c31, 'Enable', 'off', 'String', splitrange{1,3,1});
+    set(handles.c32, 'Enable', 'off', 'String', splitrange{1,3,2});
+    set(handles.c41, 'Enable', 'off', 'String', splitrange{1,4,1});
+    set(handles.c42, 'Enable', 'off', 'String', splitrange{1,4,2});
+    set(handles.c51, 'Enable', 'off', 'String', splitrange{1,5,1});
+    set(handles.c52, 'Enable', 'off', 'String', splitrange{1,5,2});
 end
 
 
@@ -493,16 +501,23 @@ if strcmp(ext,'.csv')
     set(handles.v52, 'Enable', 'on');
 else
     %set(handles.valSave, 'Enable', 'off');
-    set(handles.v11, 'Enable', 'off');
-    set(handles.v12, 'Enable', 'off');
-    set(handles.v21, 'Enable', 'off');
-    set(handles.v22, 'Enable', 'off');
-    set(handles.v31, 'Enable', 'off');
-    set(handles.v32, 'Enable', 'off');
-    set(handles.v41, 'Enable', 'off');
-    set(handles.v42, 'Enable', 'off');
-    set(handles.v51, 'Enable', 'off');
-    set(handles.v52, 'Enable', 'off');
+    if strcmp(ext,'.val')
+        load(get(hObject,'String'), '-mat', 'val');
+        splitrange = split(val.Range,'..');
+    else
+        splitrange=cell(1,5,2);
+    end
+    
+    set(handles.v11, 'Enable', 'off', 'String', splitrange{1,1,1});
+    set(handles.v12, 'Enable', 'off', 'String', splitrange{1,1,2});
+    set(handles.v21, 'Enable', 'off', 'String', splitrange{1,2,1});
+    set(handles.v22, 'Enable', 'off', 'String', splitrange{1,2,2});
+    set(handles.v31, 'Enable', 'off', 'String', splitrange{1,3,1});
+    set(handles.v32, 'Enable', 'off', 'String', splitrange{1,3,2});
+    set(handles.v41, 'Enable', 'off', 'String', splitrange{1,4,1});
+    set(handles.v42, 'Enable', 'off', 'String', splitrange{1,4,2});
+    set(handles.v51, 'Enable', 'off', 'String', splitrange{1,5,1});
+    set(handles.v52, 'Enable', 'off', 'String', splitrange{1,5,2});
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -1227,7 +1242,6 @@ default.LHSp = get(handles.LHSp,'String');
 default.direct = get(handles.direct,'Value');
 default.indirect = get(handles.indirect,'Value');
 
-default.Uncert_FLAGcheck=get(handles.Uncert_FLAGcheck,'Value');
 default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
 default.Boot_FLAGcheck=get(handles.Boot_FLAGcheck,'Value');
 default.voltTrust=get(handles.voltTrust,'String');
@@ -1357,14 +1371,21 @@ if strcmp(ext,'.csv')
     set(handles.a42, 'Enable', 'on');
 else
     %set(handles.appSave, 'Enable', 'off');
-    set(handles.a11, 'Enable', 'off');
-    set(handles.a12, 'Enable', 'off');
-    set(handles.a21, 'Enable', 'off');
-    set(handles.a22, 'Enable', 'off');
-    set(handles.a31, 'Enable', 'off');
-    set(handles.a32, 'Enable', 'off');
-    set(handles.a41, 'Enable', 'off');
-    set(handles.a42, 'Enable', 'off');
+    if strcmp(ext,'.app')
+        load(get(hObject,'String'), '-mat', 'app');
+        splitrange = split(app.Range,'..');
+    else
+        splitrange=cell(1,4,2);
+    end
+    
+    set(handles.a11, 'Enable', 'off', 'String', splitrange{1,1,1});
+    set(handles.a12, 'Enable', 'off', 'String', splitrange{1,1,2});
+    set(handles.a21, 'Enable', 'off', 'String', splitrange{1,2,1});
+    set(handles.a22, 'Enable', 'off', 'String', splitrange{1,2,2});
+    set(handles.a31, 'Enable', 'off', 'String', splitrange{1,3,1});
+    set(handles.a32, 'Enable', 'off', 'String', splitrange{1,3,2});
+    set(handles.a41, 'Enable', 'off', 'String', splitrange{1,4,1});
+    set(handles.a42, 'Enable', 'off', 'String', splitrange{1,4,2});
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -1433,20 +1454,19 @@ switch cva.type
         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
         targetMatrix0 =      csvread(cal.Path,cal.CSV(4,1),cal.CSV(4,2),cal.Range{4});
         excessVec0 =         csvread(cal.Path,cal.CSV(5,1),cal.CSV(5,2),cal.Range{5});
-                    
-        ndim = size(loadCapacities,2);
-        row = cal.CSV(1,1)-4;
-        load_col = cal.CSV(1,2);
-        volt_col = cal.CSV(2,2);
-        fileID = fopen(cal.Path);
-        tline = fgetl(fileID); %reads the first row, NOTE: Causes textscan to start reading from second row
-        parse_row = regexp(tline,',','split');
-        ncol = size(parse_row,2); %to know how many columns in this data file
-        C = textscan(fileID,[repmat('%s',[1,ncol])],'Delimiter',',');
-        fclose(fileID);
-        for k = 1:ndim
-            loadlabels{k} = C{load_col+k}{row};
-            voltlabels{k} = C{volt_col+k}{row};
+        
+        try
+            l_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(1,2)]);
+            l_label2         = rc2a1([cal.CSV(1,1)-4, cal.loadend(2)]);
+%            [~,loadlabels,~] = xlsread(cal.Path,[l_label1,':',l_label2]);  %AJM 4_20_19
+            [~,loadlabels,~] = csvread(cal.Path,[l_label1,':',l_label2]);            
+
+            v_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(2,2)]);
+            v_label2         = rc2a1([cal.CSV(1,1)-4, cal.voltend(2)]);
+%            [~,voltlabels,~] = xlsread(cal.Path,[v_label1,':',v_label2]);  %AJM 4_20_19
+            [~,voltlabels,~] = csvread(cal.Path,[v_label1,':',v_label2]);            
+            
+            clear l_label1 l_label2 v_label1 v_label2
         end
         
         [~,calName,~] = fileparts(cal.Path);
@@ -1454,8 +1474,7 @@ switch cva.type
         [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
         savePath = [CurrentPath,filesep,fileName];
         
-        clear cva calName CurrentPath ndim row load_col volt_col fileID...
-            tline parse_row ncol C
+        clear cva calName CurrentPath
         save(savePath);
     case 'validate'
         val = cva;
@@ -1849,8 +1868,6 @@ if FileName ~= 0
     set(handles.customPath,'String',FullPath)
 end
 
-
-
 function numBoot_Callback(hObject, eventdata, handles)
 % hObject    handle to numBoot (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1871,7 +1888,6 @@ function numBoot_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function voltTrust_Callback(hObject, eventdata, handles)
@@ -1920,24 +1936,3 @@ else
     set(handles.voltTrust,'Enable','off');
 end
 % Hint: get(hObject,'Value') returns toggle state of Volt_FLAGcheck
-
-
-% --- Executes on button press in Uncert_FLAGcheck.
-function Uncert_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to Uncert_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value') == 1
-    set(handles.numBoot,'Enable','on');
-    set(handles.voltTrust,'Enable','on');
-    set(handles.Boot_FLAGcheck,'Enable','on');
-    set(handles.Volt_FLAGcheck,'Enable','on');
-    Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
-    Boot_FLAGcheck_Callback(handles.Boot_FLAGcheck, eventdata, handles);    
-else
-    set(handles.numBoot,'Enable','off');
-    set(handles.voltTrust,'Enable','off');
-    set(handles.Boot_FLAGcheck,'Enable','off');
-    set(handles.Volt_FLAGcheck,'Enable','off');    
-end
-% Hint: get(hObject,'Value') returns toggle state of Uncert_FLAGcheck

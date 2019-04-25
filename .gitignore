@@ -5,6 +5,7 @@
 *.txt
 *.pdf
 *.mat
+*.lhs
 
 # GUI config files #
 ####################
