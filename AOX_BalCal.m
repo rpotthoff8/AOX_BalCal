@@ -1127,4 +1127,4 @@ end
 
 fprintf('  ');
 fprintf('Calculations Complete.');
-fprintf('  ');
+fprintf('\n');
