@@ -268,13 +268,11 @@ dlmwrite(filename,tares,'precision','%.16f');
 %  Creates Matrix for the volts to loads
 %APPROX_AOX_COEFF_MATRIX = coeff;  AJM 4_19_19
 
-xapprox = xcalib(1:nterms,:);
-coeff (end+1,:)  = zeros(1,dimFlag);
-
-%xapprox = coeff;
 if FLAGS.excel == 1
+    coeffCSV=coeff;
+    coeffCSV(end+1,:)  = zeros(1,dimFlag);
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-    dlmwrite(filename,coeff,'precision','%.16f'); % AJM 4_18_19
+    dlmwrite(filename,coeffCSV,'precision','%.16f'); % AJM 4_18_19
 end
 % Prints residual vs. input and calculates correlations
 if FLAGS.rescorr == 1
