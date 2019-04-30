@@ -269,12 +269,11 @@ dlmwrite(filename,tares,'precision','%.16f');
 %APPROX_AOX_COEFF_MATRIX = coeff;  AJM 4_19_19
 
 xapprox = xcalib(1:nterms,:);
-coeff (end+1,:)  = zeros(1,dimFlag);
 
 %xapprox = coeff;
 if FLAGS.excel == 1
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-    dlmwrite(filename,coeff,'precision','%.16f'); % AJM 4_18_19
+    dlmwrite(filename, [coeff;zeros(1,dimFlag)] ,'precision','%.16f'); % AJM 4_18_19
 end
 % Prints residual vs. input and calculates correlations
 if FLAGS.rescorr == 1
@@ -664,8 +663,8 @@ if FLAGS.balVal == 1
 
     % SOLVE FOR TARES BY TAKING THE MEAN
     [taresAllPointsvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
-    zapvalid     = taresAllPointsvalid(s_1st,:);
-    zapSTDEVvalid = taretalstdvalid(s_1st,:);
+    zapvalid     = taresAllPointsvalid(s_1stV,:);
+    zapSTDEVvalid = taretalstdvalid(s_1stV,:);
 
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
@@ -742,7 +741,7 @@ if FLAGS.balVal == 1
 
         fprintf('  ');
         fprintf('Validation data file read =');
-        fprintf(out.savePathval);
+        fprintf(fileNamevalid);
         fprintf('  ');
         fprintf('\nNumber of validation data points: %i\n',numptsvalid);
         fprintf('  ');
