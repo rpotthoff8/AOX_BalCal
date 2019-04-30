@@ -268,11 +268,14 @@ dlmwrite(filename,tares,'precision','%.16f');
 %  Creates Matrix for the volts to loads
 %APPROX_AOX_COEFF_MATRIX = coeff;  AJM 4_19_19
 
+xapprox = xcalib(1:nterms,:);
+
+%xapprox = coeff;
 if FLAGS.excel == 1
     coeffCSV=coeff;
     coeffCSV(end+1,:)  = zeros(1,dimFlag);
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
-    dlmwrite(filename,coeffCSV,'precision','%.16f'); % AJM 4_18_19
+    dlmwrite(filename, [coeff;zeros(1,dimFlag)] ,'precision','%.16f'); % AJM 4_18_19
 end
 % Prints residual vs. input and calculates correlations
 if FLAGS.rescorr == 1
@@ -355,7 +358,7 @@ if FLAGS.print == 1
     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
 
     %Should I use strtrim()  ? -AAM 042116
-    series_table = table([1:nseries]','VariableNames',{'Series1'});
+    series_table = table([1:nseries0]','VariableNames',{'SERIES'});
     calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag));
     calib_algebraic_Tares = [series_table, calib_algebraic_Tares]
 
@@ -461,9 +464,8 @@ if FLAGS.balCal == 2
         % SOLVE FOR TARES BY TAKING THE MEAN
         [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
 
-        taresGRBF = taresAllPointsGRBF(s_1st,:);
-        taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st,:);
-
+        taresGRBF = taresAllPointsGRBF(s_1st0,:);
+        taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
         tareGRBFHist{u} = taresGRBF;
 
         targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
@@ -557,8 +559,8 @@ if FLAGS.balCal == 2
         calib_GRBF_2Sigma = array2table(twoSigmaGRBF,'VariableNames',loadlist(1:dimFlag))
 
         %Should I use strtrim()  ? -AAM 042116
-        taresGRBFactual = taresGRBF + tares;
-        series_table = table([1:nseries]','VariableNames',{'Series1'});
+        taresGRBFactual = taresGRBF;
+        series_table = table([1:nseries0]','VariableNames',{'SERIES'});
         calib_GRBF_Tares = array2table(taresGRBFactual,'VariableNames',loadlist(1:dimFlag));
         calib_GRBF_Tares = [series_table, calib_GRBF_Tares]
 
@@ -663,8 +665,8 @@ if FLAGS.balVal == 1
 
     % SOLVE FOR TARES BY TAKING THE MEAN
     [taresAllPointsvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
-    zapvalid     = taresAllPointsvalid(s_1st,:);
-    zapSTDEVvalid = taretalstdvalid(s_1st,:);
+    zapvalid     = taresAllPointsvalid(s_1stV,:);
+    zapSTDEVvalid = taretalstdvalid(s_1stV,:);
 
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
@@ -741,13 +743,12 @@ if FLAGS.balVal == 1
 
         fprintf('  ');
         fprintf('Validation data file read =');
-        fprintf(out.savePathval);
+        fprintf(fileNamevalid);
         fprintf('  ');
         fprintf('\nNumber of validation data points: %i\n',numptsvalid);
         fprintf('  ');
 
-
-        series_table_valid = table([1:nseriesvalid]','VariableNames',{'Series1'});
+        series_table_valid = table([1:nseriesvalid]','VariableNames',{'SERIES'});
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag));
         alg_Tares_valid = [series_table_valid, alg_Tares_valid]
 
@@ -925,7 +926,7 @@ if FLAGS.balVal == 1
             GRBF_2Sigmavalid = array2table(twoSigmaGRBFvalid,'VariableNames',loadlist(1:dimFlag))
 
             %Should I use strtrim()  ? -AAM 042116
-            series_table_valid = table([1:nseriesvalid]','VariableNames',{'Series1'});
+            series_table_valid = table([1:nseriesvalid]','VariableNames',{'SERIES'});
             GRBF_Taresvalid = array2table(taresGRBFvalid,'VariableNames',loadlist(1:dimFlag));
             GRBF_Taresvalid = [series_table_valid, GRBF_Taresvalid]
 
@@ -1128,4 +1129,4 @@ end
 
 fprintf('  ');
 fprintf('Calculations Complete.');
-fprintf('  ');
+fprintf('\n');
