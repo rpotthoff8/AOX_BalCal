@@ -272,8 +272,6 @@ xapprox = xcalib(1:nterms,:);
 
 %xapprox = coeff;
 if FLAGS.excel == 1
-    coeffCSV=coeff;
-    coeffCSV(end+1,:)  = zeros(1,dimFlag);
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
     dlmwrite(filename, [coeff;zeros(1,dimFlag)] ,'precision','%.16f'); % AJM 4_18_19
 end
