@@ -1,20 +1,22 @@
+function ANOVA = anova(X,y)
+
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not
 % really even functions, but scripts that hold different statistical
 % analysis equations.
 
-% A breakpoint can be included in calc_xcalib.m at approximately line 34,
-% (right before xcalib_k is calculated). The scripts in this file will work
-% once the workspace has been populated to that point.
-% (For notation convenience, we'll store the loop iteration variable in
-% iter.}
-iter = k; clear k;
-
-% Before beginning, the predictors and the responses will be re-named with
-% new variables for clarity.
-X = comIN_k;
-y = targetMatrix(:,iter);
+% % A breakpoint can be included in calc_xcalib.m at approximately line 34,
+% % (right before xcalib_k is calculated). The scripts in this file will work
+% % once the workspace has been populated to that point.
+% % (For notation convenience, we'll store the loop iteration variable in
+% % iter.}
+% iter = k; clear k;
+% 
+% % Before beginning, the predictors and the responses will be re-named with
+% % new variables for clarity.
+% X = comIN_k;
+% y = targetMatrix(:,iter);
 
 %% Multiple Linear Regression
 % Instead of calculating the coefficient matrix using pinv or backslash,
@@ -23,6 +25,18 @@ y = targetMatrix(:,iter);
 % NOTE: IF THIS METHOD THROWS UP WARNINGS ABOUT ILL-CONDITIONED, DO NOT
 % SUPPRESS THEM, IT IS IMPORTANT INFORMATION TO HAVE.
 beta = inv(X'*X)*X'*y;
+
+%% TEMPORARY
+% The current data is extremely ill-conditioned, so warnings are semi-suppressed
+% for now if the data is bad, since it can be very repetitive.
+% This will be removed later, since those
+% warnings can be useful.
+warnMsg = lastwarn;
+if ~isempty(warnMsg)
+    warning('off','MATLAB:nearlySingularMatrix');
+    lastwarn('');
+end
+%%
 
 % The approximation can then be made with
 % y_hat = X b = X (X' X)^-1 X' y = H y,
@@ -36,6 +50,7 @@ e = y - y_hat;
 %% Covariance matrix and standard error
 % The covariance amtrix is calculated as C = sigma_hat^2 (X' X)^-1
 % sigma_hat is an estimate of the variance (std dev), based on the MSE
+%% 
 % (mean square error).
 % MSE = SSE / dof(SSE)
 % SSE is the sum square error, and dof() is the degrees of freedom of that
@@ -71,6 +86,7 @@ MSR = SSR/dof_r;
 
 %F-statistic, F = MSR/MSE
 F = MSR/MSE;
+p_F = 1 - fcdf(F,dof_r,dof_e);
 F_cr = finv(0.95,dof_r,dof_e);
 % F0 is the F-statistic of the Null Hypothesis, meaning that y is not a
 % function of X at all. If F>F0, then we can reject the null hypothesis,
@@ -89,6 +105,7 @@ end
 % subtracted from either end, meaning subtracting 0.05 total from both ends
 % -> 95% confidence.
 T = beta./se;
+p_T = 2*(1 - tcdf(abs(T),dof_e));
 T_cr = tinv(0.975,dof_e);
 sig = ~((T<T_cr) & (T>-T_cr));
 % If sig == 1, then that coefficient rejects the null hypothesis that b =
@@ -151,22 +168,32 @@ R_sq_p = 1 - (PRESS/SST);
 
 %% Multicollinearity detection / VIF calcualtion
 
-R_sq_vif = zeros(k,1);
-VIF = zeros(k,1);
-for j = 1:k
-    y_vif = X(:,j);
-    X_vif = X; X_vif(:,j) = []; %x_vif = [ones(n_data,1),x_vif];
-    H_vif = X_vif*inv(X_vif'*X_vif)*X_vif';
-    
-    y_bar_vif = mean(y_vif);
-    y_hat_vif = H_vif*y_vif;
-    
-    SSE_vif = sum((y_vif-y_hat_vif).^2);
-    SST_vif = sum((y_vif-y_bar_vif).^2);
-    
-    R_sq_vif(j,1) = 1 - SSE_vif/SST_vif;
-    VIF(j,1) = 1/(1-R_sq_vif(j));
-end
+VIF = vif(X);
+
+%% Save all the relevant variables to a structure to pass out of the function
+
+ANOVA.beta     = beta;     % Coefficients
+ANOVA.e        = e;        % Residuals
+
+ANOVA.PRESS = PRESS;       % PRESS Statistic
+ANOVA.F = F;               % F-value of regression
+ANOVA.p_F = p_F;           % P-value of regression
+
+ANOVA.R_sq = R_sq;         % R-square
+ANOVA.R_sq_adj = R_sq_adj; % Adjusted R-Square
+ANOVA.R_sq_p = R_sq_p;     % PRESS R-square
+
+ANOVA.beta_CI  = beta_CI;  % Coefficient Confidence Intervals 
+ANOVA.T = T;               % T-statistic of coefficients
+ANOVA.p_T = p_T;           % P-value of coefficients
+ANOVA.VIF = VIF;           % Variance Inflation Factors
+
+%% EXPERIMENTAL
+% Saving variables to calculate prediction intervals live in approximation
+ANOVA.PI.T_cr = T_cr;
+ANOVA.PI.sigma_hat_sq = sigma_hat_sq;
+ANOVA.PI.X = X;
+ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*inv(X'*X)*x')))";
 
 %% Coded values for polynomial regressions
 % Values of the variables are coded by centering or expressing the levels
@@ -177,3 +204,25 @@ end
 % there may be computational difficulties while calculating the (X'X)^-1
 % matrix to obtain the estimates, beta, of the regression coefficients
 % using the equation for the F distribution.
+
+function VIF = vif(X)
+
+[~,k] = size(X);
+VIF = zeros(k,1);
+for j = 1:k
+    y = X(:,j);
+    X_j = X; X_j(:,j) = []; %x_vif = [ones(n_data,1),x_vif];
+    H = X_j*inv(X_j'*X_j)*X_j';
+    
+    y_bar = mean(y);
+    y_hat = H*y;
+    
+    SSE = sum((y-y_hat).^2);
+    SST = sum((y-y_bar).^2);
+    
+    R_sq = 1 - SSE/SST;
+    VIF(j,1) = 1/(1-R_sq);
+end
+
+%% Turn warnings back on
+warning('on','all');
