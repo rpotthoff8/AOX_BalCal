@@ -1,4 +1,4 @@
-function [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix,series,voltTrust,Boot_Flag,Volt_Flag)
+function [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero,xcalib_error]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix,series,voltTrust,Boot_Flag,Volt_Flag)
 %Function calculates uncertainty in load from uncertainty in coefficients and input voltages
 
 %Inputs:

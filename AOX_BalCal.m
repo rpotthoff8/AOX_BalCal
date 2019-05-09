@@ -256,7 +256,7 @@ else
     uncert_comIN=zeros(nterms,numpts0,dimFlag);
 end
 
-[combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
+[combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero, xcalib_error]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
 %end uncertainty section
 
 
