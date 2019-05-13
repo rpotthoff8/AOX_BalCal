@@ -1,4 +1,4 @@
-function xcalib=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix)
+function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix, anova_Flag)
 %Function calculates coefficient matrix (xcalib)
 
 %Orders data by series (needed for bootstrap)
@@ -29,7 +29,7 @@ targetMatrix=targetMatrix(sortI,:);
         if model_FLAG == 4
             comIN_k(:,customMatrix(:,k)==0) = [];
         end
-        
+
         % SOLUTION
         if nseries==nseries0
             xcalib_k = comIN_k\targetMatrix(:,k);
@@ -41,5 +41,14 @@ targetMatrix=targetMatrix(sortI,:);
         else
             xcalib(:,k) = xcalib_k;
         end
+        
+        %Call Anova
+        if anova_Flag==1
+            ANOVA(k)=anova(comIN_k,targetMatrix(:,k));
+        end
     end
+        if anova_Flag==0
+            ANOVA='ANOVA NOT PERFORMED';
+        end
     
+end 

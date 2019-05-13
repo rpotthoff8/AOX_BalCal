@@ -76,6 +76,8 @@ numBoot=out.numBoot;
 FLAGS.boot=out.bootFlag;
 FLAGS.volt=out.voltFlag;
 voltTrust=out.voltTrust;
+
+FLAGS.anova=1;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -179,7 +181,7 @@ for lhs = 1:numLHS
     fprintf('\nWorking ...\n')
 
     %Calculate xcalib (coefficients)
-    xcalib=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix);
+    [xcalib, ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
 
     if FLAGS.LHS == 1
         x_all(:,:,lhs) = xcalib;
@@ -219,7 +221,7 @@ if FLAGS.balOut == 1
         nseries0 = length(s_1st0);
 
         %Calculate xcalib (coefficients)
-        xcalib=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix);
+        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
 
         % APPROXIMATION
         % define the approximation for inputs minus global zeros
@@ -243,7 +245,7 @@ if FLAGS.boot==1
     %%start bootstrapfunction
     bootalpha=.05;
     f=@calc_xcalib;
-    xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix});
+    xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,0});
 else
     xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
 end

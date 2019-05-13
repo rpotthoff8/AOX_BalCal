@@ -187,6 +187,7 @@ ANOVA.beta_CI  = beta_CI;  % Coefficient Confidence Intervals
 ANOVA.T = T;               % T-statistic of coefficients
 ANOVA.p_T = p_T;           % P-value of coefficients
 ANOVA.VIF = VIF;           % Variance Inflation Factors
+ANOVA.sig = sig;            %If term is significant
 
 %% EXPERIMENTAL
 % Saving variables to calculate prediction intervals live in approximation
