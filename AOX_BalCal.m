@@ -338,19 +338,19 @@ if FLAGS.print == 1
 
     %% Identify the Possible Outliers
     if FLAGS.balOut == 1
-        fprintf(' ***** ');
+        fprintf(' \n***** \n');
         fprintf(' ');
-        fprintf('Number of Outliers =');
+        fprintf('\nNumber of Outliers =');
         fprintf(string(num_outliers));
-        fprintf('Outliers % of Data =');
+        fprintf('\nOutliers % of Data =');
         fprintf(string(prcnt_outliers));
     end
 
     % Recalculated Calibration with Reduced Matrices
     if FLAGS.zeroed == 1
-        fprintf(' ************************************************************************ ');
-        fprintf('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
-        fprintf(' ************************************************************************ ');
+        fprintf('\n ************************************************************************ \n');
+        fprintf('\nFind the reduced data in zeroed_targetMatrix and zeroed_excessVec\n');
+        fprintf('\n ************************************************************************ \n');
     end
 
     %%%%%%% 6_14_18 ajm
@@ -384,9 +384,9 @@ end
 
 if FLAGS.excel == 1
     % Output results to an excel file
-    fprintf('  ');
-    fprintf('ALG CALIBRATION MODEL LOAD APPROXIMATION FILE: CALIB_AOX_ALG_RESULT.csv'); % AJM 4_19_19
-    fprintf(' ');
+    fprintf('\n  ');
+    fprintf('\nALG CALIBRATION MODEL LOAD APPROXIMATION FILE: CALIB_AOX_ALG_RESULT.csv\n'); % AJM 4_19_19
+    fprintf('\n ');
 
     filename = 'CALIB_AOX_ALG_RESULT.csv';
     dlmwrite(filename,aprxIN,'precision','%.16f');
@@ -529,9 +529,9 @@ if FLAGS.balCal == 2
     end
 
     if FLAGS.excel == 1
-        fprintf(' ***** ');
-        fprintf('  ');
-        fprintf('ALG+GRBF CALIBRATION MODEL LOAD APPROXIMATION: Check CALIB_AOX_GRBF_RESULT.csv file'); %AJM 4_19_19
+        fprintf('\n ***** \n');
+        fprintf('\n  ');
+        fprintf('\nALG+GRBF CALIBRATION MODEL LOAD APPROXIMATION: CALIB_AOX_GRBF_RESULT.csv\n'); %AJM 4_19_19
 
         filename = 'CALIB_AOX_GRBF_RESULT.csv';
         dlmwrite(filename,aprxINminGZ2,'precision','%.16f'); % Note that aprxINminGZ2 is actually aprxIN2
@@ -549,11 +549,11 @@ if FLAGS.balCal == 2
 
     if FLAGS.print == 1
 
-        fprintf(' ');
+        fprintf('\n ');
         %        fprintf('Number of GRBFs =');
         %        fprintf(string(numBasis));
         fprintf('\nNumber of GRBFs: %i\n',numBasis);
-        fprintf(' ');
+        fprintf('\n ');
 
         twoSigmaGRBF = standardDev'.*2;
         calib_GRBF_2Sigma = array2table(twoSigmaGRBF,'VariableNames',loadlist(1:dimFlag))
@@ -721,32 +721,32 @@ if FLAGS.balVal == 1
         %
         % Full Algebraic Model
         if FLAGS.model == 1
-            fprintf(' ');
-            fprintf('%%%%%%%%%%%%%%%%%');
-            fprintf(' ');
-            fprintf('VALIDATION RESULTS: Full Algebraic Model');
+            fprintf('\n ');
+            fprintf('\n%%%%%%%%%%%%%%%%%\n');
+            fprintf('\n ');
+            fprintf('\nVALIDATION RESULTS: Full Algebraic Model\n');
         end
         % Truncated Algebraic Model
         if FLAGS.model == 2
-            fprintf(' ');
-            fprintf('%%%%%%%%%%%%%%%%%');
-            fprintf(' ');
-            fprintf('VALIDATION RESULTS: Truncated Algebraic Model');
+            fprintf('\n ');
+            fprintf('\n%%%%%%%%%%%%%%%%%\n');
+            fprintf('\n ');
+            fprintf('\nVALIDATION RESULTS: Truncated Algebraic Model\n');
         end
         % Linear Algebraic Model
         if FLAGS.model == 3
-            fprintf(' ');
-            fprintf('%%%%%%%%%%%%%%%%%');
-            fprintf(' ');
-            fprintf('VALIDATION RESULTS: Linear Algebraic Model');
+            fprintf('\n ');
+            fprintf('\n%%%%%%%%%%%%%%%%%\n');
+            fprintf('\n ');
+            fprintf('\nVALIDATION RESULTS: Linear Algebraic Model\n');
         end
 
-        fprintf('  ');
-        fprintf('Validation data file read =');
+        fprintf('\n  ');
+        fprintf('\nValidation data file read: ');
         fprintf(fileNamevalid);
         fprintf('  ');
         fprintf('\nNumber of validation data points: %i\n',numptsvalid);
-        fprintf('  ');
+        fprintf('\n  ');
 
         series_table_valid = table([1:nseriesvalid]','VariableNames',{'SERIES'});
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag));
@@ -765,8 +765,8 @@ if FLAGS.balVal == 1
 
     if FLAGS.excel == 1
         %%%%
-        fprintf('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
-        fprintf(' ');
+        fprintf('\nALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace\n');
+        fprintf('\n ');
 
         filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
         %        csvwrite(filename,aprxINminGZvalid)
@@ -918,8 +918,8 @@ if FLAGS.balVal == 1
         end
         if FLAGS.print == 1
             %
-            fprintf(' ***** ');
-            fprintf(' ');
+            fprintf('\n ***** \n');
+            fprintf('\n ');
             fprintf('\nNumber of GRBFs: %i\n',numBasis);
 
             twoSigmaGRBFvalid = standardDevvalid'.*2;
@@ -959,9 +959,9 @@ if FLAGS.balVal == 1
         %end
 
         if FLAGS.excel == 1
-            fprintf(' ');
-            fprintf('ALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION: Check VALID_AOX_GLOBAL_GRBF_RESULT.csv file');
-            fprintf(' ');
+            fprintf('\n ');
+            fprintf('\nALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION:  VALID_AOX_GLOBAL_GRBF_RESULT.csv\n');
+            fprintf('\n ');
 
             filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
             csvwrite(filename,aprxINminGZ2valid)
@@ -1037,20 +1037,20 @@ if FLAGS.balApprox == 1
     end
 
     if FLAGS.excel == 1
-        fprintf(' ');
-        fprintf('%%%%%%%%%%%%%%%%%');
-        fprintf(' ');
-        fprintf('ALG MODEL APPROXIMATION RESULTS: Check GLOBAL_ALG_APPROX.csv in file');
+        fprintf('\n ');
+        fprintf('\n%%%%%%%%%%%%%%%%%\n');
+        fprintf('\n ');
+        fprintf('\nALG MODEL APPROXIMATION RESULTS: GLOBAL_ALG_APPROX.csv\n');
 
         filename = 'GLOBAL_ALG_APPROX.csv';
         csvwrite(filename,aprxINminGZapprox)
         dlmwrite(filename,aprxINminGZapprox,'precision','%.16f');
     else
 
-        fprintf(' ');
-        fprintf('%%%%%%%%%%%%%%%%%');
-        fprintf(' ');
-        fprintf('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
+        fprintf('\n ');
+        fprintf('\n%%%%%%%%%%%%%%%%%\n');
+        fprintf('\n ');
+        fprintf('\nALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace\n');
     end
 
 
@@ -1106,20 +1106,20 @@ if FLAGS.balApprox == 1
         end
 
         if FLAGS.excel == 1
-            fprintf(' ');
-            fprintf('%%%%%%%%%%%%%%%%%');
-            fprintf(' ');
+            fprintf('\n ');
+            fprintf('\n%%%%%%%%%%%%%%%%%\n');
+            fprintf('\n ');
 
-            fprintf('ALG + GRBF MODEL APPROXIMATION RESULTS: Check GLOBAL_ALG+GRBF_APPROX.csv in file');
+            fprintf('\nALG + GRBF MODEL APPROXIMATION RESULTS: GLOBAL_ALG+GRBF_APPROX.csv\n');
 
             filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
 
             csvwrite(filename,aprxINminGZ2approx)
             dlmwrite(filename,aprxINminGZ2approx,'precision','%.16f');
         else
-            fprintf(' ');
-            fprintf('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
-            fprintf(' ');
+            fprintf('\n ');
+            fprintf('\nGRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace\n');
+            fprintf('\n ');
         end
 
     end
@@ -1127,6 +1127,6 @@ if FLAGS.balApprox == 1
     %End Approximation Option
 end
 
-fprintf('  ');
-fprintf('Calculations Complete.');
+fprintf('\n  ');
+fprintf('\nCalculations Complete.\n');
 fprintf('\n');
