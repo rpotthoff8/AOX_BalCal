@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 24-Apr-2019 11:35:00
+% Last Modified by GUIDE v2.5 15-May-2019 20:51:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -173,6 +173,7 @@ if exist(fileName,'file')
         set(handles.numBoot,'String',default.numBoot);
         Boot_FLAGcheck_Callback(handles.Boot_FLAGcheck, eventdata, handles);
         Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
+        set(handles.anove_FLAGcheck,'Value',default.anova);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -286,6 +287,7 @@ outStruct.bootFlag = get(handles.Boot_FLAGcheck,'Value');
 outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
 outStruct.numBoot = str2num(get(handles.numBoot,'String'));
 outStruct.voltTrust = str2num(get(handles.voltTrust,'String'));
+outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -1246,6 +1248,7 @@ default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
 default.Boot_FLAGcheck=get(handles.Boot_FLAGcheck,'Value');
 default.voltTrust=get(handles.voltTrust,'String');
 default.numBoot=get(handles.numBoot,'String');
+default.anova = get(handles.anova_FLAGcheck,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
@@ -1936,3 +1939,12 @@ else
     set(handles.voltTrust,'Enable','off');
 end
 % Hint: get(hObject,'Value') returns toggle state of Volt_FLAGcheck
+
+
+% --- Executes on button press in anova_FLAGcheck.
+function anova_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to anova_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of anova_FLAGcheck
