@@ -77,7 +77,7 @@ FLAGS.boot=out.bootFlag;
 FLAGS.volt=out.voltFlag;
 voltTrust=out.voltTrust;
 
-FLAGS.anova=1;
+FLAGS.anova = out.anova;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
