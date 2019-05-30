@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 24-Apr-2019 11:35:00
+% Last Modified by GUIDE v2.5 15-May-2019 20:51:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -173,6 +173,7 @@ if exist(fileName,'file')
         set(handles.numBoot,'String',default.numBoot);
         Boot_FLAGcheck_Callback(handles.Boot_FLAGcheck, eventdata, handles);
         Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
+        set(handles.anova_FLAGcheck,'Value',default.anova);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -286,6 +287,7 @@ outStruct.bootFlag = get(handles.Boot_FLAGcheck,'Value');
 outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
 outStruct.numBoot = str2num(get(handles.numBoot,'String'));
 outStruct.voltTrust = str2num(get(handles.voltTrust,'String'));
+outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -413,37 +415,41 @@ function calPath_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of calPath as text
 %        str2double(get(hObject,'String')) returns contents of calPath as a double
 [~,~,ext] = fileparts(get(hObject,'String'));
-if strcmp(ext,'.csv')
-    %set(handles.calSave, 'Enable', 'on');
-    set(handles.c11, 'Enable', 'on');
-    set(handles.c12, 'Enable', 'on');
-    set(handles.c21, 'Enable', 'on');
-    set(handles.c22, 'Enable', 'on');
-    set(handles.c31, 'Enable', 'on');
-    set(handles.c32, 'Enable', 'on');
-    set(handles.c41, 'Enable', 'on');
-    set(handles.c42, 'Enable', 'on');
-    set(handles.c51, 'Enable', 'on');
-    set(handles.c52, 'Enable', 'on');
-else
-    %set(handles.calSave, 'Enable', 'off');
-    if strcmp(ext,'.cal')
-        load(get(hObject,'String'), '-mat', 'cal');
-        splitrange = split(cal.Range,'..');
+try
+    if strcmp(ext,'.csv')
+        %set(handles.calSave, 'Enable', 'on');
+        set(handles.c11, 'Enable', 'on');
+        set(handles.c12, 'Enable', 'on');
+        set(handles.c21, 'Enable', 'on');
+        set(handles.c22, 'Enable', 'on');
+        set(handles.c31, 'Enable', 'on');
+        set(handles.c32, 'Enable', 'on');
+        set(handles.c41, 'Enable', 'on');
+        set(handles.c42, 'Enable', 'on');
+        set(handles.c51, 'Enable', 'on');
+        set(handles.c52, 'Enable', 'on');
     else
-        splitrange=cell(1,5,2);
+        %set(handles.calSave, 'Enable', 'off');
+        if strcmp(ext,'.cal')
+            load(get(hObject,'String'), '-mat', 'cal');
+            splitrange = split(cal.Range,'..');
+        else
+            splitrange=cell(1,5,2);
+        end
+
+        set(handles.c11, 'Enable', 'off', 'String', splitrange{1,1,1});
+        set(handles.c12, 'Enable', 'off', 'String', splitrange{1,1,2});
+        set(handles.c21, 'Enable', 'off', 'String', splitrange{1,2,1});
+        set(handles.c22, 'Enable', 'off', 'String', splitrange{1,2,2});
+        set(handles.c31, 'Enable', 'off', 'String', splitrange{1,3,1});
+        set(handles.c32, 'Enable', 'off', 'String', splitrange{1,3,2});
+        set(handles.c41, 'Enable', 'off', 'String', splitrange{1,4,1});
+        set(handles.c42, 'Enable', 'off', 'String', splitrange{1,4,2});
+        set(handles.c51, 'Enable', 'off', 'String', splitrange{1,5,1});
+        set(handles.c52, 'Enable', 'off', 'String', splitrange{1,5,2});
     end
-    
-    set(handles.c11, 'Enable', 'off', 'String', splitrange{1,1,1});
-    set(handles.c12, 'Enable', 'off', 'String', splitrange{1,1,2});
-    set(handles.c21, 'Enable', 'off', 'String', splitrange{1,2,1});
-    set(handles.c22, 'Enable', 'off', 'String', splitrange{1,2,2});
-    set(handles.c31, 'Enable', 'off', 'String', splitrange{1,3,1});
-    set(handles.c32, 'Enable', 'off', 'String', splitrange{1,3,2});
-    set(handles.c41, 'Enable', 'off', 'String', splitrange{1,4,1});
-    set(handles.c42, 'Enable', 'off', 'String', splitrange{1,4,2});
-    set(handles.c51, 'Enable', 'off', 'String', splitrange{1,5,1});
-    set(handles.c52, 'Enable', 'off', 'String', splitrange{1,5,2});
+catch
+    disp('Problem occurred while reading Calibration file')
 end
 
 
@@ -487,37 +493,41 @@ function valPath_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of valPath as text
 %        str2double(get(hObject,'String')) returns contents of valPath as a double
 [~,~,ext] = fileparts(get(hObject,'String'));
-if strcmp(ext,'.csv')
-    %set(handles.valSave, 'Enable', 'on');
-    set(handles.v11, 'Enable', 'on');
-    set(handles.v12, 'Enable', 'on');
-    set(handles.v21, 'Enable', 'on');
-    set(handles.v22, 'Enable', 'on');
-    set(handles.v31, 'Enable', 'on');
-    set(handles.v32, 'Enable', 'on');
-    set(handles.v41, 'Enable', 'on');
-    set(handles.v42, 'Enable', 'on');
-    set(handles.v51, 'Enable', 'on');
-    set(handles.v52, 'Enable', 'on');
-else
-    %set(handles.valSave, 'Enable', 'off');
-    if strcmp(ext,'.val')
-        load(get(hObject,'String'), '-mat', 'val');
-        splitrange = split(val.Range,'..');
+try
+    if strcmp(ext,'.csv')
+        %set(handles.valSave, 'Enable', 'on');
+        set(handles.v11, 'Enable', 'on');
+        set(handles.v12, 'Enable', 'on');
+        set(handles.v21, 'Enable', 'on');
+        set(handles.v22, 'Enable', 'on');
+        set(handles.v31, 'Enable', 'on');
+        set(handles.v32, 'Enable', 'on');
+        set(handles.v41, 'Enable', 'on');
+        set(handles.v42, 'Enable', 'on');
+        set(handles.v51, 'Enable', 'on');
+        set(handles.v52, 'Enable', 'on');
     else
-        splitrange=cell(1,5,2);
+        %set(handles.valSave, 'Enable', 'off');
+        if strcmp(ext,'.val')
+            load(get(hObject,'String'), '-mat', 'val');
+            splitrange = split(val.Range,'..');
+        else
+            splitrange=cell(1,5,2);
+        end
+
+        set(handles.v11, 'Enable', 'off', 'String', splitrange{1,1,1});
+        set(handles.v12, 'Enable', 'off', 'String', splitrange{1,1,2});
+        set(handles.v21, 'Enable', 'off', 'String', splitrange{1,2,1});
+        set(handles.v22, 'Enable', 'off', 'String', splitrange{1,2,2});
+        set(handles.v31, 'Enable', 'off', 'String', splitrange{1,3,1});
+        set(handles.v32, 'Enable', 'off', 'String', splitrange{1,3,2});
+        set(handles.v41, 'Enable', 'off', 'String', splitrange{1,4,1});
+        set(handles.v42, 'Enable', 'off', 'String', splitrange{1,4,2});
+        set(handles.v51, 'Enable', 'off', 'String', splitrange{1,5,1});
+        set(handles.v52, 'Enable', 'off', 'String', splitrange{1,5,2});
     end
-    
-    set(handles.v11, 'Enable', 'off', 'String', splitrange{1,1,1});
-    set(handles.v12, 'Enable', 'off', 'String', splitrange{1,1,2});
-    set(handles.v21, 'Enable', 'off', 'String', splitrange{1,2,1});
-    set(handles.v22, 'Enable', 'off', 'String', splitrange{1,2,2});
-    set(handles.v31, 'Enable', 'off', 'String', splitrange{1,3,1});
-    set(handles.v32, 'Enable', 'off', 'String', splitrange{1,3,2});
-    set(handles.v41, 'Enable', 'off', 'String', splitrange{1,4,1});
-    set(handles.v42, 'Enable', 'off', 'String', splitrange{1,4,2});
-    set(handles.v51, 'Enable', 'off', 'String', splitrange{1,5,1});
-    set(handles.v52, 'Enable', 'off', 'String', splitrange{1,5,2});
+catch
+    disp('Problem occurred while reading Validation file');
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -1246,6 +1256,7 @@ default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
 default.Boot_FLAGcheck=get(handles.Boot_FLAGcheck,'Value');
 default.voltTrust=get(handles.voltTrust,'String');
 default.numBoot=get(handles.numBoot,'String');
+default.anova = get(handles.anova_FLAGcheck,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
@@ -1359,33 +1370,37 @@ function appPath_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of appPath as text
 %        str2double(get(hObject,'String')) returns contents of appPath as a double
 [~,~,ext] = fileparts(get(hObject,'String'));
-if strcmp(ext,'.csv')
-    %set(handles.appSave, 'Enable', 'on');
-    set(handles.a11, 'Enable', 'on');
-    set(handles.a12, 'Enable', 'on');
-    set(handles.a21, 'Enable', 'on');
-    set(handles.a22, 'Enable', 'on');
-    set(handles.a31, 'Enable', 'on');
-    set(handles.a32, 'Enable', 'on');
-    set(handles.a41, 'Enable', 'on');
-    set(handles.a42, 'Enable', 'on');
-else
-    %set(handles.appSave, 'Enable', 'off');
-    if strcmp(ext,'.app')
-        load(get(hObject,'String'), '-mat', 'app');
-        splitrange = split(app.Range,'..');
+try
+    if strcmp(ext,'.csv')
+        %set(handles.appSave, 'Enable', 'on');
+        set(handles.a11, 'Enable', 'on');
+        set(handles.a12, 'Enable', 'on');
+        set(handles.a21, 'Enable', 'on');
+        set(handles.a22, 'Enable', 'on');
+        set(handles.a31, 'Enable', 'on');
+        set(handles.a32, 'Enable', 'on');
+        set(handles.a41, 'Enable', 'on');
+        set(handles.a42, 'Enable', 'on');
     else
-        splitrange=cell(1,4,2);
+        %set(handles.appSave, 'Enable', 'off');
+        if strcmp(ext,'.app')
+            load(get(hObject,'String'), '-mat', 'app');
+            splitrange = split(app.Range,'..');
+        else
+            splitrange=cell(1,4,2);
+        end
+
+        set(handles.a11, 'Enable', 'off', 'String', splitrange{1,1,1});
+        set(handles.a12, 'Enable', 'off', 'String', splitrange{1,1,2});
+        set(handles.a21, 'Enable', 'off', 'String', splitrange{1,2,1});
+        set(handles.a22, 'Enable', 'off', 'String', splitrange{1,2,2});
+        set(handles.a31, 'Enable', 'off', 'String', splitrange{1,3,1});
+        set(handles.a32, 'Enable', 'off', 'String', splitrange{1,3,2});
+        set(handles.a41, 'Enable', 'off', 'String', splitrange{1,4,1});
+        set(handles.a42, 'Enable', 'off', 'String', splitrange{1,4,2});
     end
-    
-    set(handles.a11, 'Enable', 'off', 'String', splitrange{1,1,1});
-    set(handles.a12, 'Enable', 'off', 'String', splitrange{1,1,2});
-    set(handles.a21, 'Enable', 'off', 'String', splitrange{1,2,1});
-    set(handles.a22, 'Enable', 'off', 'String', splitrange{1,2,2});
-    set(handles.a31, 'Enable', 'off', 'String', splitrange{1,3,1});
-    set(handles.a32, 'Enable', 'off', 'String', splitrange{1,3,2});
-    set(handles.a41, 'Enable', 'off', 'String', splitrange{1,4,1});
-    set(handles.a42, 'Enable', 'off', 'String', splitrange{1,4,2});
+catch
+    disp('Problem occurred while reading Approximation file');
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -1936,3 +1951,12 @@ else
     set(handles.voltTrust,'Enable','off');
 end
 % Hint: get(hObject,'Value') returns toggle state of Volt_FLAGcheck
+
+
+% --- Executes on button press in anova_FLAGcheck.
+function anova_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to anova_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of anova_FLAGcheck
