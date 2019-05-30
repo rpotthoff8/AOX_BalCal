@@ -160,6 +160,11 @@ fprintf('\nStarting Calculations\n')
 %     fprintf('\n\nUsing the Direct Approach for Calibration');
 % end
 
+if FLAGS.approach==0
+%START OF DIRECT APPROACH: JRP QUESTION; is this start in the right place?
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %             DIRECT APPROACH SECTION                        %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 for lhs = 1:numLHS
 
@@ -588,6 +593,631 @@ if FLAGS.balCal == 2
     end
 
 end
+end %END OF DIRECT APPROACH SECTION: JRP
+
+    %% DIRTY
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Start of Indirect Approach - Map Loads to Find Best Voltage
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if FLAGS.approach == 1
+        
+        % Flip Them Around for the Indirect Approach
+        % Subtract the Global Zeros from the Inputs and Local Zeros
+        numpts = length(series);
+        [~,localZerosAllPoints] = localzeros(series,excessVec);
+        itargetMatrix = excessVec - localZerosAllPoints;
+        idainputs = targetMatrix;
+        idalz = zeros(size(itargetMatrix));
+        
+        % Build the Algebraic Model
+        
+        % Call the Algebraic Subroutine
+        icomGZ = zeros(nterms+1,1);
+        icomGZ(nterms+1,1) = 1.0;
+        [icomIN,icomLZ]=balCal_algEqns_indirect2(FLAGS.model,nterms,dimFlag,numpts,series,max(series),idainputs,idalz);
+        
+        icomINminLZ = icomIN-icomLZ;
+        %SOLUTION
+        x = pinv(icomINminLZ')*itargetMatrix;             % alternate solution method
+        
+        %APPROXIMATION
+        %define the approximation for inputs minus local zeros
+        iaprxINminLZ = icomINminLZ'*x;
+        
+        %A DIFFERENT APPROXIMATION
+        %define the approximation for inputs minus global zeros
+        iintercepts = -(icomGZ'*x);
+        iaprxIN = (x'*icomIN)';
+        iaprxLZ = (x'*icomLZ)';       %to find tares AAM042016
+        for m=1:length(iaprxIN)
+            
+            iaprxINminGZ(m,:) = iaprxIN(m,:)+iintercepts;
+            iaprxLZminGZ(m,:) = iaprxLZ(m,:)+iintercepts; %to find tares AAM042016
+            
+            %subtracts the targets from the global approx
+            %This will be averaged over the individual series to give the tares
+            icheckit(m,:) = iaprxINminLZ(m,:)-itargetMatrix(m,:);
+        end
+        
+        %  Creates BALFIT Indirect Matrix and intercept of loads to volts
+        %  ajm for the BALFIT users to view 5/11/18
+        TEMP_AMES_FORMAT(1,:) = iintercepts;
+        for i=2:nterms+1
+            TEMP_AMES_FORMAT(i,:) = x(i-1,:);
+        end
+        
+        filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
+        Z = TEMP_AMES_FORMAT;
+        xlRange = 'matrixcolumnlabels(1)1:matrixcolumnlabels(dimFlag)nterms+1';
+        
+%         indexLocalZero=[s_1st0;numpts+1];
+%         % SOLVE FOR TARES BY TAKING THE MEAN
+%         for i=1:max(series)
+%             izoop = zeros(length(excessVec(:,1)),dimFlag);
+%             kx=indexLocalZero(i)-1;
+%             
+%             for m=indexLocalZero(i):indexLocalZero(i+1)-1
+%                 izoop(m-kx,:) = icheckit(m,:);
+%             end
+%             
+%             izap(i,:) = mean(izoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
+%         end
+%         
+%         for i=1:max(series)
+%             for m=indexLocalZero(i):indexLocalZero(i+1)-1
+%                 itaretal(m,:) = izap(i,:);
+%             end
+%         end
+%   Start Replacement
+        itaretal=meantare(series,icheckit);
+%   End Replacement
+
+        %RESIDUAL
+        itargetRes = itargetMatrix-iaprxINminLZ;      %0=b-Ax
+        
+        %find the sum of squares of the residual using the dot product
+        iresSquare = dot(itargetRes,itargetRes)';
+        %AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
+        
+        %QUESTION:
+        iloadCapacities=loadCapacities;
+        %OUTPUTS FOR ALGEBRAIC SECTION
+        for k=1:length(itargetRes(1,:))
+            [igoop(k),ikstar(k)] = max(abs(itargetRes(:,k)));
+            igoopVal(k) = abs(itargetRes(ikstar(k),k));
+            ixCent(k) = excessVec(ikstar(k),k);
+            imaxTargets(k) = max(itargetRes(:,k));
+            iminTargets(k) = min(itargetRes(:,k));
+        end
+        iperGoop = 100*(igoop./iloadCapacities);
+        idavariance = var(itargetRes);
+        igee = mean(itargetRes);
+        istandardDev10 = std(itargetRes);
+        istandardDev = istandardDev10';
+        istdDevPercentCapacity = 100*(istandardDev'./iloadCapacities);
+        iratioGoop = igoop./istandardDev';
+        iratioGoop(isnan(iratioGoop)) = realmin;
+        itheminmaxband = 100*(abs(imaxTargets + iminTargets)./iloadCapacities);
+        
+        %OUTPUT HISTOGRAM PLOTS
+        if FLAGS.hist == 1 && FLAGS.LHS == 0
+            for k0=1:length(itargetRes(1,:))
+                figure;
+                [histALGB, binValues] = hist(itargetRes(:,k0)/istandardDev(k0,:),20);
+                normalizedCounts = 100 * histALGB / sum(histALGB);
+                bar(binValues, normalizedCounts, 'barwidth', 1);
+                xlabel('Ratio Between Load Residual and Standard Deviation');
+                ylabel('Number of Readings in % of Number of Data Points');
+                xlim([-4 4]);
+                ylim([0 50]);
+                title(strrep(['Histogram of ALG Inverse Model for %s',7],'%s',voltagelist(k0)));
+            end
+        end
+        
+        if FLAGS.print == 2 && FLAGS.LHS == 0
+            % Full Algebraic Model
+            if model_FLAG == 1;
+                disp(' ');
+                disp('Map Loads to Best Voltage - INVERSE RESULTS: Full Algebraic Model');
+            end
+            
+            % Truncated Algebraic Model
+            if model_FLAG == 2;
+                disp(' ');
+                disp('Map Loads to Best Voltage - INVERSE RESULTS: Truncated Algebraic Model');
+            end
+            
+            % Linear Algebraic Model
+            if model_FLAG == 3;
+                disp(' ');
+                disp('Map Loads to Best Voltage - INVERSE RESULTS: Linear Algebraic Model');
+            end
+            
+            twoSigmaALGB = standardDev'.*2;
+            
+            ialgebraic_2Sigma = array2table(itwoSigmaALGB,'VariableNames',voltagelist(1:dimFlag))
+            
+            numSeriesNames = num2str(nseries);
+            numSeriesNameCell = cellstr(numSeriesNames);
+            
+            coefficientsALGB = [ix;iintercepts];
+            for coeffCount=1:size(coefficientsALGB(:,1),1)
+                numCombin(coeffCount) = coeffCount;
+            end
+            numCombinName = cellstr(num2str(numCombin'));
+            numCombinName(nterms+nseries+1) = cellstr('Intercept');
+            
+            imean_algebraic_Resids_sqrd = array2table(resSquare'./numpts,'VariableNames',voltagelist(1:dimFlag))
+            ialgebraic_Pcnt_Capacity_Max_Mag_Volt_Resids = array2table(iperGoop,'VariableNames',voltagelist(1:dimFlag))
+            ialgebraic_Std_Dev_percnt = array2table(istdDevPercentCapacity,'VariableNames',voltagelist(1:dimFlag))
+            ialgebraic_Max_Volt_Resids = array2table(imaxTargets,'VariableNames',voltagelist(1:dimFlag))
+            ialgebraic_Min_Volt_Resids = array2table(iminTargets,'VariableNames',voltagelist(1:dimFlag))
+            ialgebraic_Ratio_Max_Mag_Volt_Resid_and_Std_Dev = array2table(iratioGoop,'VariableNames',voltagelist(1:dimFlag))
+            
+            % Prints the minmaxband
+            ialg_per_minmaxband = array2table(itheminmaxband,'VariableNames',voltagelist(1:dimFlag))
+        end
+        
+        % Compute the true approximation of the ideal voltage
+        iaprxINminGZ = iaprxINminLZ + localZerosAllPoints;
+        
+        if FLAGS.excel == 1
+            
+        end
+        
+        % Start GRBF Option
+        if FLAGS.balCal == 2
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %                     INDIRECT SECTION - RBF SECTION                    %
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %goal to minimize: minimize the sum of the squares (dot product) of each of the 8
+            %residual vectors 'itargetRes' 'target1' ... 'target8'
+            %dt1 = dot(target1,target1);
+            %find centers by finding the index of max residual, using that index to
+            %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
+            %product of the resulting column vector
+            
+            itargetRes2 =  itargetRes;
+            iaprxINminGZ2 = iaprxINminLZ; %QUESTION: GZ vs LZ
+            
+            etaHist = cell(numBasis,1);
+            iaprxINminGZ_Hist = cell(numBasis,1);
+            itareHist = cell(numBasis,1);
+            
+            for bleh=1:length(s_1st0)-1
+                for dleh = indexLocalZero(bleh):indexLocalZero(bleh+1)-1
+                    localZeroMatrix_temp(dleh,:) = localZeros0(bleh,:);
+                end
+            end
+            
+            localZeroMatrix = localZeroMatrix_temp - globalZerosAllPoints0;
+            globalZerosAllPoints = globalZerosAllPoints0 - globalZerosAllPoints0;
+            
+            etaLZ = dot(localZeroMatrix-excessVec,localZeroMatrix-excessVec);
+            etaGZ = dot(globalZerosAllPoints-excessVec,globalZerosAllPoints-excessVec);
+            
+            for u=1:numBasis
+                for s=1:dimFlag
+                    [goopLoop(s),centerIndexLoop(s)] = max(abs(itargetRes2(:,s)));
+                    
+                    for r=1:length(excessVec(:,1))
+                        eta(r,s) = dot(excessVec(r,:)-excessVec(centerIndexLoop(s),:),excessVec(r,:)-excessVec(centerIndexLoop(s),:));
+                    end
+                    
+                    %find widths 'w' by optimization routine
+                    w(s) = fminbnd(@(w) balCal_meritFunction(w,itargetRes2(:,s),eta(:,s),etaLZ(:,s)),0,1 );
+                    
+                    rbfINminLZ(:,s)=exp(eta(:,s)*log(abs(w(s)))) - exp(etaLZ(:,s)*log(abs(w(s))));
+                    rbfINminGZ(:,s)=exp(eta(:,s)*log(abs(w(s))));
+                    rbfLZminGZ(:,s)=exp(etaLZ(:,s)*log(abs(w(s))));%to find tares AAM042016
+                    coeff(s) = dot(rbfINminLZ(:,s),itargetRes2(:,s)) / dot(rbfINminLZ(:,s),rbfINminLZ(:,s));
+                    rbfc_INminLZ(:,s) = coeff(s)*rbfINminLZ(:,s);
+                    rbfc_INminGZ(:,s) = coeff(s)*rbfINminGZ(:,s);
+                    rbfc_LZminGZ(:,s) = coeff(s)*rbfLZminGZ(:,s);%to find tares AAM042016
+                end
+                
+                wHist(u,:) = w;
+                cHist(u,:) = coeff;
+                centerIndexHist(u,:) = centerIndexLoop;
+                etaHist{u} = eta;
+                
+                %update the approximation
+                iaprxINminGZ2 = iaprxINminGZ2+rbfc_INminGZ;
+                iaprxINminGZ_Hist{u} = iaprxINminGZ2;
+                
+                % SOLVE FOR TARES BY TAKING THE MEAN
+                for i=1:nseries
+                    izoop = zeros(length(excessVec(:,1)),dimFlag);
+                    kx=indexLocalZero(i)-1;
+                    
+                    for m=indexLocalZero(i):indexLocalZero(i+1)-1
+                        izoop(m-kx,:) = iaprxINminGZ2(m,:)-itargetMatrix(m,:);
+                    end
+                    
+                    izap(i,:) = mean(izoop)*numpts/(indexLocalZero(i+1)-indexLocalZero(i));
+                end
+                
+                for i=1:nseries
+                    for m=indexLocalZero(i):indexLocalZero(i+1)-1
+                        itaretalGRBF(m,:) = izap(i,:);
+                    end
+                end
+                
+                itaresGRBF = izap;
+                
+                itareHist{u} = itaresGRBF;
+                
+                itargetRes2 = itargetMatrix-iaprxINminGZ2+itaretalGRBF;      %0=b-Ax
+                inewRes2 = itargetRes2'*itargetRes2;
+                iresSquare2 = diag(inewRes2);
+                iresSquareHist(u,:) = iresSquare2;
+            end
+            
+            for b=1:length(indexLocalZero)-1
+                for c=1:length(excessVec(1,:))
+                    for a=1:numBasis
+                        itemp(a) = itareHist{a}(b,c);
+                    end
+                    itare3Sig(b,c) = 3*std(itemp);
+                end
+            end
+            
+            %OUTPUTS FOR GRBF SECTION
+            for k2=1:length(itargetRes(1,:))
+                [igoop2(k2),ikstar2(k2)] = max(abs(itargetRes2(:,k2)));
+                igoopVal2(k2) = abs(itargetRes2(ikstar2(k2),k2));
+                ixCent2(k2) = excessVec(ikstar2(k2),k2);
+                imaxTargets2(k2) = max(itargetRes2(:,k2));
+                iminTargets2(k2) = min(itargetRes2(:,k2));
+            end
+            iperGoop2 = 100*(igoop2./iloadCapacities);
+            istandardDev20 = std(itargetRes2);
+            istandardDev2 = istandardDev20';
+            istdDevPercentCapacity2 = 100*(istandardDev2'./iloadCapacities);
+            iratioGoop2 = igoop2./istandardDev2';
+            iratioGoop2(isnan(iratioGoop2)) = realmin;
+            
+            itheminmaxband2 = 100*(abs(imaxTargets2 + iminTargets2)./iloadCapacities);
+            
+            %OUTPUT HISTOGRAM PLOTS
+            if hist_FLAG == 1 && balCal_FLAG == 2 && LHS_Flag == 0
+                for k3=1:length(itargetRes2(1,:))
+                    figure;
+                    [ihistGRBF2, ibinValues2] = hist(itargetRes2(:,k3)/istandardDev2(k3,:),20);
+                    inormalizedCounts2 = 100 * ihistGRBF2 / sum(ihistGRBF2);
+                    bar(ibinValues2, inormalizedCounts2, 'barwidth', 1);
+                    xlabel('Ratio Between Load Residual and Standard Deviation')
+                    ylabel('Number of Readings in % of Number of Data Points')
+                    xlim([-4 4]);
+                    ylim([0 50]);
+                    title(strrep(['Histogram of ALG+GRBF  Inverse Model for %s',7],'%s',voltagelist(k3)));
+                end
+            end
+            
+            if print_FLAG == 2 && LHS_Flag == 0
+                
+                disp(' ***** ');
+                disp(' ');
+                disp('Number of GRBFs =');
+                disp(numBasis);
+                
+                itwoSigmaGRBF = istandardDev'.*2;
+                iGRBF_2Sigma = array2table(itwoSigmaGRBF,'VariableNames',loadlist(1:dimFlag))
+                
+                numSeriesNames = num2str(nseries);
+                numSeriesNameCell = cellstr(numSeriesNames);
+                
+                imean_GRBF_Resids_sqrd = array2table(iresSquare2'./numpts,'VariableNames',loadlist(1:dimFlag))
+                iGRBF_Pcnt_Capacity_Max_Mag_Volt_Resids = array2table(iperGoop2,'VariableNames',loadlist(1:dimFlag))
+                iGRBF_Std_Dev_pcnt = array2table(istdDevPercentCapacity2,'VariableNames',loadlist(1:dimFlag))
+                iGRBF_Max_Volt_Resids = array2table(imaxTargets2,'VariableNames',loadlist(1:dimFlag))
+                iGRBF_Min_Volt_Resids = array2table(iminTargets2,'VariableNames',loadlist(1:dimFlag))
+                iGRBF_Ratio_Max_Mag_Volt_Resid_and_Std_Dev = array2table(iratioGoop2,'VariableNames',loadlist(1:dimFlag))
+                
+                % Prints the GRBF minmax
+                iGRBF_minmaxband_per_capacity_valid = array2table(itheminmaxband2,'VariableNames',loadlist(1:dimFlag))
+            end
+            
+            if excel_FLAG == 1 && balCal_FLAG == 2
+                
+            end
+            
+            % Compute the true approximation of the ideal voltage
+            iaprxINminGZ2true = iaprxINminGZ2 + localZerosAllPoints;
+        end
+        % End GRBF Option
+        
+        % Start Intermediate section (Voltage to Voltage Mapping)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %                          VOLT TO VOLT SECTION      AJM 8/2/17          %
+        % (Find the mapping between the measured and best voltages)               %
+        % (Uses a linear fit for the mapping - that was the best I could determine)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        
+        if FLAGS.balCal == 2
+            qttargetMatrix =      iaprxINminGZ2true; % The best voltage (alg+rbfs)
+        else
+            qttargetMatrix =      iaprxINminGZ; % The best voltage (alg)
+        end
+        
+        qtexcessVec = excessVec0 - globalZeros;
+        
+        %find the average natural zeros (also called global zeros)
+        globalZeros = mean(natzeros);
+        
+        %load capacities
+        loadCapacities(loadCapacities == 0) = realmin;
+        
+        %find number of series; this will tell us the number of tares
+        nseries = max(series);
+        localZeros=qtexcessVec(s_1st0,:);
+        
+        % Subtract the Global Zeros from the Inputs and Local Zeros
+        for i=1:dimFlag
+            qtdainputs(:,i) = qtexcessVec(:,i);
+            qtdalz(:,i) = localZerosAllPoints(:,i);
+        end
+        
+        %find the number of points in each series and the number of series
+        for j = 1:length(counter)-1
+            numPoints(j) = counter(j+1)-counter(j);
+            nseries(j,:) = j;
+        end
+        
+        % Build the Algebraic Model
+        nseries = series(numpts);
+        
+        % Call the Algebraic Subroutine
+        qtcomGZ = zeros(dimFlag+1,1);
+        qtcomGZ(dimFlag+1,1) = 1.0;
+        
+        [qtcomIN,qtcomLZ]=balCal_algEqns_indirect2(3,nterms,dimFlag,numpts,series,nseries,qtdainputs,qtdalz);
+        
+        % calculate coefficients from least sq fit of voltage to voltage data
+        qtzee = zeros(dimFlag+1,dimFlag);
+        qtps = zeros(dimFlag,2);
+        for j=1:dimFlag
+            f=fit(qtdainputs(:,j)-qtdalz(:,j),qttargetMatrix(:,j),'poly1');
+            qtps(j,:) = coeffvalues(f);
+            qtzee(j,j) = qtps(j,1);
+            qtzee(dimFlag+1,j) = -qtps(j,2);
+        end
+        
+        % Remove the NaN
+        if dimFlag > 6
+            for k=7:dimFlag
+                qtzee(k,k) = 1.0;
+            end
+        end
+        
+        qtcomINminLZ = qtcomIN-qtcomLZ;
+        
+        %SOLUTION
+        qtx = qtzee;
+        measuredV_to_idealV_coeffs = qtx;
+        
+        %A DIFFERENT APPROXIMATION
+        %define the approximation for inputs minus global zeros
+        qtintercepts = -(qtcomGZ'*qtx);
+        qtaprxIN = (qtx'*qtcomIN)';
+        
+        for m=1:length(qtaprxIN)
+            qtaprxINminGZ(m,:) = qtaprxIN(m,:);
+        end
+        
+        %RESIDUAL
+        qttargetRes = qttargetMatrix-qtaprxINminGZ;      %0=b-Ax
+        
+        %find the sum of squares of the residual using the dot product
+        qtresSquare = dot(qttargetRes,qttargetRes)';
+        %AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
+        
+        %OUTPUTS FOR ALGEBRAIC SECTION
+        for k=1:length(qttargetRes(1,:))
+            [goop(k),kstar(k)] = max(abs(qttargetRes(:,k)));
+            goopVal(k) = abs(qttargetRes(kstar(k),k));
+            xCent(k) = qtexcessVec(kstar(k),k);
+            maxTargets(k) = max(qttargetRes(:,k));
+            minTargets(k) = min(qttargetRes(:,k));
+        end
+        perGoop = 100*(goop./loadCapacities);
+        davariance = var(qttargetRes);
+        gee = mean(qttargetRes);
+        standardDev10 = std(qttargetRes);
+        standardDev = standardDev10';
+        stdDevPercentCapacity = 100*(standardDev'./loadCapacities);
+        ratioGoop = goop./standardDev';
+        ratioGoop(isnan(ratioGoop)) = realmin;
+        
+        theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
+        
+        %OUTPUT HISTOGRAM PLOTS
+        if hist_FLAG == 1 && LHS_Flag == 0
+            for k0=1:length(qttargetRes(1,:))
+                figure;
+                [histALGB, binValues] = hist(qttargetRes(:,k0)/standardDev(k0,:),20);
+                normalizedCounts = 100 * histALGB / sum(histALGB);
+                bar(binValues, normalizedCounts, 'barwidth', 1);
+                xlabel('Ratio Between Load Residual and Standard Deviation');
+                ylabel('Number of Readings in % of Number of Data Points');
+                xlim([-4 4]);
+                ylim([0 50]);
+                title(strrep(['Histogram of ALG V-to-V Model for %s',7],'%s',voltagelist(k0)));
+            end
+        end
+        
+        if print_FLAG == 2 && LHS_Flag == 0
+            % Full Algebraic Model
+            if model_FLAG == 1
+                disp(' ');
+                disp('Map Measured Voltage to Best Voltage - RESULTS: Full Algebraic Model');
+            end
+            
+            % Truncated Algebraic Model
+            if model_FLAG == 2
+                disp(' ');
+                disp('Map Measured Voltage to Best Voltage - RESULTS: Truncated Algebraic Model');
+            end
+            
+            % Linear Algebraic Model
+            if model_FLAG == 3
+                disp(' ');
+                disp('Map Measured Voltage to Best Voltage - RESULTS: Linear Algebraic  Model');
+            end
+            
+            qtcoefficientsALGB = [qtx;qtintercepts];
+            for coeffCount=1:size(qtcoefficientsALGB(:,1),1)
+                numCombin(coeffCount) = coeffCount;
+            end
+            numCombinName = cellstr(num2str(numCombin'));
+            numCombinName(nterms+nseries+1) = cellstr('Intercept');
+            
+            mean_algebraic_Resids_sqrd = array2table(resSquare'./numpts,'VariableNames',loadlist(1:dimFlag))
+            algebraic_Pcnt_Capacity_Max_Mag_Volt_Resids = array2table(perGoop,'VariableNames',loadlist(1:dimFlag))
+            algebraic_Std_Dev_pcnt = array2table(stdDevPercentCapacity,'VariableNames',loadlist(1:dimFlag))
+            algebraic_Max_Volt_Resids = array2table(maxTargets,'VariableNames',loadlist(1:dimFlag))
+            algebraic_Min_Volt_Resids = array2table(minTargets,'VariableNames',loadlist(1:dimFlag))
+            algebraic_Ratio_Max_Mag_Volt_Resid_and_Std_Dev = array2table(ratioGoop,'VariableNames',loadlist(1:dimFlag))
+            
+            % Prints the minmaxband
+            alg_per_minmaxband = array2table(theminmaxband,'VariableNames',loadlist(1:dimFlag))
+        end
+        
+        if excel_FLAG == 1
+            
+        end
+        
+        % Start GRBF Option
+        if balCal_FLAG == 2
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %                          VOLT TO VOLT SECTION - RBF SECTION             %
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %goal to minimize: minimize the sum of the squares (dot product) of each of the 8
+            %residual vectors 'targetRes' 'target1' ... 'target8'
+            %dt1 = dot(target1,target1);
+            %find centers by finding the index of max residual, using that index to
+            %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
+            %product of the resulting column vector
+            
+            for i=1:dimFlag
+                for s=1:length(series)
+                    qttargetResX(s,i) = qttargetRes(s,i);
+                end
+            end
+            qttargetRes2 = qttargetResX;
+            qtaprxINminGZ2 = qtaprxINminGZ;
+            
+            etaHist = cell(numBasis,1);
+            qtaprxINminGZ_Hist = cell(numBasis,1);
+            qttareHist = cell(numBasis,1);
+            
+            etaLZ = dot(localZeroMatrix-qtexcessVec,localZeroMatrix-qtexcessVec);
+            etaGZ = dot(globalZerosAllPoints-qtexcessVec,globalZerosAllPoints-qtexcessVec);
+            
+            for u=1:numBasis
+                for s=1:dimFlag
+                    [goopLoop(s),qtcenterIndexLoop(s)] = max(abs(qttargetRes2(:,s)));
+                    
+                    for r=1:length(qtexcessVec(:,1))
+                        eta(r,s) = dot(qtexcessVec(r,:)-qtexcessVec(qtcenterIndexLoop(s),:),qtexcessVec(r,:)-qtexcessVec(qtcenterIndexLoop(s),:));
+                    end
+                    
+                    %find widths 'qtw' by optimization routine
+                    qtw(s) = fminbnd(@(qtw) balCal_meritFunction(qtw,qttargetRes2(:,s),eta(:,s),etaLZ(:,s)),0,1 );
+                    
+                    qtrbfINminLZ(:,s)=exp(eta(:,s)*log(abs(qtw(s)))) - exp(etaLZ(:,s)*log(abs(w(s))));
+                    qtrbfINminGZ(:,s)=exp(eta(:,s)*log(abs(qtw(s))));
+                    qtrbfLZminGZ(:,s)=exp(etaLZ(:,s)*log(abs(qtw(s))));%to find tares AAM042016
+                    qtcoeff(s) = dot(qtrbfINminLZ(:,s),qttargetRes2(:,s)) / dot(qtrbfINminLZ(:,s),qtrbfINminLZ(:,s));
+                    qtrbfc_INminLZ(:,s) = qtcoeff(s)*qtrbfINminLZ(:,s);
+                    qtrbfc_INminGZ(:,s) = qtcoeff(s)*qtrbfINminGZ(:,s);
+                    qtrbfc_LZminGZ(:,s) = qtcoeff(s)*qtrbfLZminGZ(:,s);%to find tares AAM042016
+                end
+                
+                qtwHist(u,:) = qtw;
+                qtcHist(u,:) = qtcoeff;
+                qtcenterIndexHist(u,:) = qtcenterIndexLoop;
+                qtetaHist{u} = eta;
+                qtrbfINminGZ_Hist{u} = qtrbfINminGZ;  %AJM
+                
+                %update the approximation
+                qtaprxINminGZ2 = qtaprxINminGZ2+qtrbfc_INminGZ;
+                qtaprxINminGZ2_Hist{u} = qtaprxINminGZ2;
+                
+                qtrbfc_INminGZ_Hist{u} = qtrbfc_INminGZ; % AJM 5_20_18
+                
+                qttargetRes2 = qttargetMatrix-qtaprxINminGZ2;      %0=b-Ax
+                newRes2 = qttargetRes2'*qttargetRes2;
+                resSquare2 = diag(newRes2);
+                resSquareHist(u,:) = resSquare2;
+            end
+            
+            %OUTPUTS FOR GRBF SECTION
+            for k2=1:length(qttargetRes(1,:))
+                [goop2(k2),kstar2(k2)] = max(abs(qttargetRes2(:,k2)));
+                goopVal2(k2) = abs(qttargetRes2(kstar2(k2),k2));
+                xCent2(k2) = qtexcessVec(kstar2(k2),k2);
+                maxTargets2(k2) = max(qttargetRes2(:,k2));
+                minTargets2(k2) = min(qttargetRes2(:,k2));
+            end
+            perGoop2 = 100*(goop2./loadCapacities);
+            standardDev20 = std(qttargetRes2);
+            standardDev2 = standardDev20';
+            stdDevPercentCapacity2 = 100*(standardDev2'./loadCapacities);
+            ratioGoop2 = goop2./standardDev2';
+            ratioGoop2(isnan(ratioGoop2)) = realmin;
+            
+            theminmaxband2 = 100*(abs(maxTargets2 + minTargets2)./loadCapacities);
+            
+            %OUTPUT HISTOGRAM PLOTS
+            if hist_FLAG == 1 && balCal_FLAG == 2 && LHS_Flag == 0;
+                for k3=1:length(qttargetRes2(1,:))
+                    figure;
+                    [histGRBF2, binValues2] = hist(qttargetRes2(:,k3)/standardDev2(k3,:),20);
+                    normalizedCounts2 = 100 * histGRBF2 / sum(histGRBF2);
+                    bar(binValues2, normalizedCounts2, 'barwidth', 1);
+                    xlabel('Ratio Between Load Residual and Standard Deviation')
+                    ylabel('Number of Readings in % of Number of Data Points')
+                    xlim([-4 4]);
+                    ylim([0 50]);
+                    title(strrep(['Histogram of ALG+GRBF V-to-V Model for %s',7],'%s',voltagelist(k3)));
+                end
+            end
+            
+            if print_FLAG == 2 && LHS_Flag == 0
+                disp(' ***** ');
+                disp(' ');
+                disp('Number of GRBFs =');
+                disp(numBasis);
+                
+                twoSigmaGRBF = standardDev'.*2;
+                GRBF_2Sigma = array2table(twoSigmaGRBF,'VariableNames',loadlist(1:dimFlag))
+                
+                mean_GRBF_Resids_sqrd = array2table(resSquare2'./numpts,'VariableNames',loadlist(1:dimFlag))
+                GRBF_Pcnt_Capacity_Max_Mag_Volt_Resids = array2table(perGoop2,'VariableNames',loadlist(1:dimFlag))
+                GRBF_Std_Dev_pcnt = array2table(stdDevPercentCapacity2,'VariableNames',loadlist(1:dimFlag))
+                GRBF_Max_Volt_Resids = array2table(maxTargets2,'VariableNames',loadlist(1:dimFlag))
+                GRBF_Min_Volt_Resids = array2table(minTargets2,'VariableNames',loadlist(1:dimFlag))
+                GRBF_Ratio_Max_Magn_Volt_Resid_and_Std_Dev = array2table(ratioGoop2,'VariableNames',loadlist(1:dimFlag))
+                
+                % Prints the GRBF minmax
+                GRBF_minmaxband_per_capacity = array2table(theminmaxband2,'VariableNames',loadlist(1:dimFlag))
+            end
+            
+            if excel_FLAG == 1 && balCal_FLAG == 2
+                
+            end
+            
+        end
+        % End GRBF Option
+        % End Intermediate Section Option
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % End of Indirect Approach
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    end
+
 
 if FLAGS.balVal == 1
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
