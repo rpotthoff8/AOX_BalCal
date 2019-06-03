@@ -425,16 +425,14 @@ if FLAGS.balCal == 2
     %find centers by finding the index of max residual, using that index to
     %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
     %product of the resulting column vector
-    for i=1:dimFlag
-        for s=1:length(series0)
-            targetRes2(s,i) = targetRes(s,i);
-        end
-    end
+
+    targetRes2= targetRes;
     aprxINminGZ2 = aprxINminGZ;
 
     etaHist = cell(numBasis,1);
     aprxINminGZ_Hist = cell(numBasis,1);
     tareHist = cell(numBasis,1);
+    
     localZerosAllPoints=tares(series0,:);
     for i=1:dimFlag
         dainputscalib(:,i) = excessVec0(:,i)-globalZeros(i);
@@ -596,7 +594,6 @@ end
 end %END OF DIRECT APPROACH SECTION: JRP
 
     %% DIRTY
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Start of Indirect Approach - Map Loads to Find Best Voltage
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -779,7 +776,8 @@ end %END OF DIRECT APPROACH SECTION: JRP
             %product of the resulting column vector
             
             itargetRes2 =  itargetRes;
-            iaprxINminGZ2 = iaprxINminLZ; %QUESTION: GZ vs LZ
+%             iaprxINminGZ2 = iaprxINminLZ; %QUESTION: GZ vs LZ
+            iaprxINminGZ2 = iaprxINminGZ; %QUESTION: GZ vs LZ 
             
             etaHist = cell(numBasis,1);
             iaprxINminGZ_Hist = cell(numBasis,1);
