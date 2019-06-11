@@ -76,6 +76,8 @@ numBoot=out.numBoot;
 FLAGS.boot=out.bootFlag;
 FLAGS.volt=out.voltFlag;
 voltTrust=out.voltTrust;
+
+FLAGS.anova = out.anova;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -121,6 +123,8 @@ globalZeros = mean(natzeros);
 % Subtracts global zeros from signal.
 dainputs0 = excessVec0 - ones(numpts0,1)*globalZeros;
 
+
+
 % Determines how many terms are in the algebraic model; this will help
 % determine the size of the calibration matrix
 switch FLAGS.model
@@ -140,6 +144,19 @@ end
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
 comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0);
+
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+balfitdainputs0 = targetMatrix0; 
+
+balfittargetMatrixTemp = balCal_algEqns(3,dainputs0,series0);
+balfittargetMatrix0 = balfittargetMatrixTemp(:, [1:dimFlag]); 
+
+balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0);
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
 
 if FLAGS.LHS == 0
     numLHS = 1;
@@ -171,15 +188,116 @@ for lhs = 1:numLHS
         sample = [1:length(series0)]';
     end
 
+
+
     % Uses the sampling indices in "sample" to create the subsamples
     series = series0(sample);
     targetMatrix = targetMatrix0(sample,:);
     comIN = comIN0(sample,:);
+    
+    
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+    balfittargetMatrix = balfittargetMatrix0(sample,:);
+    balfitcomIN = balfitcomIN0(sample,:);    
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
 
     fprintf('\nWorking ...\n')
 
+
+%%% ANOVA Stats AJM 6_8_19
+
+totalnum = nterms+nseries0; 
+totalnumcoeffs = [1:totalnum]; 
+dsof = numpts0-nterms-1; 
+
     %Calculate xcalib (coefficients)
-    xcalib=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix);
+[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+
+loadstatlist = {'Load', 'PRESS_Stat', 'DOF', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'}; 
+
+regresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'}; 
+
+if FLAGS.model == 4
+
+else
+
+for k=1:dimFlag
+
+RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])]; 
+
+manoa(k,:) = [loadlist(k), ANOVA(k).PRESS, dsof, ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_p, ANOVA(k).R_sq_p];  
+
+ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';  
+
+ANOVA1(:,:) = [ANOVA01([1:nterms+1],:)]; 
+
+STAT_LOAD = array2table(manoa(k,:),'VariableNames',loadstatlist(1:8));
+
+REGRESS_COEFFS = array2table(ANOVA1(:,:),'VariableNames',regresslist(1:7));
+
+filename = 'DIRECT_ANOVA_STATS.xlsx';
+writetable(STAT_LOAD,filename,'Sheet',k,'Range','A1');
+writetable(REGRESS_COEFFS,filename,'Sheet',k,'Range','A4');
+
+end 
+
+filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
+dlmwrite(filename,RECOMM_ALG_EQN,'precision','%.8f');
+
+end
+
+%%% ANOVA Stats AJM 6_8_19
+
+
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
+
+voltagestatlist = {'Voltage', 'PRESS_Stat', 'DOF', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'}; 
+
+balfitregresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'}; 
+
+
+if FLAGS.model == 4
+
+else
+
+for k=1:dimFlag
+BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig; 
+
+toplayer(k,:) = [voltagelist(k), balfitANOVA(k).PRESS, dsof, balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_p, balfitANOVA(k).R_sq_p];  
+
+balfitANOVA01(:,:) = [totalnumcoeffs; balfitANOVA(k).beta'; ANOVA(k).beta_CI'; balfitANOVA(k).T'; balfitANOVA(k).p_T'; balfitANOVA(k).VIF'; 1.0*balfitANOVA(k).sig']';  
+
+balfitANOVA_intercept1(1,:) = balfitANOVA01(nterms+1,:);  
+balfitANOVA_intercept1(1,1) = 0;
+
+balfitANOVA1(:,:) = [balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)]; 
+
+BALFIT_STAT_VOLTAGE_1 = array2table(toplayer(k,:),'VariableNames',voltagestatlist(1:8));
+
+BALFIT_REGRESS_COEFFS_1 = array2table(balfitANOVA1(:,:),'VariableNames',balfitregresslist(1:7));
+
+filename = 'BALFIT_ANOVA_STATS.xlsx';
+writetable(BALFIT_STAT_VOLTAGE_1,filename,'Sheet',k,'Range','A1');
+writetable(BALFIT_REGRESS_COEFFS_1,filename,'Sheet',k,'Range','A4');
+
+end 
+
+
+%filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
+%dlmwrite(filename,BALFIT_RECOMM_ALG_EQN,'precision','%.8f');
+
+end
+
+
+%%% Balfit Stats and Matrix AJM 5_31_19
+
+
 
     if FLAGS.LHS == 1
         x_all(:,:,lhs) = xcalib;
@@ -219,7 +337,17 @@ if FLAGS.balOut == 1
         nseries0 = length(s_1st0);
 
         %Calculate xcalib (coefficients)
-        xcalib=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,model_FLAG,customMatrix);
+        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
+
+filename = 'Testing_Sig.csv';
+dlmwrite(filename,balfitANOVA(1).sig,'precision','%.16f');
+
+%%% Balfit Stats and Matrix AJM 5_31_19
+
 
         % APPROXIMATION
         % define the approximation for inputs minus global zeros
@@ -228,7 +356,10 @@ if FLAGS.balOut == 1
         % RESIDUAL
         targetRes = targetMatrix0-aprxIN;
 
+
+    
     end
+    
 end
 
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
@@ -238,12 +369,30 @@ intercepts=-tares;
 taretal=tares(series,:);
 aprxINminGZ=aprxIN+taretal; %QUESTION: 29 MAR 2019: JRP
 
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+balfit_C1INV = xcalib([1:dimFlag], :); % AJM 5_31_19
+balfit_D1 = zeros(dimFlag,dimFlag); % AJM 5_31_19
+%balfit_INTER_temp = balfitxcalib(nterms+1, :); % AJM 5_31_19
+balfit_INTERCEPT = balfitxcalib(nterms+1, :) + globalZeros; % AJM 5_31_19
+%balfit_C2 = balfitxcalib([dimFlag+1:nterms], :); % AJM 5_31_19
+balfit_C1INVC2 = balfitxcalib([dimFlag+1:nterms], :)*balfit_C1INV; % AJM 5_31_19
+
+balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_D1 ; balfit_C1INVC2 ]; 
+
+filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
+dlmwrite(filename,balfit_regress_matrix,'precision','%.16f');
+
+%%% Balfit Stats and Matrix AJM 5_31_19
+
+
 %Start uncertainty section
 if FLAGS.boot==1
     %%start bootstrapfunction
     bootalpha=.05;
     f=@calc_xcalib;
-    xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix});
+    xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,0});
 else
     xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
 end
@@ -256,13 +405,13 @@ else
     uncert_comIN=zeros(nterms,numpts0,dimFlag);
 end
 
-[combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
+[combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero, xcalib_error]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
 %end uncertainty section
 
 
 % Temp for Tares AJM 4_20_19
-filename = 'Tares_Double_Precision.csv';
-dlmwrite(filename,tares,'precision','%.16f');
+%filename = 'Tares_Double_Precision.csv';
+%dlmwrite(filename,tares,'precision','%.16f');
 %%%%%
 
 %  Creates Matrix for the volts to loads
@@ -336,19 +485,19 @@ if FLAGS.print == 1
 
     %% Identify the Possible Outliers
     if FLAGS.balOut == 1
-        fprintf(' ***** ');
+        fprintf(' \n***** \n');
         fprintf(' ');
-        fprintf('Number of Outliers =');
+        fprintf('\nNumber of Outliers =');
         fprintf(string(num_outliers));
-        fprintf('Outliers % of Data =');
+        fprintf('\nOutliers % of Data =');
         fprintf(string(prcnt_outliers));
     end
 
     % Recalculated Calibration with Reduced Matrices
     if FLAGS.zeroed == 1
-        fprintf(' ************************************************************************ ');
-        fprintf('Find the reduced data in zeroed_targetMatrix and zeroed_excessVec');
-        fprintf(' ************************************************************************ ');
+        fprintf('\n ************************************************************************ \n');
+        fprintf('\nFind the reduced data in zeroed_targetMatrix and zeroed_excessVec\n');
+        fprintf('\n ************************************************************************ \n');
     end
 
     %%%%%%% 6_14_18 ajm
@@ -382,9 +531,9 @@ end
 
 if FLAGS.excel == 1
     % Output results to an excel file
-    fprintf('  ');
-    fprintf('ALG CALIBRATION MODEL LOAD APPROXIMATION FILE: CALIB_AOX_ALG_RESULT.csv'); % AJM 4_19_19
-    fprintf(' ');
+    fprintf('\n  ');
+    fprintf('\nALG CALIBRATION MODEL LOAD APPROXIMATION FILE: CALIB_AOX_ALG_RESULT.csv\n'); % AJM 4_19_19
+    fprintf('\n ');
 
     filename = 'CALIB_AOX_ALG_RESULT.csv';
     dlmwrite(filename,aprxIN,'precision','%.16f');
@@ -461,7 +610,7 @@ if FLAGS.balCal == 2
 
         % SOLVE FOR TARES BY TAKING THE MEAN
         [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
-        
+
         taresGRBF = taresAllPointsGRBF(s_1st0,:);
         taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
         tareGRBFHist{u} = taresGRBF;
@@ -527,9 +676,9 @@ if FLAGS.balCal == 2
     end
 
     if FLAGS.excel == 1
-        fprintf(' ***** ');
-        fprintf('  ');
-        fprintf('ALG+GRBF CALIBRATION MODEL LOAD APPROXIMATION: Check CALIB_AOX_GRBF_RESULT.csv file'); %AJM 4_19_19
+        fprintf('\n ***** \n');
+        fprintf('\n  ');
+        fprintf('\nALG+GRBF CALIBRATION MODEL LOAD APPROXIMATION: CALIB_AOX_GRBF_RESULT.csv\n'); %AJM 4_19_19
 
         filename = 'CALIB_AOX_GRBF_RESULT.csv';
         dlmwrite(filename,aprxINminGZ2,'precision','%.16f'); % Note that aprxINminGZ2 is actually aprxIN2
@@ -547,11 +696,11 @@ if FLAGS.balCal == 2
 
     if FLAGS.print == 1
 
-        fprintf(' ');
+        fprintf('\n ');
         %        fprintf('Number of GRBFs =');
         %        fprintf(string(numBasis));
         fprintf('\nNumber of GRBFs: %i\n',numBasis);
-        fprintf(' ');
+        fprintf('\n ');
 
         twoSigmaGRBF = standardDev'.*2;
         calib_GRBF_2Sigma = array2table(twoSigmaGRBF,'VariableNames',loadlist(1:dimFlag))
@@ -719,33 +868,33 @@ if FLAGS.balVal == 1
         %
         % Full Algebraic Model
         if FLAGS.model == 1
-            fprintf(' ');
-            fprintf('%%%%%%%%%%%%%%%%%');
-            fprintf(' ');
-            fprintf('VALIDATION RESULTS: Full Algebraic Model');
+            fprintf('\n ');
+            fprintf('\n%%%%%%%%%%%%%%%%%\n');
+            fprintf('\n ');
+            fprintf('\nVALIDATION RESULTS: Full Algebraic Model\n');
         end
         % Truncated Algebraic Model
         if FLAGS.model == 2
-            fprintf(' ');
-            fprintf('%%%%%%%%%%%%%%%%%');
-            fprintf(' ');
-            fprintf('VALIDATION RESULTS: Truncated Algebraic Model');
+            fprintf('\n ');
+            fprintf('\n%%%%%%%%%%%%%%%%%\n');
+            fprintf('\n ');
+            fprintf('\nVALIDATION RESULTS: Truncated Algebraic Model\n');
         end
         % Linear Algebraic Model
         if FLAGS.model == 3
-            fprintf(' ');
-            fprintf('%%%%%%%%%%%%%%%%%');
-            fprintf(' ');
-            fprintf('VALIDATION RESULTS: Linear Algebraic Model');
+            fprintf('\n ');
+            fprintf('\n%%%%%%%%%%%%%%%%%\n');
+            fprintf('\n ');
+            fprintf('\nVALIDATION RESULTS: Linear Algebraic Model\n');
         end
 
-        fprintf('  ');
-        fprintf('Validation data file read =');
+        fprintf('\n  ');
+        fprintf('\nValidation data file read: ');
         fprintf(fileNamevalid);
         fprintf('  ');
         fprintf('\nNumber of validation data points: %i\n',numptsvalid);
-        fprintf('  ');
-        
+        fprintf('\n  ');
+
         series_table_valid = table([1:nseriesvalid]','VariableNames',{'SERIES'});
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag));
         alg_Tares_valid = [series_table_valid, alg_Tares_valid]
@@ -763,8 +912,8 @@ if FLAGS.balVal == 1
 
     if FLAGS.excel == 1
         %%%%
-        fprintf('ALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace');
-        fprintf(' ');
+        fprintf('\nALG VALIDATION MODEL GLOBAL LOAD APPROXIMATION: VALID_AOX_GLOBAL_ALG_RESULT in Workspace\n');
+        fprintf('\n ');
 
         filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
         %        csvwrite(filename,aprxINminGZvalid)
@@ -916,8 +1065,8 @@ if FLAGS.balVal == 1
         end
         if FLAGS.print == 1
             %
-            fprintf(' ***** ');
-            fprintf(' ');
+            fprintf('\n ***** \n');
+            fprintf('\n ');
             fprintf('\nNumber of GRBFs: %i\n',numBasis);
 
             twoSigmaGRBFvalid = standardDevvalid'.*2;
@@ -957,9 +1106,9 @@ if FLAGS.balVal == 1
         %end
 
         if FLAGS.excel == 1
-            fprintf(' ');
-            fprintf('ALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION: Check VALID_AOX_GLOBAL_GRBF_RESULT.csv file');
-            fprintf(' ');
+            fprintf('\n ');
+            fprintf('\nALG+GRBF VALIDATION MODEL GLOBAL LOAD APPROXIMATION:  VALID_AOX_GLOBAL_GRBF_RESULT.csv\n');
+            fprintf('\n ');
 
             filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
             csvwrite(filename,aprxINminGZ2valid)
@@ -1035,20 +1184,20 @@ if FLAGS.balApprox == 1
     end
 
     if FLAGS.excel == 1
-        fprintf(' ');
-        fprintf('%%%%%%%%%%%%%%%%%');
-        fprintf(' ');
-        fprintf('ALG MODEL APPROXIMATION RESULTS: Check GLOBAL_ALG_APPROX.csv in file');
+        fprintf('\n ');
+        fprintf('\n%%%%%%%%%%%%%%%%%\n');
+        fprintf('\n ');
+        fprintf('\nALG MODEL APPROXIMATION RESULTS: GLOBAL_ALG_APPROX.csv\n');
 
         filename = 'GLOBAL_ALG_APPROX.csv';
         csvwrite(filename,aprxINminGZapprox)
         dlmwrite(filename,aprxINminGZapprox,'precision','%.16f');
     else
 
-        fprintf(' ');
-        fprintf('%%%%%%%%%%%%%%%%%');
-        fprintf(' ');
-        fprintf('ALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace');
+        fprintf('\n ');
+        fprintf('\n%%%%%%%%%%%%%%%%%\n');
+        fprintf('\n ');
+        fprintf('\nALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace\n');
     end
 
 
@@ -1104,20 +1253,20 @@ if FLAGS.balApprox == 1
         end
 
         if FLAGS.excel == 1
-            fprintf(' ');
-            fprintf('%%%%%%%%%%%%%%%%%');
-            fprintf(' ');
+            fprintf('\n ');
+            fprintf('\n%%%%%%%%%%%%%%%%%\n');
+            fprintf('\n ');
 
-            fprintf('ALG + GRBF MODEL APPROXIMATION RESULTS: Check GLOBAL_ALG+GRBF_APPROX.csv in file');
+            fprintf('\nALG + GRBF MODEL APPROXIMATION RESULTS: GLOBAL_ALG+GRBF_APPROX.csv\n');
 
             filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
 
             csvwrite(filename,aprxINminGZ2approx)
             dlmwrite(filename,aprxINminGZ2approx,'precision','%.16f');
         else
-            fprintf(' ');
-            fprintf('GRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace');
-            fprintf(' ');
+            fprintf('\n ');
+            fprintf('\nGRBF MODEL APPROXIMATION RESULTS: Check aprxINminGZ2approx in Workspace\n');
+            fprintf('\n ');
         end
 
     end
@@ -1125,6 +1274,6 @@ if FLAGS.balApprox == 1
     %End Approximation Option
 end
 
-fprintf('  ');
-fprintf('Calculations Complete.');
+fprintf('\n  ');
+fprintf('\nCalculations Complete.\n');
 fprintf('\n');
