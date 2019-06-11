@@ -194,7 +194,8 @@ end
 
 %%
 % APPROXIMATION
-% define the approximation for inputs minus global zeros
+% define the approximation for inputs minus global zeros and local zeros
+% %QUESTION: correct statement?
 aprxIN = comIN0*xcalib;
 
 % RESIDUAL
@@ -224,7 +225,8 @@ if FLAGS.balOut == 1
         [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
 
         % APPROXIMATION
-        % define the approximation for inputs minus global zeros
+        % define the approximation for inputs minus global zeros and local
+        % zeros %QUESTION: correct statement?
         aprxIN = comIN0*xcalib;
 
         % RESIDUAL
