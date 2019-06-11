@@ -1471,27 +1471,17 @@ switch cva.type
         excessVec0 =         csvread(cal.Path,cal.CSV(5,1),cal.CSV(5,2),cal.Range{5});
         
         try
-%             l_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(1,2)]);
-%             l_label2         = rc2a1([cal.CSV(1,1)-4, cal.loadend(2)]);
-% %            [~,loadlabels,~] = xlsread(cal.Path,[l_label1,':',l_label2]);  %AJM 4_20_19
-%             [~,loadlabels,~] = csvread(cal.Path,[l_label1,':',l_label2]);   
-            
-            %START: new approach, JRP 11 June 19
-            file=fopen(cal.Path);
-            label_text1 = textscan(file,'%s','Delimiter','\n');
-            splitlabelRow=cellstr(strsplit(string(label_text1{1}{cal.CSV(1,1)-3}),',','CollapseDelimiters',false));
-            fclose(file);
-            loadlabels=splitlabelRow(cal.CSV(1,2)+1:cal.loadend(2)+1);
-            voltlabels=splitlabelRow(cal.CSV(2,2)+1:cal.voltend(2)+1);
-            clear file label_text1 splitlabelRow
-            %END: new approach, JRP 11 June 19
+            l_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(1,2)]);
+            l_label2         = rc2a1([cal.CSV(1,1)-4, cal.loadend(2)]);
+%            [~,loadlabels,~] = xlsread(cal.Path,[l_label1,':',l_label2]);  %AJM 4_20_19
+            [~,loadlabels,~] = csvread(cal.Path,[l_label1,':',l_label2]);            
 
-%             v_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(2,2)]);
-%             v_label2         = rc2a1([cal.CSV(1,1)-4, cal.voltend(2)]);
-% %            [~,voltlabels,~] = xlsread(cal.Path,[v_label1,':',v_label2]);  %AJM 4_20_19
-%             [~,voltlabels,~] = csvread(cal.Path,[v_label1,':',v_label2]);            
-%             
-%             clear l_label1 l_label2 v_label1 v_label2
+            v_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(2,2)]);
+            v_label2         = rc2a1([cal.CSV(1,1)-4, cal.voltend(2)]);
+%            [~,voltlabels,~] = xlsread(cal.Path,[v_label1,':',v_label2]);  %AJM 4_20_19
+            [~,voltlabels,~] = csvread(cal.Path,[v_label1,':',v_label2]);            
+            
+            clear l_label1 l_label2 v_label1 v_label2
         end
         
         [~,calName,~] = fileparts(cal.Path);

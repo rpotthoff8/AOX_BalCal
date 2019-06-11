@@ -190,9 +190,6 @@ ANOVA.VIF = VIF;           % Variance Inflation Factors
 ANOVA.sig = sig;            %If term is significant
 
 ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
-ANOVA.y_hat_CI=y_hat_CI; %Confidence interval for datapoints
-ANOVA.MSE=MSE;          %Mean Square Error
-ANOVA.se=se;                %Standard error of each variable
 %% EXPERIMENTAL
 % Saving variables to calculate prediction intervals live in approximation
 ANOVA.PI.T_cr = T_cr;
