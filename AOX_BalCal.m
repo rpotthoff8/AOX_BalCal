@@ -251,18 +251,18 @@ if FLAGS.boot==1
     %START EXTRA for testing uncert prop
     f2=@(input,input2,input3) calc_xcalib(input,input2,input3,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,0);
     g=@(input,input2,input3) calc_yhat(input,input2,input3,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,0,comIN0);
-    xcalib_ci2=bootci(numBoot,{f2,comIN0,targetMatrix0,series0},'type','norm');
+%     xcalib_ci2=bootci(numBoot,{f2,comIN0,targetMatrix0,series0},'type','norm');
     boot_yhat_ci=bootci(numBoot,{g,comIN0,targetMatrix0,series0}); %CHANGE BACK
-    boot_yhat_ci2=bootci(numBoot,{g,comIN0,targetMatrix0,series0},'type','norm');
+%     boot_yhat_ci2=bootci(numBoot,{g,comIN0,targetMatrix0,series0},'type','norm');
     
     for i=1:size(aprxIN,1)
     for j=1:size(aprxIN,2)
         for k=1:2
             error(k,i,j)=abs(boot_yhat_ci(k,i,j)-aprxIN(i,j));
-            error2(k,i,j)=abs(boot_yhat_ci2(k,i,j)-aprxIN(i,j));
+%             error2(k,i,j)=abs(boot_yhat_ci2(k,i,j)-aprxIN(i,j));
         end
         yhat_error(i,j)=max(error(:,i,j));
-        yhat_error2(i,j)=mean(error(:,i,j));
+%         yhat_error2(i,j)=mean(error(:,i,j));
     end
     end
     %END extra for testing uncert prop
