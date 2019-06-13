@@ -190,6 +190,7 @@ ANOVA.p_T = p_T;           % P-value of coefficients
 ANOVA.VIF = VIF;           % Variance Inflation Factors
 ANOVA.sig = sig;            %If term is significant
 
+ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
 %% EXPERIMENTAL
 % Saving variables to calculate prediction intervals live in approximation
 ANOVA.PI.T_cr = T_cr;

@@ -268,7 +268,8 @@ end
 
 %%
 % APPROXIMATION
-% define the approximation for inputs minus global zeros
+% define the approximation for inputs minus global zeros and local zeros
+% %QUESTION: correct statement?
 aprxIN = comIN0*xcalib;
 
 % RESIDUAL
@@ -304,7 +305,8 @@ if FLAGS.balOut == 1
         %%% Balfit Stats and Matrix AJM 5_31_19
                 
         % APPROXIMATION
-        % define the approximation for inputs minus global zeros
+        % define the approximation for inputs minus global zeros and local
+        % zeros %QUESTION: correct statement?
         aprxIN = comIN0*xcalib;
         
         % RESIDUAL
@@ -352,6 +354,17 @@ else
 end
 % END: bootstrap section
 
+%ANOVA data for uncertainty
+beta_CI_comb=zeros(size(xcalib,1),dimFlag);
+y_hat_PI_comb=zeros(size(targetMatrix,1),size(targetMatrix,2));
+if FLAGS.anova==1
+    for j=1:dimFlag
+        beta_CI_comb(:,j)=ANOVA(j).beta_CI;
+        y_hat_PI_comb(:,j)=ANOVA(j).y_hat_PI;
+    end
+end
+%END: ANOVA data for uncertainty
+
 if FLAGS.volt==1
     %uncertainty due to uncertainty in volt readings
     uncert_comIN=balCal_algEquations_partialdiff(FLAGS.model, dimFlag, dainputs0);
@@ -359,7 +372,8 @@ else
     uncert_comIN=zeros(nterms,numpts0,dimFlag);
 end
 
-[combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero, xcalib_error]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
+[combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero, xcalib_error,coeff_uncert_boot]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
+[combined_uncert_anova,tare_uncert_anova, FL_uncert_anova,coeff_uncert_anova]=uncert_prop_anova(xcalib,beta_CI_comb,comIN,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix,series,voltTrust,FLAGS.anova,FLAGS.volt);
 %end uncertainty section
 
 

@@ -1,9 +1,9 @@
-function [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero,xcalib_error,coeff_uncert]=uncert_prop(xcalib,fxcalib_ci,comIN,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix,series,voltTrust,Boot_Flag,Volt_Flag)
+function [combined_uncert,tare_uncert, FL_uncert,coeff_uncert]=uncert_prop_anova(xcalib,beta_CI,comIN,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix,series,voltTrust,Anova_Flag,Volt_Flag)
 %Function calculates uncertainty in load from uncertainty in coefficients and input voltages
 
 %Inputs:
 %xcalib: Coefficients from calibration
-%fxcalib_ci: Confidence interval for coefficients
+%beta_ci: Confidence interval for coefficients
 %comIN: Produced by balCal_algEquations3: Voltages provided put into matrix
 %to multiply by coefficients for load output
 %dimFlag: Number of dimensions (channels)
@@ -13,7 +13,7 @@ function [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero,xcalib_err
 %nterms: number of coefficients used for model
 %targetMatrix: desired output loads
 %voltTrust: 95% confidence (+/-) for voltage readings (in mV)
-%Boot_Flag: 1 or 0: flag for if bootstrap method was used to find coeff CI
+%Boot_Flag: 1 or 0: flag for if anova method was used to find coeff CI
 %Volt_Flag: 1 or 0: If voltage uncertainty prop is to be performed
 
 %Outputs:
@@ -27,20 +27,10 @@ function [combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero,xcalib_err
 %START: coeff uncertainty propagation JRP 16 Jan 19
 %Take Confidence interval found for coefficients using bootstrap, and store
 %the absolute value of the larger error between +/- in a matrix
-if Boot_Flag==1
-for i=1:size(xcalib,1)
-    for j=1:size(xcalib,2)
-        for k=1:2
-            error(k,i,j)=abs(fxcalib_ci(k,i,j)-xcalib(i,j));
-        end
-        xcalib_ci_product(i,j)=fxcalib_ci(1,i,j)*fxcalib_ci(2,i,j);
-        xcalib_error(i,j)=max(error(:,i,j));
-    end
-end
-    xcalibCI_includeZero=(xcalib_ci_product<=0);
+if Anova_Flag==1
+        xcalib_error=beta_CI;
 else
     xcalib_error=zeros(size(xcalib,1),size(xcalib,2));
-    xcalibCI_includeZero=zeros(size(xcalib,1),size(xcalib,2));
 end
 comIN_square=comIN.^2; %Square input matrix
 xcalib_error_square=xcalib_error.^2; %square error matrix
@@ -69,7 +59,8 @@ end
 %Combine uncertainty from coeff and input voltages for 1 total uncertainty
 %value for every datapoint:
 combined_uncert=(coeff_uncert_square+volt_uncert_square).^(.5);
-tare_uncert=combined_uncert(s_1st0(1:(numel(s_1st0)-1)),:); %Uncert for tare loads
+
+tare_uncert=beta_CI(nterms+1:size(beta_CI,1),:); %Uncert for tare loads
 
 %FL Uncert:
 for i=1:numel(series)
