@@ -1,5 +1,6 @@
 function ANOVA = anova(X,y)
 
+fprintf('\nCalculating The Statistics ...\n')
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not
@@ -48,7 +49,7 @@ y_hat = H*y;
 e = y - y_hat;
 
 %% Covariance matrix and standard error
-% The covariance amtrix is calculated as C = sigma_hat^2 (X' X)^-1
+% The covariance matrix is calculated as C = sigma_hat^2 (X' X)^-1
 % sigma_hat is an estimate of the variance (std dev), based on the MSE
 %% 
 % (mean square error).
@@ -94,9 +95,9 @@ F_cr = finv(0.95,dof_r,dof_e);
 % the first input 0.05, is to calculate those tolerance with 95%
 % confidence.
 if F > F_cr
-    disp('We can reject the null hypothesis');
+    disp('We can reject the null hypothesis: The residual is independent from the voltage');
 else
-    disp('We cannot reject the null hypothesis');
+    disp('We cannot reject the null hypothesis: The residual is related to the voltage');
 end
 
 %% T test for individual coefficients b_i
