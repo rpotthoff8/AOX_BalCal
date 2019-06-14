@@ -268,8 +268,7 @@ end
 
 %%
 % APPROXIMATION
-% define the approximation for inputs minus global zeros and local zeros
-% %QUESTION: correct statement?
+% define the approximation for inputs minus global zeros
 aprxIN = comIN0*xcalib;
 
 % RESIDUAL
@@ -305,8 +304,7 @@ if FLAGS.balOut == 1
         %%% Balfit Stats and Matrix AJM 5_31_19
                 
         % APPROXIMATION
-        % define the approximation for inputs minus global zeros and local
-        % zeros %QUESTION: correct statement?
+        % define the approximation for inputs minus global zeros
         aprxIN = comIN0*xcalib;
         
         % RESIDUAL
