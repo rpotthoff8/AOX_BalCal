@@ -10,7 +10,7 @@
 %initialize the workspace
 clc;
 clearvars;
-% close all;
+close all;
 workspace;
 fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.\n')
 % The mean of the approximation residual (testmatrix minus local approximation) for each section is taken as the tare for that channel and section. The tare is subtracted from the global values to make the local loads. The accuracy of the validation, when compared to the known loads, is very sensitive to the value of the tares (which is unknown) and NOT the order of the calibration equations.
@@ -123,6 +123,8 @@ globalZeros = mean(natzeros);
 % Subtracts global zeros from signal.
 dainputs0 = excessVec0 - ones(numpts0,1)*globalZeros;
 
+
+
 % Determines how many terms are in the algebraic model; this will help
 % determine the size of the calibration matrix
 switch FLAGS.model
@@ -142,6 +144,19 @@ end
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
 comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0);
+
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+balfitdainputs0 = targetMatrix0;
+
+balfittargetMatrixTemp = balCal_algEqns(3,dainputs0,series0);
+balfittargetMatrix0 = balfittargetMatrixTemp(:, [1:dimFlag]);
+
+balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0);
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
 
 if FLAGS.LHS == 0
     numLHS = 1;
@@ -173,15 +188,74 @@ for lhs = 1:numLHS
         sample = [1:length(series0)]';
     end
 
+
+
     % Uses the sampling indices in "sample" to create the subsamples
     series = series0(sample);
     targetMatrix = targetMatrix0(sample,:);
     comIN = comIN0(sample,:);
 
+
+    %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+    balfittargetMatrix = balfittargetMatrix0(sample,:);
+    balfitcomIN = balfitcomIN0(sample,:);
+
+    %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+
     fprintf('\nWorking ...\n')
 
+
+    %%% ANOVA Stats AJM 6_8_19
+
+    totalnum = nterms+nseries0;
+    totalnumcoeffs = [1:totalnum];
+    dsof = numpts0-nterms-1;
+
     %Calculate xcalib (coefficients)
-    [xcalib, ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+    [xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+
+    loadstatlist = {'Load', 'PRESS_Stat', 'DOF', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
+    regresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
+
+    %%% ANOVA Stats AJM 6_8_19
+    %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+    [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
+    voltagestatlist = {'Voltage', 'PRESS_Stat', 'DOF', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
+    balfitregresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
+
+    if FLAGS.model ~= 4 && FLAGS.anova==1
+        for k=1:dimFlag
+            RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
+            manoa(k,:) = [loadlist(k), ANOVA(k).PRESS, dsof, ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_p, ANOVA(k).R_sq_p];
+            ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';
+            ANOVA1(:,:) = [ANOVA01([1:nterms+1],:)];
+            STAT_LOAD = array2table(manoa(k,:),'VariableNames',loadstatlist(1:8));
+            REGRESS_COEFFS = array2table(ANOVA1(:,:),'VariableNames',regresslist(1:7));
+
+            filename = 'DIRECT_ANOVA_STATS.xlsx';
+            writetable(STAT_LOAD,filename,'Sheet',k,'Range','A1');
+            writetable(REGRESS_COEFFS,filename,'Sheet',k,'Range','A4');
+
+
+            BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig;
+            toplayer(k,:) = [voltagelist(k), balfitANOVA(k).PRESS, dsof, balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_p, balfitANOVA(k).R_sq_p];
+            balfitANOVA01(:,:) = [totalnumcoeffs; balfitANOVA(k).beta'; ANOVA(k).beta_CI'; balfitANOVA(k).T'; balfitANOVA(k).p_T'; balfitANOVA(k).VIF'; 1.0*balfitANOVA(k).sig']';
+            balfitANOVA_intercept1(1,:) = balfitANOVA01(nterms+1,:);
+            balfitANOVA_intercept1(1,1) = 0;
+            balfitANOVA1(:,:) = [balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)];
+            BALFIT_STAT_VOLTAGE_1 = array2table(toplayer(k,:),'VariableNames',voltagestatlist(1:8));
+            BALFIT_REGRESS_COEFFS_1 = array2table(balfitANOVA1(:,:),'VariableNames',balfitregresslist(1:7));
+
+            filename = 'BALFIT_ANOVA_STATS.xlsx';
+            writetable(BALFIT_STAT_VOLTAGE_1,filename,'Sheet',k,'Range','A1');
+            writetable(BALFIT_REGRESS_COEFFS_1,filename,'Sheet',k,'Range','A4');
+        end
+        filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
+        dlmwrite(filename,RECOMM_ALG_EQN,'precision','%.8f');
+    end
+    %%% Balfit Stats and Matrix AJM 5_31_19
 
     if FLAGS.LHS == 1
         x_all(:,:,lhs) = xcalib;
@@ -223,6 +297,12 @@ if FLAGS.balOut == 1
         %Calculate xcalib (coefficients)
         [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
 
+        %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
+        filename = 'Testing_Sig.csv';
+        dlmwrite(filename,balfitANOVA(1).sig,'precision','%.16f');
+        %%% Balfit Stats and Matrix AJM 5_31_19
+
         % APPROXIMATION
         % define the approximation for inputs minus global zeros
         aprxIN = comIN0*xcalib;
@@ -230,7 +310,10 @@ if FLAGS.balOut == 1
         % RESIDUAL
         targetRes = targetMatrix0-aprxIN;
 
+
+
     end
+
 end
 
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
@@ -240,21 +323,38 @@ intercepts=-tares;
 taretal=tares(series,:);
 aprxINminGZ=aprxIN+taretal; %QUESTION: 29 MAR 2019: JRP
 
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+balfit_C1INV = xcalib([1:dimFlag], :); % AJM 5_31_19
+balfit_D1 = zeros(dimFlag,dimFlag); % AJM 5_31_19
+%balfit_INTER_temp = balfitxcalib(nterms+1, :); % AJM 5_31_19
+balfit_INTERCEPT = balfitxcalib(nterms+1, :) + globalZeros; % AJM 5_31_19
+%balfit_C2 = balfitxcalib([dimFlag+1:nterms], :); % AJM 5_31_19
+balfit_C1INVC2 = balfitxcalib([dimFlag+1:nterms], :)*balfit_C1INV; % AJM 5_31_19
+
+balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_D1 ; balfit_C1INVC2 ];
+
+filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
+dlmwrite(filename,balfit_regress_matrix,'precision','%.16f');
+
+%%% Balfit Stats and Matrix AJM 5_31_19
+
+
 %Start uncertainty section
 if FLAGS.boot==1
     %%start bootstrapfunction
     bootalpha=.05;
     f=@calc_xcalib;
-
     xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,0});
-    
+
     %START EXTRA for testing uncert prop
     f2=@(input,input2,input3) calc_xcalib(input,input2,input3,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,0);
     g=@(input,input2,input3) calc_yhat(input,input2,input3,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,0,comIN0);
 %     xcalib_ci2=bootci(numBoot,{f2,comIN0,targetMatrix0,series0},'type','norm');
     boot_yhat_ci=bootci(numBoot,{g,comIN0,targetMatrix0,series0}); %CHANGE BACK
 %     boot_yhat_ci2=bootci(numBoot,{g,comIN0,targetMatrix0,series0},'type','norm');
-    
+
     for i=1:size(aprxIN,1)
     for j=1:size(aprxIN,2)
         for k=1:2
@@ -295,8 +395,8 @@ end
 
 
 % Temp for Tares AJM 4_20_19
-filename = 'Tares_Double_Precision.csv';
-dlmwrite(filename,tares,'precision','%.16f');
+%filename = 'Tares_Double_Precision.csv';
+%dlmwrite(filename,tares,'precision','%.16f');
 %%%%%
 
 %  Creates Matrix for the volts to loads
