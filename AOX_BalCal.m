@@ -225,7 +225,7 @@ for lhs = 1:numLHS
     voltagestatlist = {'Voltage', 'PRESS_Stat', 'DOF', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
     balfitregresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
     
-    if FLAGS.model ~= 4
+    if FLAGS.model ~= 4 && FLAGS.anova==1
         for k=1:dimFlag
             RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
             manoa(k,:) = [loadlist(k), ANOVA(k).PRESS, dsof, ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_p, ANOVA(k).R_sq_p];
