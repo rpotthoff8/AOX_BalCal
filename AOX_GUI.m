@@ -1466,7 +1466,9 @@ switch cva.type
         
         loadCapacities =     csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),cal.Range{1});
         natzeros =           csvread(cal.Path,cal.CSV(2,1),cal.CSV(2,2),cal.Range{2});
-        series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
+        opts = spreadsheetImportOptions('DataRange',strrep(cal.Range{3},'..',':')); %Options for series 'readtable': JRP 14 June 19
+        series =             str2double(table2array(readtable(cal.Path,opts))); %Read series labels using 'readtable': JRP 14 June 19
+%         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
         targetMatrix0 =      csvread(cal.Path,cal.CSV(4,1),cal.CSV(4,2),cal.Range{4});
         excessVec0 =         csvread(cal.Path,cal.CSV(5,1),cal.CSV(5,2),cal.Range{5});
         
