@@ -16,6 +16,8 @@ fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarrea
 % The mean of the approximation residual (testmatrix minus local approximation) for each section is taken as the tare for that channel and section. The tare is subtracted from the global values to make the local loads. The accuracy of the validation, when compared to the known loads, is very sensitive to the value of the tares (which is unknown) and NOT the order of the calibration equations.
 % Because of measurement noise in the voltage the APPROXIMATION tare is computed by post-processing. The average and stddev is taken of all channels per section. If the stddev is less than 0.25% of the capacity for any station the tare is equal to the average for that channel. If the stddev is greater than 0.25% then the approximation at the local zero is taken as the tare for that channel and section. The global approximation is left alone but the tare is subtracted from the values to make the local loads. Line 3133.
 %
+% AJM 6_14_19 This version doesn't seem to have an intercept vector at the global zero. We can calculate the intercept by adding a line to the data set where that tare = the intercepts.
+%
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       USER INPUT SECTION
 out = AOX_GUI;
@@ -206,7 +208,6 @@ for lhs = 1:numLHS
     
     fprintf('\nWorking ...\n')
     
-    
     %%% ANOVA Stats AJM 6_8_19
     
     totalnum = nterms+nseries0;
@@ -268,7 +269,8 @@ end
 
 %%
 % APPROXIMATION
-% define the approximation for inputs minus global zeros
+% define the approximation for inputs minus global zeros and local zeros
+% %QUESTION: correct statement?
 aprxIN = comIN0*xcalib;
 
 % RESIDUAL
@@ -296,15 +298,16 @@ if FLAGS.balOut == 1
         
         %Calculate xcalib (coefficients)
         [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
-
+        
         %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
         [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
         filename = 'Testing_Sig.csv';
         dlmwrite(filename,balfitANOVA(1).sig,'precision','%.16f');
         %%% Balfit Stats and Matrix AJM 5_31_19
-                
+        
         % APPROXIMATION
-        % define the approximation for inputs minus global zeros
+        % define the approximation for inputs minus global zeros and local
+        % zeros %QUESTION: correct statement?
         aprxIN = comIN0*xcalib;
         
         % RESIDUAL
@@ -324,13 +327,18 @@ taretal=tares(series,:);
 aprxINminGZ=aprxIN+taretal; %QUESTION: 29 MAR 2019: JRP
 
 
+%%% AJM 6_11_19
+[temp_tares,tares_STDDEV_all] = meantare(series0,aprxINminGZ-targetMatrix0);
+
+tares_STDDEV = tares_STDDEV_all(s_1st0,:);
+%%% AJM 6_11_19
+
+
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
 
 balfit_C1INV = xcalib([1:dimFlag], :); % AJM 5_31_19
 balfit_D1 = zeros(dimFlag,dimFlag); % AJM 5_31_19
-%balfit_INTER_temp = balfitxcalib(nterms+1, :); % AJM 5_31_19
-balfit_INTERCEPT = balfitxcalib(nterms+1, :) + globalZeros; % AJM 5_31_19
-%balfit_C2 = balfitxcalib([dimFlag+1:nterms], :); % AJM 5_31_19
+balfit_INTERCEPT = globalZeros; % AJM 6_14_19
 balfit_C1INVC2 = balfitxcalib([dimFlag+1:nterms], :)*balfit_C1INV; % AJM 5_31_19
 
 balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_D1 ; balfit_C1INVC2 ];
@@ -410,6 +418,7 @@ for k=1:length(targetRes(1,:))
     xCent(k) = excessVec0(kstar(k),k);
     maxTargets(k) = max(targetRes(:,k));
     minTargets(k) = min(targetRes(:,k));
+    tR2(k) = targetRes(:,k)'*targetRes(:,k);     % AJM 6_12_19
 end
 perGoop = 100*(goop./loadCapacities);
 davariance = var(targetRes);
@@ -422,6 +431,112 @@ ratioGoop(isnan(ratioGoop)) = realmin;
 
 %    theminmaxband = abs(maxTargets + minTargets);
 theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
+
+
+%%% ANOVA Stats AJM 6_12_19
+
+if FLAGS.model ~= 4
+    
+    totalnum = nterms+nseries0;
+    totalnumcoeffs = [1:totalnum];
+    totalnumcoeffs2 = [2:totalnum+1];
+    dsof = numpts0-nterms-1;
+    
+    loadstatlist = {'Load', 'Sum_Sqrs', 'PRESS_Stat', 'DOF', 'Mean_Sqrs', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
+    
+    regresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
+    
+    
+    for k=1:dimFlag
+        
+        RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
+        
+        manoa(k,:) = [loadlist(k), tR2(1,k), ANOVA(k).PRESS, dsof, gee(1,k), ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_adj, ANOVA(k).R_sq_p];
+        
+        ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';
+        
+        ANOVA1(:,:) = [ANOVA01([1:nterms],:)];
+        
+        STAT_LOAD = array2table(manoa(k,:),'VariableNames',loadstatlist(1:10));
+        
+        REGRESS_COEFFS = array2table(ANOVA1(:,:),'VariableNames',regresslist(1:7));
+        
+        filename = 'DIRECT_ANOVA_STATS.xlsx';
+        writetable(STAT_LOAD,filename,'Sheet',k,'Range','A1');
+        writetable(REGRESS_COEFFS,filename,'Sheet',k,'Range','A4');
+        
+    end
+    
+    filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
+    dlmwrite(filename,RECOMM_ALG_EQN,'precision','%.8f');
+    
+end
+
+%%% ANOVA Stats AJM 6_8_19
+
+
+
+%%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+
+
+balfitaprxIN = balfitcomIN*balfitxcalib;
+balfittargetRes = balfittargetMatrix-balfitaprxIN;
+
+for k=1:length(balfittargetRes(1,:))
+    [balfitgoop(k),balfitkstar(k)] = max(abs(balfittargetRes(:,k)));
+    balfitgoopVal(k) = abs(balfittargetRes(kstar(k),k));
+    balfittR2(k) = balfittargetRes(:,k)'*balfittargetRes(:,k);     % AJM 6_12_19
+end
+
+balfitdavariance = var(balfittargetRes);
+balfitgee = mean(balfittargetRes);
+balfitstandardDev10 = std(balfittargetRes);
+balfitstandardDev = balfitstandardDev10';
+
+
+voltagestatlist = {'Voltage', 'Sum_Sqrs', 'PRESS_Stat', 'DOF', 'Mean_Sqrs', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
+
+balfitregresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
+
+%balfitinterceptlist = ['Intercept', '0', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'];
+balfitinterceptlist = [1, 0, 0, 0, 0, 0, 0];
+
+
+if FLAGS.model ~= 4
+    
+    for k=1:dimFlag
+        
+        BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig;
+        
+        balfitANOVA01(:,:) = [totalnumcoeffs2; balfitANOVA(k).beta'; ANOVA(k).beta_CI'; balfitANOVA(k).T'; balfitANOVA(k).p_T'; balfitANOVA(k).VIF'; 1.0*balfitANOVA(k).sig']';
+        
+        balfitANOVA_intercept1(1,:) = balfitinterceptlist(1,:);
+        
+        balfitANOVA1([1:nterms+1],:) = [balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)];
+        
+        toplayer(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
+        
+        BALFIT_STAT_VOLTAGE_1 = array2table(toplayer(k,:),'VariableNames',voltagestatlist(1:10));
+        
+        BALFIT_REGRESS_COEFFS_1 = array2table(balfitANOVA1([1:nterms],:),'VariableNames',balfitregresslist(1:7));
+        
+        filename = 'BALFIT_ANOVA_STATS.xlsx';
+        writetable(BALFIT_STAT_VOLTAGE_1,filename,'Sheet',k,'Range','A1');
+        writetable(BALFIT_REGRESS_COEFFS_1,filename,'Sheet',k,'Range','A4');
+        
+        
+    end
+    
+    
+    %filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
+    %dlmwrite(filename,BALFIT_RECOMM_ALG_EQN,'precision','%.8f');
+    
+end
+
+
+%%% Balfit Stats and Matrix AJM 5_31_19
+
+
 
 %OUTPUT HISTOGRAM PLOTS
 if FLAGS.hist == 1
@@ -466,7 +581,9 @@ if FLAGS.print == 1
         fprintf('\n ************************************************************************ \n');
     end
     
-    %%%%%%% 6_14_18 ajm
+    fprintf('\n ');
+    fprintf('\n%%%%%%%%%%%%%%%%%\n');
+    fprintf('\n ');
     calib_twoSigmaALGB = standardDev'.*2;
     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
     
@@ -474,6 +591,8 @@ if FLAGS.print == 1
     series_table = table([1:nseries0]','VariableNames',{'SERIES'});
     calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag));
     calib_algebraic_Tares = [series_table, calib_algebraic_Tares]
+    calib_algebraic_Tares_stdev = array2table(tares_STDDEV,'VariableNames',loadlist(1:dimFlag));
+    calib_algebraic_Tares_stdev = [series_table, calib_algebraic_Tares_stdev]
     
     coefficientsALGB = [xcalib;intercepts];
     for coeffCount=1:size(coefficientsALGB(:,1),1)
@@ -676,7 +795,8 @@ if FLAGS.balCal == 2
         series_table = table([1:nseries0]','VariableNames',{'SERIES'});
         calib_GRBF_Tares = array2table(taresGRBFactual,'VariableNames',loadlist(1:dimFlag));
         calib_GRBF_Tares = [series_table, calib_GRBF_Tares]
-        
+        calib_GRBF_STDEV_Tares = array2table(taresGRBFSTDEV,'VariableNames',loadlist(1:dimFlag));
+        calib_GRBF_STDEV_Tares = [series_table, calib_GRBF_STDEV_Tares]
         calib_mean_GRBF_Resids_sqrd = array2table(resSquare2'./numpts0,'VariableNames',loadlist(1:dimFlag))
         calib_GRBF_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop2,'VariableNames',loadlist(1:dimFlag))
         calib_GRBF_Std_Dev_pcnt = array2table(stdDevPercentCapacity2,'VariableNames',loadlist(1:dimFlag))
@@ -864,7 +984,8 @@ if FLAGS.balVal == 1
         series_table_valid = table([1:nseriesvalid]','VariableNames',{'SERIES'});
         alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag));
         alg_Tares_valid = [series_table_valid, alg_Tares_valid]
-        
+        alg_Tares_stdev_valid = array2table(zapSTDEVvalid,'VariableNames',loadlist(1:dimFlag));
+        alg_Tares_stdev_valid= [series_table_valid, alg_Tares_stdev_valid]
         mean_alg_Resids_sqrd_valid = array2table(resSquarevalid'./numptsvalid,'VariableNames',loadlist(1:dimFlag))
         alg_Pcnt_Capacity_Max_Mag_Load_Resids_valid = array2table(perGoopvalid,'VariableNames',loadlist(1:dimFlag))
         alg_Std_Dev_pcnt_valid = array2table(stdDevPercentCapacityvalid,'VariableNames',loadlist(1:dimFlag))
@@ -1042,7 +1163,8 @@ if FLAGS.balVal == 1
             series_table_valid = table([1:nseriesvalid]','VariableNames',{'SERIES'});
             GRBF_Taresvalid = array2table(taresGRBFvalid,'VariableNames',loadlist(1:dimFlag));
             GRBF_Taresvalid = [series_table_valid, GRBF_Taresvalid]
-            
+            GRBF_TaresSTDEVvalid = array2table(taresGRBFSTDEVvalid,'VariableNames',loadlist(1:dimFlag));
+            GRBF_TaresSTDEVvalid = [series_table_valid, GRBF_TaresSTDEVvalid]
             mean_GRBF_Resids_sqrdvalid = array2table(resSquare2valid'./numptsvalid,'VariableNames',loadlist(1:dimFlag))
             GRBF_Pcnt_Capacity_Max_Mag_Load_Resid_valid = array2table(perGoop2valid,'VariableNames',loadlist(1:dimFlag))
             GRBF_Std_Dev_pcnt_valid = array2table(stdDevPercentCapacity2valid,'VariableNames',loadlist(1:dimFlag))
