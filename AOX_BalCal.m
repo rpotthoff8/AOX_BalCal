@@ -5,7 +5,6 @@
 %input file: "BuffetBalance-CalDataOfOct2015-3F3M.csv"
 %output file: "balCal_output_ALGB.xls"
 %output file: "balCal_output_GRBF.xls"
-%
 %%
 %initialize the workspace
 clc;
