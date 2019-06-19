@@ -6,6 +6,7 @@
 *.pdf
 *.mat
 *.lhs
+*.xlsx
 
 # GUI config files #
 ####################
