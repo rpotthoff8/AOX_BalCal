@@ -406,15 +406,15 @@ if FLAGS.model ~= 4 && FLAGS.anova==1
         
         RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
         
-        manoa(k,:) = [loadlist(k), tR2(1,k), ANOVA(k).PRESS, dsof, gee(1,k), ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_adj, ANOVA(k).R_sq_p];
+        manoa2(k,:) = [loadlist(k), tR2(1,k), ANOVA(k).PRESS, dsof, gee(1,k), ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_adj, ANOVA(k).R_sq_p];
         
         ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';
         
-        ANOVA1(:,:) = [ANOVA01([1:nterms],:)];
+        ANOVA1_2(:,:) = [ANOVA01([1:nterms],:)];
         
-        STAT_LOAD = array2table(manoa(k,:),'VariableNames',loadstatlist(1:10));
+        STAT_LOAD = array2table(manoa2(k,:),'VariableNames',loadstatlist(1:10));
         
-        REGRESS_COEFFS = array2table(ANOVA1(:,:),'VariableNames',regresslist(1:7));
+        REGRESS_COEFFS = array2table(ANOVA1_2(:,:),'VariableNames',regresslist(1:7));
         
         filename = 'DIRECT_ANOVA_STATS.xlsx';
         writetable(STAT_LOAD,filename,'Sheet',k,'Range','A1');
@@ -469,9 +469,9 @@ if FLAGS.model ~= 4 && FLAGS.anova==1
         
         balfitANOVA1([1:nterms+1],:) = [balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)];
         
-        toplayer(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
+        toplayer2(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
         
-        BALFIT_STAT_VOLTAGE_1 = array2table(toplayer(k,:),'VariableNames',voltagestatlist(1:10));
+        BALFIT_STAT_VOLTAGE_1 = array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10));
         
         BALFIT_REGRESS_COEFFS_1 = array2table(balfitANOVA1([1:nterms],:),'VariableNames',balfitregresslist(1:7));
         
