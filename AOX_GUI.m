@@ -166,7 +166,7 @@ if exist(fileName,'file')
         set(handles.numLHS,'String',default.numLHS);
         set(handles.LHSp,'String',default.LHSp);
         LHS_FLAGcheck_Callback(handles.LHS_FLAGcheck, eventdata, handles);
-    
+        
         set(handles.Volt_FLAGcheck,'Value',default.Volt_FLAGcheck);
         set(handles.Boot_FLAGcheck,'Value',default.Boot_FLAGcheck);
         set(handles.voltTrust,'String',default.voltTrust);
@@ -436,7 +436,7 @@ try
         else
             splitrange=cell(1,5,2);
         end
-
+        
         set(handles.c11, 'Enable', 'off', 'String', splitrange{1,1,1});
         set(handles.c12, 'Enable', 'off', 'String', splitrange{1,1,2});
         set(handles.c21, 'Enable', 'off', 'String', splitrange{1,2,1});
@@ -514,7 +514,7 @@ try
         else
             splitrange=cell(1,5,2);
         end
-
+        
         set(handles.v11, 'Enable', 'off', 'String', splitrange{1,1,1});
         set(handles.v12, 'Enable', 'off', 'String', splitrange{1,1,2});
         set(handles.v21, 'Enable', 'off', 'String', splitrange{1,2,1});
@@ -1389,7 +1389,7 @@ try
         else
             splitrange=cell(1,4,2);
         end
-
+        
         set(handles.a11, 'Enable', 'off', 'String', splitrange{1,1,1});
         set(handles.a12, 'Enable', 'off', 'String', splitrange{1,1,2});
         set(handles.a21, 'Enable', 'off', 'String', splitrange{1,2,1});
@@ -1466,15 +1466,25 @@ switch cva.type
         
         loadCapacities =     csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),cal.Range{1});
         natzeros =           csvread(cal.Path,cal.CSV(2,1),cal.CSV(2,2),cal.Range{2});
-        series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
+
+        %Read series labels using 'readtable': JRP 19 June 19
+        A=extractAfter(cal.Range{3},'..');
+        bottom=str2double(regexp(A,'\d*','Match'));
+        opts=delimitedTextImportOptions('DataLines',[cal.CSV(3,1)+1 bottom]);
+        series_bulk=readtable(cal.Path,opts);
+        series=str2double(table2array(series_bulk(:,cal.CSV(3,2)+1)));
+        clear A bottom opts series_bulk
+
+        %         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
+        
         targetMatrix0 =      csvread(cal.Path,cal.CSV(4,1),cal.CSV(4,2),cal.Range{4});
         excessVec0 =         csvread(cal.Path,cal.CSV(5,1),cal.CSV(5,2),cal.Range{5});
         
         try
-%             l_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(1,2)]);
-%             l_label2         = rc2a1([cal.CSV(1,1)-4, cal.loadend(2)]);
-% %            [~,loadlabels,~] = xlsread(cal.Path,[l_label1,':',l_label2]);  %AJM 4_20_19
-%             [~,loadlabels,~] = csvread(cal.Path,[l_label1,':',l_label2]);   
+            %             l_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(1,2)]);
+            %             l_label2         = rc2a1([cal.CSV(1,1)-4, cal.loadend(2)]);
+            % %            [~,loadlabels,~] = xlsread(cal.Path,[l_label1,':',l_label2]);  %AJM 4_20_19
+            %             [~,loadlabels,~] = csvread(cal.Path,[l_label1,':',l_label2]);
             
             %START: new approach, JRP 11 June 19
             file=fopen(cal.Path);
@@ -1485,13 +1495,13 @@ switch cva.type
             voltlabels=splitlabelRow(cal.CSV(2,2)+1:cal.voltend(2)+1);
             clear file label_text1 splitlabelRow
             %END: new approach, JRP 11 June 19
-
-%             v_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(2,2)]);
-%             v_label2         = rc2a1([cal.CSV(1,1)-4, cal.voltend(2)]);
-% %            [~,voltlabels,~] = xlsread(cal.Path,[v_label1,':',v_label2]);  %AJM 4_20_19
-%             [~,voltlabels,~] = csvread(cal.Path,[v_label1,':',v_label2]);            
-%             
-%             clear l_label1 l_label2 v_label1 v_label2
+            
+            %             v_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(2,2)]);
+            %             v_label2         = rc2a1([cal.CSV(1,1)-4, cal.voltend(2)]);
+            % %            [~,voltlabels,~] = xlsread(cal.Path,[v_label1,':',v_label2]);  %AJM 4_20_19
+            %             [~,voltlabels,~] = csvread(cal.Path,[v_label1,':',v_label2]);
+            %
+            %             clear l_label1 l_label2 v_label1 v_label2
         end
         
         [~,calName,~] = fileparts(cal.Path);
@@ -1942,7 +1952,7 @@ function Boot_FLAGcheck_Callback(hObject, eventdata, handles)
 % hObject    handle to Boot_FLAGcheck (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value') == 1  
+if get(hObject,'Value') == 1
     set(handles.numBoot,'Enable','on');
 else
     set(handles.numBoot,'Enable','off');
@@ -1955,7 +1965,7 @@ function Volt_FLAGcheck_Callback(hObject, eventdata, handles)
 % hObject    handle to Volt_FLAGcheck (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value') == 1  
+if get(hObject,'Value') == 1
     set(handles.voltTrust,'Enable','on');
 else
     set(handles.voltTrust,'Enable','off');

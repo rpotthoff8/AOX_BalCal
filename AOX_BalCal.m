@@ -207,56 +207,12 @@ for lhs = 1:numLHS
     
     fprintf('\nWorking ...\n')
     
-    %%% ANOVA Stats AJM 6_8_19
-    
-    totalnum = nterms+nseries0;
-    totalnumcoeffs = [1:totalnum];
-    dsof = numpts0-nterms-1;
-    
     %Calculate xcalib (coefficients)
     [xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
     
-    loadstatlist = {'Load', 'PRESS_Stat', 'DOF', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
-    regresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
-    
-    %%% ANOVA Stats AJM 6_8_19
-    %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-    [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
-    voltagestatlist = {'Voltage', 'PRESS_Stat', 'DOF', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
-    balfitregresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
-    
-    if FLAGS.model ~= 4 && FLAGS.anova==1
-        for k=1:dimFlag
-            RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
-            manoa(k,:) = [loadlist(k), ANOVA(k).PRESS, dsof, ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_p, ANOVA(k).R_sq_p];
-            ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';
-            ANOVA1(:,:) = [ANOVA01([1:nterms+1],:)];
-            STAT_LOAD = array2table(manoa(k,:),'VariableNames',loadstatlist(1:8));
-            REGRESS_COEFFS = array2table(ANOVA1(:,:),'VariableNames',regresslist(1:7));
-            
-            filename = 'DIRECT_ANOVA_STATS.xlsx';
-            writetable(STAT_LOAD,filename,'Sheet',k,'Range','A1');
-            writetable(REGRESS_COEFFS,filename,'Sheet',k,'Range','A4');
-            
-            
-            BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig;
-            toplayer(k,:) = [voltagelist(k), balfitANOVA(k).PRESS, dsof, balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_p, balfitANOVA(k).R_sq_p];
-            balfitANOVA01(:,:) = [totalnumcoeffs; balfitANOVA(k).beta'; ANOVA(k).beta_CI'; balfitANOVA(k).T'; balfitANOVA(k).p_T'; balfitANOVA(k).VIF'; 1.0*balfitANOVA(k).sig']';
-            balfitANOVA_intercept1(1,:) = balfitANOVA01(nterms+1,:);
-            balfitANOVA_intercept1(1,1) = 0;
-            balfitANOVA1(:,:) = [balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)];
-            BALFIT_STAT_VOLTAGE_1 = array2table(toplayer(k,:),'VariableNames',voltagestatlist(1:8));
-            BALFIT_REGRESS_COEFFS_1 = array2table(balfitANOVA1(:,:),'VariableNames',balfitregresslist(1:7));
-            
-            filename = 'BALFIT_ANOVA_STATS.xlsx';
-            writetable(BALFIT_STAT_VOLTAGE_1,filename,'Sheet',k,'Range','A1');
-            writetable(BALFIT_REGRESS_COEFFS_1,filename,'Sheet',k,'Range','A4');
-        end
-        filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
-        dlmwrite(filename,RECOMM_ALG_EQN,'precision','%.8f');
-    end
-    %%% Balfit Stats and Matrix AJM 5_31_19
-    
+    [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); 
+        
+        
     if FLAGS.LHS == 1
         x_all(:,:,lhs) = xcalib;
     end
@@ -434,7 +390,7 @@ theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
 
 %%% ANOVA Stats AJM 6_12_19
 
-if FLAGS.model ~= 4
+if FLAGS.model ~= 4 && FLAGS.anova==1
     
     totalnum = nterms+nseries0;
     totalnumcoeffs = [1:totalnum];
@@ -450,15 +406,15 @@ if FLAGS.model ~= 4
         
         RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
         
-        manoa(k,:) = [loadlist(k), tR2(1,k), ANOVA(k).PRESS, dsof, gee(1,k), ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_adj, ANOVA(k).R_sq_p];
+        manoa2(k,:) = [loadlist(k), tR2(1,k), ANOVA(k).PRESS, dsof, gee(1,k), ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_adj, ANOVA(k).R_sq_p];
         
         ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';
         
-        ANOVA1(:,:) = [ANOVA01([1:nterms],:)];
+        ANOVA1_2(:,:) = [ANOVA01([1:nterms],:)];
         
-        STAT_LOAD = array2table(manoa(k,:),'VariableNames',loadstatlist(1:10));
+        STAT_LOAD = array2table(manoa2(k,:),'VariableNames',loadstatlist(1:10));
         
-        REGRESS_COEFFS = array2table(ANOVA1(:,:),'VariableNames',regresslist(1:7));
+        REGRESS_COEFFS = array2table(ANOVA1_2(:,:),'VariableNames',regresslist(1:7));
         
         filename = 'DIRECT_ANOVA_STATS.xlsx';
         writetable(STAT_LOAD,filename,'Sheet',k,'Range','A1');
@@ -501,7 +457,7 @@ balfitregresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VI
 balfitinterceptlist = [1, 0, 0, 0, 0, 0, 0];
 
 
-if FLAGS.model ~= 4
+if FLAGS.model ~= 4 && FLAGS.anova==1
     
     for k=1:dimFlag
         
@@ -513,9 +469,9 @@ if FLAGS.model ~= 4
         
         balfitANOVA1([1:nterms+1],:) = [balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)];
         
-        toplayer(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
+        toplayer2(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
         
-        BALFIT_STAT_VOLTAGE_1 = array2table(toplayer(k,:),'VariableNames',voltagestatlist(1:10));
+        BALFIT_STAT_VOLTAGE_1 = array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10));
         
         BALFIT_REGRESS_COEFFS_1 = array2table(balfitANOVA1([1:nterms],:),'VariableNames',balfitregresslist(1:7));
         
