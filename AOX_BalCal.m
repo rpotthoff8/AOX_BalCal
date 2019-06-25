@@ -319,7 +319,7 @@ beta_CI_comb=zeros(size(xcalib,1),dimFlag);
 y_hat_PI_comb=zeros(size(targetMatrix,1),size(targetMatrix,2));
 if FLAGS.anova==1
     for j=1:dimFlag
-        beta_CI_comb(:,j)=ANOVA(j).beta_CI;
+        beta_CI_comb(boolean(customMatrix(:,j)),j)=ANOVA(j).beta_CI;
         y_hat_PI_comb(:,j)=ANOVA(j).y_hat_PI;
     end
 end
@@ -339,6 +339,7 @@ end
 %OUTPUT FUNCTION
 %Function creates all outputs for calibration, algebraic section
 calib_alg_output(FLAGS,coeff,dimFlag,excessVec0,targetRes,voltagelist,reslist,loadCapacities,nterms,nseries0,numpts0,ANOVA,loadlist,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA,tares,tares_STDDEV,xcalib,intercepts,aprxIN,series0);
+%END CALIBRATION DIRECT APPROACH ALGEBRAIC SECTION
 
 if FLAGS.balCal == 2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
