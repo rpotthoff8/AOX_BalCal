@@ -319,7 +319,11 @@ beta_CI_comb=zeros(size(xcalib,1),dimFlag);
 y_hat_PI_comb=zeros(size(targetMatrix,1),size(targetMatrix,2));
 if FLAGS.anova==1
     for j=1:dimFlag
-        beta_CI_comb(boolean(customMatrix(:,j)),j)=ANOVA(j).beta_CI;
+        if FLAGS.model == 4
+            beta_CI_comb(boolean(customMatrix(:,j)),j)=ANOVA(j).beta_CI;
+        else
+            beta_CI_comb(:,j)=ANOVA(j).beta_CI;
+        end
         y_hat_PI_comb(:,j)=ANOVA(j).y_hat_PI;
     end
 end
