@@ -22,3 +22,7 @@
 # Prevent subfolders #
 ######################
 */
+
+# Random Mac Files #
+####################
+*.DS_Store
