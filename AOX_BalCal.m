@@ -146,9 +146,7 @@ end
 % Also creates intercept terms; a different intercept for each series.
 comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0);
 
-
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-
 balfitdainputs0 = targetMatrix0;
 
 balfittargetMatrixTemp = balCal_algEqns(3,dainputs0,series0);
@@ -442,7 +440,7 @@ if FLAGS.balVal == 1
     %     excessVecvalid =         csvread(inputFile_balCal,19,12,'M20..T139');
     load(out.savePathval,'-mat');
     [validSeries,s_1stV,~] = unique(seriesvalid);
-    xvalid=[coeff;tares(validSeries,:)]; %QUESTION: 29 March 2019; JRP
+    xvalid=[coeff;tares(validSeries,:)]; %QUESTION: 29 March 2019; JRP %PHASE OUT 3, JUST USE COEFF
     
     % num of data points
     numptsvalid = length(seriesvalid);
@@ -464,35 +462,18 @@ if FLAGS.balVal == 1
     globalZerosAllPointsvalid = ones(numptsvalid,1)*globalZerosvalid;
     
     % Subtract the Global Zeros from the Inputs and Local Zeros
-    for k=1:dimFlagvalid
-        dainputsvalid(:,k) = excessVecvalid(:,k)-globalZerosvalid(k);
-        dalzvalid(:,k) = localZerosAllPointsvalid(:,k)-globalZerosvalid(k);
-        dagzvalid(:,k) = 0;
-    end
+    dainputsvalid = excessVecvalid-globalZerosvalid;
+    dalzvalid = localZerosAllPointsvalid-globalZerosvalid;
+    dagzvalid = zeros(1,dimFlagvalid);
     
     %%% 5/16/18
     %Remember that  excessVec0 = excessVec0_complete - globalZerosAllPoints;
     excessVecvalidkeep = excessVecvalid  - globalZerosAllPointsvalid;
     %%%
     
-    % Build the Algebraic Model
-    lasttarevalid = seriesvalid(numptsvalid);
-    % Full Algebraic Model
-    if FLAGS.model == 1
-        nterms = 2*dimFlag*(dimFlag+2);
-    end
-    % Truncated Algebraic Model
-    if FLAGS.model == 2
-        nterms = dimFlag*(dimFlag+3)/2;
-    end
-    % Linear Algebraic Model
-    if FLAGS.model == 3
-        nterms = dimFlag;
-    end
-    
     % Call the Algebraic Subroutine
     comGZvalid = zeros(nterms+1,1);
-    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numptsvalid,seriesvalid,nseriesvalid,dainputsvalid,dalzvalid,dagzvalid);
+    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numptsvalid,seriesvalid,nseriesvalid,dainputsvalid,dalzvalid,dagzvalid); %PHASE OUT
     
     comINminLZvalid = comINvalid-comLZvalid;
     
@@ -505,14 +486,10 @@ if FLAGS.balVal == 1
     
     aprxINminLZvalid = comINminLZvalid'*xvalid;
     
-    for m=1:length(aprxINvalid(:,1))
-        %%%%% 3/23/17 Zap intercepts %%%
-        %        aprxINminGZvalid(m,:) = aprxINvalid(m,:)+interceptsvalid;
-        aprxINminGZvalid(m,:) = aprxINvalid(m,:);
-        %%%%%%
-        
-        checkitvalid(m,:) = aprxINminGZvalid(m,:)-targetMatrixvalid(m,:);
-    end
+    %%%%% 3/23/17 Zap intercepts %%%
+    %        aprxINminGZvalid(m,:) = aprxINvalid(m,:)+interceptsvalid;
+    aprxINminGZvalid = aprxINvalid;
+    checkitvalid = aprxINminGZvalid-targetMatrixvalid;
     
     % SOLVE FOR TARES BY TAKING THE MEAN
     [taresAllPointsvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
@@ -630,7 +607,8 @@ if FLAGS.balVal == 1
         plotResPages(seriesvalid, targetResvalid, loadCapacities, stdDevPercentCapacityvalid, loadlist)
         %    hold off
     end
-    
+
+    if FLAGS.balCal == 2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                    RBF SECTION FOR VALIDATION     AJM 12/10/16                         %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -822,7 +800,11 @@ if FLAGS.balVal == 1
             
         end
     end
+    end
+    %END RBF SECTION FOR VALIDATION
+    
 end
+%END VALIDATION SECTION
 
 if FLAGS.balApprox == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
