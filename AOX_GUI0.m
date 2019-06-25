@@ -1516,16 +1516,7 @@ switch cva.type
         
         loadCapacitiesvalid =    csvread(val.Path,val.CSV(1,1),val.CSV(1,2),val.Range{1});
         natzerosvalid =          csvread(val.Path,val.CSV(2,1),val.CSV(2,2),val.Range{2});
-        
-        %Read series labels using 'readtable': JRP 19 June 19
-        A=extractAfter(val.Range{3},'..');
-        bottom=str2double(regexp(A,'\d*','Match'));
-        opts=delimitedTextImportOptions('DataLines',[val.CSV(3,1)+1 bottom]);
-        series_bulk=readtable(val.Path,opts);
-        seriesvalid=str2double(table2array(series_bulk(:,val.CSV(3,2)+1)));
-        clear A bottom opts series_bulk
-%         seriesvalid =            csvread(val.Path,val.CSV(3,1),val.CSV(3,2),val.Range{3});
-
+        seriesvalid =            csvread(val.Path,val.CSV(3,1),val.CSV(3,2),val.Range{3});
         targetMatrixvalid =      csvread(val.Path,val.CSV(4,1),val.CSV(4,2),val.Range{4});
         excessVecvalid =         csvread(val.Path,val.CSV(5,1),val.CSV(5,2),val.Range{5});
         
@@ -1542,16 +1533,7 @@ switch cva.type
         
         loadCapacitiesapprox =    csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
         natzerosapprox =          csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
-        
-       %Read series labels using 'readtable': JRP 19 June 19
-        A=extractAfter(app.Range{3},'..');
-        bottom=str2double(regexp(A,'\d*','Match'));
-        opts=delimitedTextImportOptions('DataLines',[app.CSV(3,1)+1 bottom]);
-        series_bulk=readtable(app.Path,opts);
-        seriesapprox=str2double(table2array(series_bulk(:,app.CSV(3,2)+1)));
-        clear A bottom opts series_bulk 
-%         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
-        
+        seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
         excessVecapprox =         csvread(app.Path,app.CSV(4,1),app.CSV(4,2),app.Range{4});
         
         [~,appName,~] = fileparts(app.Path);
