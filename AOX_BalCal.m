@@ -81,7 +81,8 @@ voltTrust=out.voltTrust;
 FLAGS.anova = out.anova;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%                       INITIALIZATION SECTION
+fprintf('\nWorking ...\n')
 % Load data and characterize series
 load(out.savePathcal,'-mat');
 series0 = series;
@@ -118,13 +119,16 @@ if FLAGS.corr == 1
     correlationPlot(targetMatrix0, excessVec0, loadlist, voltagelist);
 end
 
+%                       END INITIALIZATION SECTION
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%             VOLTAGE TO LOAD (DIRECT) - ALGEBRAIC SECTION                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Finds the average  of the natural zeros (called global zeros)
 globalZeros = mean(natzeros);
 
 % Subtracts global zeros from signal.
 dainputs0 = excessVec0 - ones(numpts0,1)*globalZeros;
-
-
 
 % Determines how many terms are in the algebraic model; this will help
 % determine the size of the calibration matrix
@@ -148,13 +152,9 @@ comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0,1);
 
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
 balfitdainputs0 = targetMatrix0;
-
 balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
-
 balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,1);
-
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-
 
 if FLAGS.LHS == 0
     numLHS = 1;
@@ -173,7 +173,6 @@ fprintf('\nStarting Calculations\n')
 %     fprintf('\n\nUsing the Direct Approach for Calibration');
 % end
 
-%%
 for lhs = 1:numLHS
     
     % Creates an LHS sub-sample of the data.
@@ -186,30 +185,21 @@ for lhs = 1:numLHS
         sample = (1:length(series0))';
     end
     
-    
-    
     % Uses the sampling indices in "sample" to create the subsamples
     series = series0(sample);
     targetMatrix = targetMatrix0(sample,:);
     comIN = comIN0(sample,:);
     
-    
     %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-    
     balfittargetMatrix = balfittargetMatrix0(sample,:);
     balfitcomIN = balfitcomIN0(sample,:);
-    
     %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-    
-    
-    fprintf('\nWorking ...\n')
     
     %Calculate xcalib (coefficients)
     [xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
     
-    [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); 
-        
-        
+    [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+    
     if FLAGS.LHS == 1
         x_all(:,:,lhs) = xcalib;
     end
@@ -219,7 +209,6 @@ if FLAGS.LHS == 1
     xcalib_std = std(x_all,[],3);
 end
 
-%%
 % APPROXIMATION
 % define the approximation for inputs minus global zeros (includes
 % intercept terms)
@@ -228,7 +217,6 @@ aprxIN = comIN0*xcalib;
 % RESIDUAL
 targetRes = targetMatrix0-aprxIN;
 
-%%
 % Identify Outliers After Filtering
 % (Threshold approach) ajm 8/2/17
 if FLAGS.balOut == 1
@@ -253,10 +241,9 @@ if FLAGS.balOut == 1
         
         %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
         [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
-        
         if FLAGS.anova==1
-        filename = 'Testing_Sig.csv';
-        dlmwrite(filename,balfitANOVA(1).sig,'precision','%.16f');
+            filename = 'Testing_Sig.csv';
+            dlmwrite(filename,balfitANOVA(1).sig,'precision','%.16f');
         end
         %%% Balfit Stats and Matrix AJM 5_31_19
         
@@ -266,10 +253,9 @@ if FLAGS.balOut == 1
         aprxIN = comIN0*xcalib;
         
         % RESIDUAL
-        targetRes = targetMatrix0-aprxIN; 
-    
+        targetRes = targetMatrix0-aprxIN;
+        
     end
-    
 end
 
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
@@ -281,12 +267,10 @@ aprxINminGZ=aprxIN+taretal; %Approximation that does not include intercept terms
 
 %%% AJM 6_11_19
 [temp_tares,tares_STDDEV_all] = meantare(series0,aprxINminGZ-targetMatrix0);
-
 tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 %%% AJM 6_11_19
 
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-
 balfit_C1INV = xcalib((1:dimFlag), :); % AJM 5_31_19
 balfit_D1 = zeros(dimFlag,dimFlag); % AJM 5_31_19
 balfit_INTERCEPT = globalZeros; % AJM 6_14_19
@@ -296,7 +280,6 @@ balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_
 
 filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
 dlmwrite(filename,balfit_regress_matrix,'precision','%.16f');
-
 %%% Balfit Stats and Matrix AJM 5_31_19
 
 %Start uncertainty section
@@ -341,6 +324,7 @@ end
 calib_alg_output(FLAGS,coeff,dimFlag,excessVec0,targetRes,voltagelist,reslist,loadCapacities,nterms,nseries0,numpts0,ANOVA,loadlist,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA,tares,tares_STDDEV,xcalib,intercepts,aprxIN,series0);
 %END CALIBRATION DIRECT APPROACH ALGEBRAIC SECTION
 
+%%
 if FLAGS.balCal == 2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %             VOLTAGE TO LOAD (DIRECT) - RBF SECTION                         %
@@ -351,7 +335,7 @@ if FLAGS.balCal == 2
     %find centers by finding the index of max residual, using that index to
     %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
     %product of the resulting column vector
-   
+    
     targetRes2=targetRes(1:length(series0),1:dimFlag);
     aprxINminGZ2 = aprxINminGZ;
     
@@ -414,9 +398,9 @@ if FLAGS.balCal == 2
     end
     
     %OUTPUT FUNCTION
-%Function creates all outputs for calibration, GRBF section
-calib_GRBF_output(FLAGS,targetRes2,loadCapacities,series0,loadlist,aprxINminGZ2,wHist,cHist,centerIndexHist,numBasis,taresGRBF,taresGRBFSTDEV,dainputscalib,dimFlag,nseries0,resSquare2,numpts0);
-
+    %Function creates all outputs for calibration, GRBF section
+    calib_GRBF_output(FLAGS,targetRes2,loadCapacities,series0,loadlist,aprxINminGZ2,wHist,cHist,centerIndexHist,numBasis,taresGRBF,taresGRBFSTDEV,dainputscalib,dimFlag,nseries0,resSquare2,numpts0);
+    
 end
 %END CALIBRATION GRBF SECTION
 
@@ -425,14 +409,7 @@ if FLAGS.balVal == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                       VALIDATION SECTION      AJM 7/1/17                %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %
-    %DEFINE THE VALIDATION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
-    %     inputFile_balCal = 'MK14C-ChkLds-Ames2011-Meade-8D.csv';
-    %     loadCapacitiesvalid =    csvread(inputFile_balCal,9,4,'E10..L10');
-    %     natzerosvalid =          csvread(inputFile_balCal,12,12,'M13..T16');
-    %     seriesvalid =            csvread(inputFile_balCal,19,2,'C20..C139');
-    %     targetMatrixvalid =      csvread(inputFile_balCal,19,4,'E20..L139');
-    %     excessVecvalid =         csvread(inputFile_balCal,19,12,'M20..T139');
+
     load(out.savePathval,'-mat');
     [validSeries,s_1stV,~] = unique(seriesvalid);
     xvalid=coeff; %JUST USE COEFF FOR VALIDATION (NO ITERCEPTS)
@@ -493,21 +470,21 @@ if FLAGS.balVal == 1
     %Function creates all outputs for validation, algebraic section
     valid_alg_output(targetResvalid,loadCapacitiesvalid,FLAGS,fileNamevalid,numptsvalid,nseriesvalid,zapvalid,zapSTDEVvalid,loadlist,resSquarevalid,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlag)
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
-
     
+    %%
     if FLAGS.balCal == 2
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %                    RBF SECTION FOR VALIDATION     AJM 12/10/16                         %
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %goal to use centers, width and coefficients to validate parameters against
-    %independent data
-
-    targetRes2valid = targetResvalid;
-    aprxINminGZ2valid = aprxINminGZvalid;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %                    RBF SECTION FOR VALIDATION     AJM 12/10/16                         %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %goal to use centers, width and coefficients to validate parameters against
+        %independent data
         
-    % Subtract the Global Zeros from the Inputs
-    dainputsvalid = excessVecvalid-globalZerosvalid;
-
+        targetRes2valid = targetResvalid;
+        aprxINminGZ2valid = aprxINminGZvalid;
+        
+        % Subtract the Global Zeros from the Inputs
+        dainputsvalid = excessVecvalid-globalZerosvalid;
+        
         etaHistvalid = cell(numBasis,1);
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
@@ -581,13 +558,12 @@ if FLAGS.balVal == 1
             total_rbfc_INminGZ_valid = total_rbfc_INminGZ_valid + rbfc_INminGZ_Histvalid{u};            % temp ajm 6_7_18
         end
         
-
+        
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         valid_GRBF_output(FLAGS,targetResvalid,targetRes2valid,loadCapacitiesvalid,loadlist,dimFlag,numBasis,validSeries,aprxINminGZ2valid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,resSquare2valid,numptsvalid);
     end
-    % END GRBF SECTION FOR VALIDATION
-    
+    %END GRBF SECTION FOR VALIDATION
 end
 %END VALIDATION SECTION
 
@@ -614,7 +590,7 @@ if FLAGS.balApprox == 1
     
     % Call the Algebraic Subroutine
     comINapprox = balCal_algEqns(FLAGS.model,dainputsapprox,seriesapprox,0);
-
+    
     %LOAD APPROXIMATION
     %define the approximation for inputs minus global zeros
     aprxINapprox = comINapprox*coeff;        %to find approximation AJM111516
@@ -636,17 +612,16 @@ if FLAGS.balApprox == 1
         fprintf('\n ');
         fprintf('\nALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace\n');
     end
-
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                    RBF SECTION FOR APPROXIMATION     AJM 6/29/17                         %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %goal to use centers, width and coefficients to approxate parameters against
     %independent data
     
-    aprxINminGZ2approx = aprxINminGZapprox;
-    
     if FLAGS.balCal == 2
         
+        aprxINminGZ2approx = aprxINminGZapprox;
         etaHistapprox = cell(numBasis,1);
         aprxINminGZ_Histapprox = cell(numBasis,1);
         
@@ -655,7 +630,7 @@ if FLAGS.balApprox == 1
         for u=1:numBasis
             for s=1:length(excessVec0(1,:)) % loops through the 8 components
                 
-                centerIndexLoop(s) = centerIndexHist(u,s); %Have to use the history or it gets overwritten
+                centerIndexLoop(s) = centerIndexHist(u,s); %Have to use the history or it gets overwritten% QUESTION: JRP, 26 JUNE 19: WHAT IF DATAPOINTS ARE NOT THE SAME, DIFFERENT CENTER?
                 
                 for r=1:length(excessVecapprox(:,1))
                     etaapprox(r,s) = dot(excessVecapprox(r,:)-excessVec0(centerIndexLoop(s),:),excessVecapprox(r,:)-excessVec0(centerIndexLoop(s),:));
@@ -668,7 +643,6 @@ if FLAGS.balApprox == 1
                 
                 rbfc_INminGZapprox(:,s) = coeffapprox(s)*rbfINminGZapprox(:,s);
                 
-                
             end
             
             wHistapprox(u,:) = w;
@@ -676,10 +650,7 @@ if FLAGS.balApprox == 1
             centerIndexHist(u,:) = centerIndexLoop;
             etaHistapprox{u} = etaapprox;
             
-            %UPDATE THE RESIDUAL
-            
             %update the approximation
-            
             aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
             aprxINminGZ_Histapprox{u} = aprxINminGZ2approx;
             
@@ -689,11 +660,9 @@ if FLAGS.balApprox == 1
             fprintf('\n ');
             fprintf('\n%%%%%%%%%%%%%%%%%\n');
             fprintf('\n ');
-            
             fprintf('\nALG + GRBF MODEL APPROXIMATION RESULTS: GLOBAL_ALG+GRBF_APPROX.csv\n');
             
             filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
-            
             csvwrite(filename,aprxINminGZ2approx)
             dlmwrite(filename,aprxINminGZ2approx,'precision','%.16f');
         else
@@ -703,9 +672,10 @@ if FLAGS.balApprox == 1
         end
         
     end
+    % END APPROXIMATION GRBF SECTION
     
-    %End Approximation Option
 end
+%End APPROXIMATION SECTION
 
 fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
