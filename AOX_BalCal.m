@@ -183,7 +183,7 @@ for lhs = 1:numLHS
         lhs_ind(find(lhs_check-1)); % This line outputs which data points haven't been sampled yet
         pct_sampled = sum(lhs_check)/length(lhs_check); % This line outputs what percentage of points have been sampled
     else
-        sample = [1:length(series0)]';
+        sample = (1:length(series0))';
     end
     
     
@@ -287,10 +287,10 @@ tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
 
-balfit_C1INV = xcalib([1:dimFlag], :); % AJM 5_31_19
+balfit_C1INV = xcalib((1:dimFlag), :); % AJM 5_31_19
 balfit_D1 = zeros(dimFlag,dimFlag); % AJM 5_31_19
 balfit_INTERCEPT = globalZeros; % AJM 6_14_19
-balfit_C1INVC2 = balfitxcalib([dimFlag+1:nterms], :)*balfit_C1INV; % AJM 5_31_19
+balfit_C1INVC2 = balfitxcalib((dimFlag+1:nterms), :)*balfit_C1INV; % AJM 5_31_19
 
 balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_D1 ; balfit_C1INVC2 ];
 
@@ -598,7 +598,6 @@ if FLAGS.balApprox == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
     %DEFINE THE PRODUCTION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
-    
     load(out.savePathapp,'-mat');
     
     % num of data points
@@ -608,54 +607,18 @@ if FLAGS.balApprox == 1
     globalZerosapprox = mean(natzerosapprox);
     
     % make an array out of the globalZerosapprox vector
-    for i=1:numptsapprox
-        globalZerosAllPointsapprox(i,:) = globalZerosapprox;
-    end
+    globalZerosAllPointsapprox = ones(numptsapprox,1)*globalZerosapprox;
     
     % Subtract the Global Zeros from the Inputs
-    for k=1:dimFlag
-        
-        dainputsapprox(:,k) = excessVecapprox(:,k)-globalZerosAllPointsapprox(:,k);
-        
-        dalzapprox(:,k) = globalZerosAllPointsapprox(:,k)-globalZerosAllPointsapprox(:,k);
-        
-    end
-    
-    %% Build the Algebraic Model
-    
-    % Full Algebraic Model
-    if FLAGS.model == 1
-        nterms = 2*dimFlag*(dimFlag+2);
-    end
-    
-    % Truncated Algebraic Model
-    if FLAGS.model == 2
-        nterms = dimFlag*(dimFlag+3)/2;
-    end
-    
-    % Linear Algebraic Model
-    if FLAGS.model == 3
-        nterms = dimFlag;
-    end
+    dainputsapprox = excessVecapprox-globalZerosAllPointsapprox;
     
     % Call the Algebraic Subroutine
-    comGZapprox= zeros(nterms,1);
-    
-    
-    for i=1:dimFlag
-        biggee(:,i) = 0;
-    end
-    
-    [comINapprox,comLZapprox,comGZapprox]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numptsapprox,0,0,dainputsapprox,dalzapprox,biggee);
-    
+    comINapprox = balCal_algEqns(FLAGS.model,dainputsapprox,seriesapprox,0);
+
     %LOAD APPROXIMATION
     %define the approximation for inputs minus global zeros
-    interceptsapprox = -(comGZapprox'*coeff);
-    aprxINapprox = ( coeff'*comINapprox)';        %to find ?? AJM111516
-    
-    for m=1:length(aprxINapprox)
-        aprxINminGZapprox(m,:) = aprxINapprox(m,:);
-    end
+    aprxINapprox = comINapprox*coeff;        %to find approximation AJM111516
+    aprxINminGZapprox = aprxINapprox;
     
     if FLAGS.excel == 1
         fprintf('\n ');
@@ -673,11 +636,7 @@ if FLAGS.balApprox == 1
         fprintf('\n ');
         fprintf('\nALG MODEL APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace\n');
     end
-    
-    
-    %%%%%%
-    
-    
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                    RBF SECTION FOR APPROXIMATION     AJM 6/29/17                         %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
