@@ -52,7 +52,7 @@ function AOX_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to AOX_GUI (see VARARGIN)
-
+set(handles.figure1, 'units', 'normalized', 'position', [0.15 0.1 0.5 0.8])
 global VERSION
 VERSION = 15;
 try
