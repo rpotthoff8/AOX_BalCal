@@ -1,5 +1,8 @@
 % Copyright ©2017 Andrew Meade, Javier Villarreal.  All Rights Reserved.
-function in_comb = balCal_algEqns(model_FLAG,in,series)
+function in_comb = balCal_algEqns(model_FLAG,in,series,intercept_FLAG)
+%validation_FLAG==1 if producing in_comb for the validation section.  The
+%only difference is the series intercept terms are not included for
+%validation
 
 % Detect the size of the input
 n = size(in,1); %number of data points
@@ -8,8 +11,8 @@ if model_FLAG == 3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%LINEAR MODEL
     in_comb = in;%                                                        3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    in_comb = interceptTerms(in_comb,series);
-    return 
+    in_comb = interceptTerms(in_comb,series,intercept_FLAG);
+    return
 end
 
 in_sq = in.^2;
@@ -24,11 +27,11 @@ end
 if model_FLAG == 2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%TRUNCATED MODEL
     in_comb = [in,      ...                                               2
-               in_sq,   ...
-               ini_inj];
+        in_sq,   ...
+        ini_inj];
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    in_comb = interceptTerms(in_comb,series);
-    return 
+    in_comb = interceptTerms(in_comb,series,intercept_FLAG);
+    return
 end
 
 abs_in = abs(in);
@@ -48,25 +51,28 @@ in_cu = in.^3;
 abs_incu = abs(in_cu);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%FULL MODEL
 in_comb = [in,        ...                                                 1
-           abs_in,    ...
-           in_sq,     ...
-           in_absin,  ...
-           ini_inj,   ...
-           abs_iniinj,...
-           ini_absinj,...
-           absini_inj,...
-           in_cu,     ...
-           abs_incu];
+    abs_in,    ...
+    in_sq,     ...
+    in_absin,  ...
+    ini_inj,   ...
+    abs_iniinj,...
+    ini_absinj,...
+    absini_inj,...
+    in_cu,     ...
+    abs_incu];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-in_comb = interceptTerms(in_comb,series);
+in_comb = interceptTerms(in_comb,series,intercept_FLAG);
 end
 
-function in_comb = interceptTerms(in_comb,series)
+function in_comb = interceptTerms(in_comb,series,intercept_FLAG)
 n = size(in_comb,1);
 [~,s_1st,s_id] = unique(series);
 nseries = length(s_1st);
 ints = zeros(n,nseries);
 ids = sub2ind(size(ints),[1:n]',s_id);
 ints(ids) = 1;
-in_comb = [in_comb, ints];
+
+if intercept_FLAG==1 %If preference for series intercepts is on, add 1's for intercept terms: (These are not included for validation)
+    in_comb = [in_comb, ints];
+end
 end

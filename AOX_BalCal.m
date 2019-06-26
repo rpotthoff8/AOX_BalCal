@@ -144,15 +144,14 @@ end
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
-comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0);
+comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0,1);
 
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
 balfitdainputs0 = targetMatrix0;
 
-balfittargetMatrixTemp = balCal_algEqns(3,dainputs0,series0);
-balfittargetMatrix0 = balfittargetMatrixTemp(:, [1:dimFlag]);
+balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
 
-balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0);
+balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,1);
 
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
 
@@ -237,8 +236,6 @@ if FLAGS.balOut == 1
     %Identify outliers based on residuals
     [OUTLIER_ROWS,num_outliers,prcnt_outliers]=ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS);
     
-    
-    
     % Use the reduced input and target files
     if FLAGS.zeroed == 1
         
@@ -269,8 +266,8 @@ if FLAGS.balOut == 1
         aprxIN = comIN0*xcalib;
         
         % RESIDUAL
-        targetRes = targetMatrix0-aprxIN;
-         
+        targetRes = targetMatrix0-aprxIN; 
+    
     end
     
 end
@@ -279,7 +276,7 @@ end
 coeff = xcalib(1:nterms,:);
 tares = -xcalib(nterms+1:end,:);
 intercepts=-tares;
-taretal=tares(series,:);
+taretal=tares(series0,:);
 aprxINminGZ=aprxIN+taretal; %Approximation that does not include intercept terms %QUESTION: 29 MAR 2019: JRP
 
 %%% AJM 6_11_19
@@ -287,7 +284,6 @@ aprxINminGZ=aprxIN+taretal; %Approximation that does not include intercept terms
 
 tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 %%% AJM 6_11_19
-
 
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
 
@@ -302,7 +298,6 @@ filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
 dlmwrite(filename,balfit_regress_matrix,'precision','%.16f');
 
 %%% Balfit Stats and Matrix AJM 5_31_19
-
 
 %Start uncertainty section
 if FLAGS.boot==1
@@ -417,7 +412,6 @@ if FLAGS.balCal == 2
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
     end
-
     
     %OUTPUT FUNCTION
 %Function creates all outputs for calibration, GRBF section
@@ -440,7 +434,7 @@ if FLAGS.balVal == 1
     %     excessVecvalid =         csvread(inputFile_balCal,19,12,'M20..T139');
     load(out.savePathval,'-mat');
     [validSeries,s_1stV,~] = unique(seriesvalid);
-    xvalid=[coeff;tares(validSeries,:)]; %QUESTION: 29 March 2019; JRP %PHASE OUT 3, JUST USE COEFF
+    xvalid=coeff; %JUST USE COEFF FOR VALIDATION (NO ITERCEPTS)
     
     % num of data points
     numptsvalid = length(seriesvalid);
@@ -472,22 +466,13 @@ if FLAGS.balVal == 1
     %%%
     
     % Call the Algebraic Subroutine
-    comGZvalid = zeros(nterms+1,1);
-    [comINvalid,comLZvalid,comGZvalid]=balCal_algEquations3(FLAGS.model,nterms,dimFlag,numptsvalid,seriesvalid,nseriesvalid,dainputsvalid,dalzvalid,dagzvalid); %PHASE OUT
-    
-    comINminLZvalid = comINvalid-comLZvalid;
+    comINvalid = balCal_algEqns(FLAGS.model,dainputsvalid,seriesvalid,0);
     
     %VALIDATION APPROXIMATION
     %define the approximation for inputs minus global zeros
-    %    interceptsvalid = -(comGZvalid'*xvalid);  % ajm 5/17/18
-    
-    aprxINvalid = comINvalid'*xvalid;        %to find approximation AJM111516
-    aprxLZvalid = comLZvalid'*xvalid;       %to find tares AAM042016
-    
-    aprxINminLZvalid = comINminLZvalid'*xvalid;
+    aprxINvalid = comINvalid*xvalid;        %to find approximation AJM111516
     
     %%%%% 3/23/17 Zap intercepts %%%
-    %        aprxINminGZvalid(m,:) = aprxINvalid(m,:)+interceptsvalid;
     aprxINminGZvalid = aprxINvalid;
     checkitvalid = aprxINminGZvalid-targetMatrixvalid;
     
