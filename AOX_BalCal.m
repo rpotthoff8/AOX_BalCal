@@ -420,8 +420,9 @@ calib_GRBF_output(FLAGS,targetRes2,loadCapacities,series0,loadlist,aprxINminGZ2,
 end
 %END CALIBRATION GRBF SECTION
 
+%%
 if FLAGS.balVal == 1
-    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                       VALIDATION SECTION      AJM 7/1/17                %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
@@ -457,8 +458,6 @@ if FLAGS.balVal == 1
     
     % Subtract the Global Zeros from the Inputs and Local Zeros
     dainputsvalid = excessVecvalid-globalZerosvalid;
-    dalzvalid = localZerosAllPointsvalid-globalZerosvalid;
-    dagzvalid = zeros(1,dimFlagvalid);
     
     %%% 5/16/18
     %Remember that  excessVec0 = excessVec0_complete - globalZerosAllPoints;
@@ -502,26 +501,13 @@ if FLAGS.balVal == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %goal to use centers, width and coefficients to validate parameters against
     %independent data
-    
-    for k=1:dimFlagvalid
-        for s=1:length(seriesvalid)
-            targetResvalidX(s,k) = targetResvalid(s,k);
-        end
-    end
-    targetRes2valid = targetResvalidX;
+
+    targetRes2valid = targetResvalid;
     aprxINminGZ2valid = aprxINminGZvalid;
-    
-    % Subtract the Global Zeros from the Inputs and Local Zeros
-    for k=1:dimFlagvalid
-        dainputsvalid(:,k) = excessVecvalid(:,k)-globalZerosvalid(k);
-        dalzvalid(:,k) = localZerosAllPointsvalid(:,k)-globalZerosvalid(k);
-        dagzvalid(:,k) = 0;
-    end
-    
-    for k=1:dimFlag % ajm 6_8_18
-        dainputscalib(:,k) = excessVec0(:,k) - globalZeros(k);
-    end
-    
+        
+    % Subtract the Global Zeros from the Inputs
+    dainputsvalid = excessVecvalid-globalZerosvalid;
+
         etaHistvalid = cell(numBasis,1);
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
@@ -600,11 +586,12 @@ if FLAGS.balVal == 1
         %Function creates all outputs for validation, GRBF section
         valid_GRBF_output(FLAGS,targetResvalid,targetRes2valid,loadCapacitiesvalid,loadlist,dimFlag,numBasis,validSeries,aprxINminGZ2valid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,resSquare2valid,numptsvalid);
     end
-    %END GRBF SECTION FOR VALIDATION
+    % END GRBF SECTION FOR VALIDATION
     
 end
 %END VALIDATION SECTION
 
+%%
 if FLAGS.balApprox == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                        APPROXIMATION SECTION      AJM 6/29/17           %
