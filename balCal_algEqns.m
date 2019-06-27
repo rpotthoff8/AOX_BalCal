@@ -52,19 +52,20 @@ if normFLAG == 1
 end
     
 in_absin = in_n.*abs_in;
-abs_iniinj = abs(ini_inj);
 j = 1;
+abs_iniinj = zeros(n,(d^2-d)/2);
 ini_absinj = zeros(n,(d^2-d)/2);
 absini_inj = zeros(n,(d^2-d)/2);
 for k = 1:d-1
     for m = k+1:d
+        abs_iniinj(:,j) = abs_in(:,k).*abs_in(:,m);
         ini_absinj(:,j) = in_n(:,k).*abs_in(:,m);
         absini_inj(:,j) = abs_in(:,k).*in_n(:,m);
         j = j+1;
     end
 end
 in_cu = in_n.^3;
-abs_incu = abs(in_cu);
+abs_incu = abs_in.^3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%FULL MODEL
 in_comb = [in_n,        ...                                                 1
            abs_in,    ...
