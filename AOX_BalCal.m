@@ -526,17 +526,11 @@ if FLAGS.balApprox == 1
     %DEFINE THE PRODUCTION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
     load(out.savePathapp,'-mat');
     
-    % num of data points
-    numptsapprox = length(excessVecapprox);
-    
     %natural zeros (also called global zeros)
     globalZerosapprox = mean(natzerosapprox);
     
-    % make an array out of the globalZerosapprox vector
-    globalZerosAllPointsapprox = ones(numptsapprox,1)*globalZerosapprox;
-    
     % Subtract the Global Zeros from the Inputs
-    dainputsapprox = excessVecapprox-globalZerosAllPointsapprox;
+    dainputsapprox = excessVecapprox-globalZerosapprox;
     
     % Call the Algebraic Subroutine
     comINapprox = balCal_algEqns(FLAGS.model,dainputsapprox,seriesapprox,0);
@@ -572,11 +566,8 @@ if FLAGS.balApprox == 1
     if FLAGS.balCal == 2
         
         aprxINminGZ2approx = aprxINminGZapprox;
-        etaHistapprox = cell(numBasis,1);
         aprxINminGZ_Histapprox = cell(numBasis,1);
-        
-        etaGZapprox = dot(globalZerosAllPointsapprox-excessVecapprox,globalZerosAllPointsapprox-excessVecapprox);
-        
+               
         for u=1:numBasis
             for s=1:length(excessVec0(1,:)) % loops through the 8 components
                 
@@ -594,10 +585,7 @@ if FLAGS.balApprox == 1
                 rbfc_INminGZapprox(:,s) = coeffapprox(s)*rbfINminGZapprox(:,s);
                 
             end
-            
-            %Store History
-            etaHistapprox{u} = etaapprox;
-            
+          
             %update the approximation
             aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
             aprxINminGZ_Histapprox{u} = aprxINminGZ2approx;
