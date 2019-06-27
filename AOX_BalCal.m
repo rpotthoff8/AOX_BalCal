@@ -557,8 +557,7 @@ if FLAGS.balVal == 1
         for u=2:numBasis
             total_rbfc_INminGZ_valid = total_rbfc_INminGZ_valid + rbfc_INminGZ_Histvalid{u};            % temp ajm 6_7_18
         end
-        
-        
+         
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         valid_GRBF_output(FLAGS,targetResvalid,targetRes2valid,loadCapacitiesvalid,loadlist,dimFlag,numBasis,validSeries,aprxINminGZ2valid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,resSquare2valid,numptsvalid);
@@ -630,7 +629,7 @@ if FLAGS.balApprox == 1
         for u=1:numBasis
             for s=1:length(excessVec0(1,:)) % loops through the 8 components
                 
-                centerIndexLoop(s) = centerIndexHist(u,s); %Have to use the history or it gets overwritten% QUESTION: JRP, 26 JUNE 19: WHAT IF DATAPOINTS ARE NOT THE SAME, DIFFERENT CENTER?
+                centerIndexLoop(s) = centerIndexHist(u,s); %Have to use the history or it gets overwritten
                 
                 for r=1:length(excessVecapprox(:,1))
                     etaapprox(r,s) = dot(excessVecapprox(r,:)-excessVec0(centerIndexLoop(s),:),excessVecapprox(r,:)-excessVec0(centerIndexLoop(s),:));
@@ -645,9 +644,7 @@ if FLAGS.balApprox == 1
                 
             end
             
-            wHistapprox(u,:) = w;
-            cHistapprox(u,:) = coeffapprox;
-            centerIndexHist(u,:) = centerIndexLoop;
+            %Store History
             etaHistapprox{u} = etaapprox;
             
             %update the approximation
@@ -675,7 +672,7 @@ if FLAGS.balApprox == 1
     % END APPROXIMATION GRBF SECTION
     
 end
-%End APPROXIMATION SECTION
+%END APPROXIMATION SECTION
 
 fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
