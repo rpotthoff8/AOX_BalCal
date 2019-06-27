@@ -402,7 +402,7 @@ if FLAGS.balVal == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                       VALIDATION SECTION      AJM 7/1/17                %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+    
     load(out.savePathval,'-mat');
     [validSeries,s_1stV,~] = unique(seriesvalid);
     xvalid=coeff; %JUST USE COEFF FOR VALIDATION (NO ITERCEPTS)
@@ -452,7 +452,7 @@ if FLAGS.balVal == 1
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
     resSquarevalid = dot(targetResvalid,targetResvalid)';
-       
+    
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section
     valid_alg_output(targetResvalid,loadCapacitiesvalid,FLAGS,fileNamevalid,numptsvalid,nseriesvalid,zapvalid,zapSTDEVvalid,loadlist,resSquarevalid,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlagvalid)
@@ -475,26 +475,16 @@ if FLAGS.balVal == 1
         %Initialize Variables
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
-        etavalid=zeros(size(dainputsvalid));
-        rbfINminGZvalid=zeros(size(dainputsvalid));
-        rbfc_INminGZvalid=zeros(size(dainputsvalid));
         resSquareHistvalid=zeros(numBasis,dimFlagvalid);
         
         for u=1:numBasis
-            for s=1:length(excessVec0(1,:)) % loops through the components
-                
-                adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputsvalid;
-                etavalid(:,s) = dot(adiffervalid,adiffervalid,2);
-                
-                rbfINminGZvalid(:,s)=exp(etavalid(:,s)*log(abs(wHist(u,s))));
-                
-                rbfc_INminGZvalid(:,s) = cHist(u,s)*rbfINminGZvalid(:,s);
-            end
+            %Call function to place single GRBF
+            [rbfc_INminGZvalid]=place_GRBF(u,dainputscalib,dainputsvalid,centerIndexHist,wHist,cHist);
             
             %update the approximation
             aprxINminGZ2valid = aprxINminGZ2valid+rbfc_INminGZvalid;
             aprxINminGZ_Histvalid{u} = aprxINminGZ2valid;
-                        
+            
             % SOLVE FOR TARES BY TAKING THE MEAN
             [~,s_1st,~] = unique(seriesvalid);
             [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid);
@@ -507,8 +497,8 @@ if FLAGS.balVal == 1
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
             resSquareHistvalid(u,:) = resSquare2valid;
-        end       
-         
+        end
+        
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         valid_GRBF_output(FLAGS,targetResvalid,targetRes2valid,loadCapacitiesvalid,loadlist,dimFlagvalid,numBasis,validSeries,aprxINminGZ2valid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,resSquare2valid,numptsvalid);
@@ -567,25 +557,12 @@ if FLAGS.balApprox == 1
         
         aprxINminGZ2approx = aprxINminGZapprox;
         aprxINminGZ_Histapprox = cell(numBasis,1);
-               
+        
         for u=1:numBasis
-            for s=1:length(excessVec0(1,:)) % loops through the 8 components
-                
-                centerIndexLoop(s) = centerIndexHist(u,s); %Have to use the history or it gets overwritten
-                
-                for r=1:length(excessVecapprox(:,1))
-                    etaapprox(r,s) = dot(excessVecapprox(r,:)-excessVec0(centerIndexLoop(s),:),excessVecapprox(r,:)-excessVec0(centerIndexLoop(s),:));
-                end
-                
-                w(s) = wHist(u,s); % Have to use the history or it gets overwritten
-                
-                rbfINminGZapprox(:,s)=exp(etaapprox(:,s)*log(abs(w(s))));
-                coeffapprox(s) = cHist(u,s); %Have to use the history or it gets overwritten
-                
-                rbfc_INminGZapprox(:,s) = coeffapprox(s)*rbfINminGZapprox(:,s);
-                
-            end
-          
+            
+            %Call function to place single GRBF
+            [rbfc_INminGZapprox]=place_GRBF(u,dainputscalib,dainputsapprox,centerIndexHist,wHist,cHist);
+            
             %update the approximation
             aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
             aprxINminGZ_Histapprox{u} = aprxINminGZ2approx;
