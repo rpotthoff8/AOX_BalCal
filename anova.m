@@ -1,5 +1,4 @@
-function ANOVA = anova(X,y)
-
+function ANOVA = anova(X,y,test_FLAG,pct)
 fprintf('\nCalculating The Statistics ...\n')
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
@@ -7,17 +6,30 @@ fprintf('\nCalculating The Statistics ...\n')
 % really even functions, but scripts that hold different statistical
 % analysis equations.
 
-% % A breakpoint can be included in calc_xcalib.m at approximately line 34,
-% % (right before xcalib_k is calculated). The scripts in this file will work
-% % once the workspace has been populated to that point.
-% % (For notation convenience, we'll store the loop iteration variable in
-% % iter.}
-% iter = k; clear k;
-% 
-% % Before beginning, the predictors and the responses will be re-named with
-% % new variables for clarity.
-% X = comIN_k;
-% y = targetMatrix(:,iter);
+%% Check if testing
+% if test_FLAG is true, then the code checks the vif's for the new paramter
+% before continuing statistical analysis. If the maximum VIF is => 4, then
+% the data is becoming too collinear and that term should be "banned" from
+% testing. Otherwise, resume ANOVA.
+if nargin < 3
+    test_FLAG = 0;
+    pct = 95;
+elseif nargin < 4
+    pct = 95;
+end
+
+%% Multicollinearity detection / VIF calcualtion
+% Variance inflation factor is calculated first so that when we're
+% iterating through test terms in the model, we can eliminate collinear
+% data right away, before wasting computer time on unnecessary statistical
+% calculations.
+
+VIF = vif(X);
+
+if test_FLAG == 1 && max(VIF) >= 4
+    ANOVA.test = -1;
+    return
+end
 
 %% Multiple Linear Regression
 % Instead of calculating the coefficient matrix using pinv or backslash,
@@ -25,7 +37,8 @@ fprintf('\nCalculating The Statistics ...\n')
 % b = (X' X)^-1 X y
 % NOTE: IF THIS METHOD THROWS UP WARNINGS ABOUT ILL-CONDITIONED, DO NOT
 % SUPPRESS THEM, IT IS IMPORTANT INFORMATION TO HAVE.
-beta = inv(X'*X)*X'*y;
+invXtX = inv(X'*X);
+beta = invXtX*X'*y;
 
 %% TEMPORARY
 % The current data is extremely ill-conditioned, so warnings are semi-suppressed
@@ -42,7 +55,7 @@ end
 % The approximation can then be made with
 % y_hat = X b = X (X' X)^-1 X' y = H y,
 % where H is called the "hat" matrix, H = X(X'X)^-1X'
-H = X*inv(X'*X)*X';
+H = X*invXtX*X';
 y_hat = H*y;
 
 % The error e = y - y_hat
@@ -67,7 +80,7 @@ dof_e = n-k;
 MSE = SSE/dof_e;
 sigma_hat_sq = MSE;
 
-C = sigma_hat_sq*inv(X'*X);
+C = sigma_hat_sq*invXtX;
 
 % The standard error of each variable is then the square root of it's
 % variance (the diagonal terms in the covariance matrix C.
@@ -88,16 +101,16 @@ MSR = SSR/dof_r;
 %F-statistic, F = MSR/MSE
 F = MSR/MSE;
 p_F = 1 - fcdf(F,dof_r,dof_e);
-F_cr = finv(0.95,dof_r,dof_e);
+F_cr = finv(pct/100,dof_r,dof_e);
 % F0 is the F-statistic of the Null Hypothesis, meaning that y is not a
 % function of X at all. If F>F0, then we can reject the null hypothesis,
 % and the data suggests that y is a function of X. in the function finv,
 % the first input 0.05, is to calculate those tolerance with 95%
 % confidence.
 if F > F_cr
-    disp('We can reject the null hypothesis: The residual is independent from the voltage');
+    %disp('We can reject the null hypothesis');
 else
-    disp('We cannot reject the null hypothesis: The residual is related to the voltage');
+    disp('We cannot reject the null hypothesis');
 end
 
 %% T test for individual coefficients b_i
@@ -107,7 +120,7 @@ end
 % -> 95% confidence.
 T = beta./se;
 p_T = 2*(1 - tcdf(abs(T),dof_e));
-T_cr = tinv(0.975,dof_e);
+T_cr = tinv(1-((1-(pct/100))/2),dof_e);
 sig = ~((T<T_cr) & (T>-T_cr));
 % If sig == 1, then that coefficient rejects the null hypothesis that b =
 % 0, so the data suggests that the terms matters to this regression.
@@ -126,7 +139,7 @@ beta_CI = T_cr.*se;
 % confidence interval for the predicted values, must be calculated one data
 % point at a time
 for j = 1:n
-    y_hat_CI(j,1) = T_cr*sqrt(sigma_hat_sq*X(j,:)*inv(X'*X)*X(j,:)');
+    y_hat_CI(j,1) = T_cr*sqrt(sigma_hat_sq*X(j,:)*invXtX*X(j,:)');
 end
 
 %% Prediction Intervals
@@ -136,7 +149,7 @@ end
 % interval for a new prediction, given new data.
 
 for j = 1:n
-    y_hat_PI(j,1) = T_cr*sqrt(sigma_hat_sq*(1+(X(j,:)*inv(X'*X)*X(j,:)')));
+    y_hat_PI(j,1) = T_cr*sqrt(sigma_hat_sq*(1+(X(j,:)*invXtX*X(j,:)')));
 end
 
 %% Measures of Model Adequacy
@@ -167,11 +180,9 @@ PRESS = sum(e_p.^2);
 % PRESS R_sq
 R_sq_p = 1 - (PRESS/SST);
 
-%% Multicollinearity detection / VIF calcualtion
-
-VIF = vif(X);
-
 %% Save all the relevant variables to a structure to pass out of the function
+
+ANOVA.test     = 0;        % (to indicate that VIF < 4, so test term is not collinear)
 
 ANOVA.beta     = beta;     % Coefficients
 ANOVA.e        = e;        % Residuals
@@ -195,8 +206,8 @@ ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
 % Saving variables to calculate prediction intervals live in approximation
 ANOVA.PI.T_cr = T_cr;
 ANOVA.PI.sigma_hat_sq = sigma_hat_sq;
-ANOVA.PI.X = X;
-ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*inv(X'*X)*x')))";
+ANOVA.PI.invXtX = invXtX;
+ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
 
 %% Coded values for polynomial regressions
 % Values of the variables are coded by centering or expressing the levels
