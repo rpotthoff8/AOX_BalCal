@@ -423,7 +423,6 @@ if FLAGS.balVal == 1
     %find zero points of each series0 and number of points in a series0
     %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
     %section
-    [localZerosvalid,localZerosAllPointsvalid] = localzeros(seriesvalid,excessVecvalid);
     globalZerosAllPointsvalid = ones(numptsvalid,1)*globalZerosvalid;
     
     % Subtract the Global Zeros from the Inputs and Local Zeros
@@ -452,16 +451,11 @@ if FLAGS.balVal == 1
     
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
-    
-    %targetMatrixGlobalvalid = targetMatrixvalid + taresAllPointsvalid; % just for testing ajm 5_7_18
-    
     resSquarevalid = dot(targetResvalid,targetResvalid)';
-    
-    aprxINminGZvalidprime = targetMatrixvalid+taresAllPointsvalid;
-    
+       
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section
-    valid_alg_output(targetResvalid,loadCapacitiesvalid,FLAGS,fileNamevalid,numptsvalid,nseriesvalid,zapvalid,zapSTDEVvalid,loadlist,resSquarevalid,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlag)
+    valid_alg_output(targetResvalid,loadCapacitiesvalid,FLAGS,fileNamevalid,numptsvalid,nseriesvalid,zapvalid,zapSTDEVvalid,loadlist,resSquarevalid,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlagvalid)
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
     
     %%
@@ -478,82 +472,46 @@ if FLAGS.balVal == 1
         % Subtract the Global Zeros from the Inputs
         dainputsvalid = excessVecvalid-globalZerosvalid;
         
-        etaHistvalid = cell(numBasis,1);
+        %Initialize Variables
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
-        
-        [~,~,s_id] = unique(seriesvalid);
-        localZeroMatrixvalid = localZerosvalid(s_id,:);
-        
-        etaLZvalid = dot(localZeroMatrixvalid-dainputsvalid,localZeroMatrixvalid-dainputsvalid);
-        etaGZvalid = dot(globalZerosAllPointsvalid-dainputsvalid,globalZerosAllPointsvalid-dainputsvalid);
+        etavalid=zeros(size(dainputsvalid));
+        rbfINminGZvalid=zeros(size(dainputsvalid));
+        rbfc_INminGZvalid=zeros(size(dainputsvalid));
+        resSquareHistvalid=zeros(numBasis,dimFlagvalid);
         
         for u=1:numBasis
             for s=1:length(excessVec0(1,:)) % loops through the components
                 
-                centerIndexLoop(s) = centerIndexHist(u,s); %Have to use the history or it gets overwritten
+                adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputsvalid;
+                etavalid(:,s) = dot(adiffervalid,adiffervalid,2);
                 
-                for r=1:length(excessVecvalid(:,1))
-                    adiffervalid(r,:) = dainputscalib(centerIndexHist(u,s),:)-dainputsvalid(r,:);
-                    etavalid(r,s) = dot(adiffervalid(r,:),adiffervalid(r,:));
-                end
-                
-                w(s) = wHist(u,s); % Have to use the history or it gets overwritten
-                
-                rbfINminLZvalid(:,s)=exp(etavalid(:,s)*log(abs(wHist(u,s)))) - exp(etaLZvalid(:,s)*log(abs(wHist(u,s))));
                 rbfINminGZvalid(:,s)=exp(etavalid(:,s)*log(abs(wHist(u,s))));
-                rbfLZminGZvalid(:,s)=exp(etaLZvalid(:,s)*log(abs(wHist(u,s))));%to find tares AAM042016
-                coeffvalid(s) = cHist(u,s); %Have to use the history or it gets overwritten
                 
-                rbfc_INminLZvalid(:,s) = cHist(u,s)*rbfINminLZvalid(:,s);
                 rbfc_INminGZvalid(:,s) = cHist(u,s)*rbfINminGZvalid(:,s);
-                rbfc_LZminGZvalid(:,s) = cHist(u,s)*rbfLZminGZvalid(:,s);%to find tares AAM042016
             end
             
             %update the approximation
             aprxINminGZ2valid = aprxINminGZ2valid+rbfc_INminGZvalid;
             aprxINminGZ_Histvalid{u} = aprxINminGZ2valid;
-            
-            rbfc_INminGZ_Histvalid{u} = rbfc_INminGZvalid;  % temp ajm 6_7_18
-            
-            rbf_etavalid_Hist{u} = etavalid;   % temp ajm 6_7_18
-            rbf_excessvec_center_Hist{u} = excessVec0(centerIndexHist(u,:),:);  % temp ajm 6_7_18
-            rbf_excessvec_valid_Hist{u} = excessVecvalid;  % temp ajm 6_7_18
-            
+                        
             % SOLVE FOR TARES BY TAKING THE MEAN
             [~,s_1st,~] = unique(seriesvalid);
             [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid);
-            
             taresGRBFvalid = taresAllPointsvalid2(s_1st,:);
             taresGRBFSTDEVvalid = taretalstdvalid2(s_1st,:);
             tareHistvalid{u} = taresGRBFvalid;
             
+            %Residuals
             targetRes2valid = targetMatrixvalid+taresAllPointsvalid2-aprxINminGZ2valid;      %0=b-Ax
-            targetMatrixGlobalGRBFvalid = targetMatrixvalid+taresAllPointsvalid2;  % temp for ajm 6_7_18
-            
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
             resSquareHistvalid(u,:) = resSquare2valid;
-        end
-        
-        for b=1:nseriesvalid
-            for c=1:length(excessVecvalid(1,:))
-                for a=1:numBasis
-                    tempvalid(a) = tareHistvalid{a}(b,c);
-                end
-                tare3Sigvalid(b,c) = 3*std(tempvalid);
-            end
-        end
-        
-        total_rbfc_INminGZ_valid = rbfc_INminGZ_Histvalid{1};            % temp ajm 6_7_18
-        
-        for u=2:numBasis
-            total_rbfc_INminGZ_valid = total_rbfc_INminGZ_valid + rbfc_INminGZ_Histvalid{u};            % temp ajm 6_7_18
-        end
+        end       
          
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
-        valid_GRBF_output(FLAGS,targetResvalid,targetRes2valid,loadCapacitiesvalid,loadlist,dimFlag,numBasis,validSeries,aprxINminGZ2valid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,resSquare2valid,numptsvalid);
+        valid_GRBF_output(FLAGS,targetResvalid,targetRes2valid,loadCapacitiesvalid,loadlist,dimFlagvalid,numBasis,validSeries,aprxINminGZ2valid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,resSquare2valid,numptsvalid);
     end
     %END GRBF SECTION FOR VALIDATION
 end
