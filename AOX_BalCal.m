@@ -165,13 +165,7 @@ lhs_ind = 1:length(excessVec0(:,1));
 if FLAGS.LHS == 1
     fprintf('\nNumber of LHS Iterations Selected: %i\n',numLHS)
 end
-
 fprintf('\nStarting Calculations\n')
-% if FLAGS.approach == 1
-%     fprintf('\n\nUsing the Indirect Approach for Calibration');
-% else
-%     fprintf('\n\nUsing the Direct Approach for Calibration');
-% end
 
 for lhs = 1:numLHS
     
@@ -265,8 +259,8 @@ intercepts=-tares;
 taretal=tares(series0,:);
 aprxINminGZ=aprxIN+taretal; %Approximation that does not include intercept terms %QUESTION: 29 MAR 2019: JRP
 
-%%% AJM 6_11_19
-[temp_tares,tares_STDDEV_all] = meantare(series0,aprxINminGZ-targetMatrix0);
+%%% AJM 6_11_19%    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
+[~,tares_STDDEV_all] = meantare(series0,aprxINminGZ-targetMatrix0);
 tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 %%% AJM 6_11_19
 
@@ -336,22 +330,24 @@ if FLAGS.balCal == 2
     %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
     %product of the resulting column vector
     
-    targetRes2=targetRes(1:length(series0),1:dimFlag);
+    targetRes2=targetRes;
     aprxINminGZ2 = aprxINminGZ;
+    dainputscalib = excessVec0-globalZeros;
     
+    %Initialize Variables
     etaHist = cell(numBasis,1);
     aprxINminGZ_Hist = cell(numBasis,1);
-    tareHist = cell(numBasis,1);
-    localZerosAllPoints=tares(series0,:);
-    
-    dainputscalib = excessVec0-globalZeros;
-    dalzcalib = localZerosAllPoints-globalZeros;
-    
-    %    localZeroMatrix = localZerosAllPoints;
-    globalZerosAllPoints = zeros(length(excessVec0(:,1)),dimFlag); % ajm 6_2_18
-    
-    etaLZ = dot(dalzcalib-dainputscalib,dalzcalib-dainputscalib);
-    etaGZ = dot(globalZerosAllPoints-dainputscalib,globalZerosAllPoints-dainputscalib);
+    tareGRBFHist = cell(numBasis,1);
+    centerIndexLoop=zeros(1,dimFlag);
+    eta=zeros(length(excessVec0(:,1)),dimFlag);
+    w=zeros(1,dimFlag);
+    rbfINminGZ=zeros(length(excessVec0(:,1)),dimFlag);
+    coeffRBF=zeros(1,dimFlag);
+    rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
+    wHist=zeros(numBasis,dimFlag);
+    cHist=zeros(numBasis,dimFlag);
+    centerIndexHist=zeros(numBasis,dimFlag);
+    resSquareHist=zeros(numBasis,dimFlag);
     
     for u=1:numBasis
         for s=1:dimFlag
@@ -364,17 +360,14 @@ if FLAGS.balCal == 2
             %find widths 'w' by optimization routine
             w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),0,1 );
             
-            rbfINminLZ(:,s)=exp(eta(:,s)*log(abs(w(s)))) - exp(etaLZ(:,s)*log(abs(w(s))));
             rbfINminGZ(:,s)=exp(eta(:,s)*log(abs(w(s))));
-            rbfLZminGZ(:,s)=exp(etaLZ(:,s)*log(abs(w(s))));%to find tares AAM042016
             
             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
             
-            rbfc_INminLZ(:,s) = coeffRBF(s)*rbfINminLZ(:,s);
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
-            rbfc_LZminGZ(:,s) = coeffRBF(s)*rbfLZminGZ(:,s); %to find tares AAM042016
         end
         
+        %Store basis parameters in Hist variables
         wHist(u,:) = w;
         cHist(u,:) = coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
@@ -386,11 +379,11 @@ if FLAGS.balCal == 2
         
         % SOLVE FOR TARES BY TAKING THE MEAN
         [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
-        
         taresGRBF = taresAllPointsGRBF(s_1st0,:);
         taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
         tareGRBFHist{u} = taresGRBF;
         
+        %Calculate and store residuals
         targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
         newRes2 = targetRes2'*targetRes2;
         resSquare2 = diag(newRes2);
