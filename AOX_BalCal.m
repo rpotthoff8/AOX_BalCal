@@ -446,8 +446,8 @@ if FLAGS.balVal == 1
     
     % SOLVE FOR TARES BY TAKING THE MEAN
     [taresAllPointsvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
-    zapvalid     = taresAllPointsvalid(s_1stV,:);
-    zapSTDEVvalid = taretalstdvalid(s_1stV,:);
+    taresvalid     = taresAllPointsvalid(s_1stV,:);
+    tares_STDEV_valid = taretalstdvalid(s_1stV,:);
     
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
@@ -455,7 +455,7 @@ if FLAGS.balVal == 1
     
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section
-    valid_alg_output(targetResvalid,loadCapacitiesvalid,FLAGS,fileNamevalid,numptsvalid,nseriesvalid,zapvalid,zapSTDEVvalid,loadlist,resSquarevalid,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlagvalid)
+    valid_alg_output(targetResvalid,loadCapacitiesvalid,FLAGS,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEVvalid,loadlist,resSquarevalid,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlagvalid)
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
     
     %%

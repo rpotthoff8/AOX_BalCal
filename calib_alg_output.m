@@ -28,7 +28,7 @@ resSquare = sum(targetRes.^2);
 % resSquare = dot(targetRes,targetRes)';
 %AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
 
-%OUTPUTS FOR ALGEBRAIC SECTION
+%OUTPUTS FOR ALGEBRAIC SECTION %SAME START
 for k=1:length(targetRes(1,:))
     [goop(k),kstar(k)] = max(abs(targetRes(:,k)));
     goopVal(k) = abs(targetRes(kstar(k),k));
@@ -48,7 +48,7 @@ ratioGoop(isnan(ratioGoop)) = realmin;
 
 %    theminmaxband = abs(maxTargets + minTargets);
 theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
-
+%SAME END
 
 %%% ANOVA Stats AJM 6_12_19
 
@@ -153,8 +153,8 @@ end
 
 %%% Balfit Stats and Matrix AJM 5_31_19
 
-
-%OUTPUT HISTOGRAM PLOTS
+%SAME START
+%OUTPUT HISTOGRAM PLOTS 
 if FLAGS.hist == 1
     figure('Name','Calibration - ALGB','NumberTitle','off')
     for k0=1:length(targetRes(1,:))
@@ -174,6 +174,7 @@ if FLAGS.hist == 1
         xlabel(['\Delta',loadlist{k0},'/\sigma']);
     end
 end
+%END SAME
 
 %START PRINT OUT PERFORMANCE INFORMATION TO THE SCREEN
 if FLAGS.print == 1
@@ -192,11 +193,13 @@ if FLAGS.print == 1
     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
     
     %Should I use strtrim()  ? -AAM 042116
+    %SAME START
     series_table = table([1:nseries0]','VariableNames',{'SERIES'});
     calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag));
     calib_algebraic_Tares = [series_table, calib_algebraic_Tares]
     calib_algebraic_Tares_stdev = array2table(tares_STDDEV,'VariableNames',loadlist(1:dimFlag));
     calib_algebraic_Tares_stdev = [series_table, calib_algebraic_Tares_stdev]
+    %SAME END
     
     coefficientsALGB = [xcalib;intercepts];
     for coeffCount=1:size(coefficientsALGB(:,1),1)
@@ -205,6 +208,7 @@ if FLAGS.print == 1
     numCombinName = cellstr(num2str(numCombin'));
     numCombinName(nterms+nseries0+1) = cellstr('Intercept');
     
+    %SAME START
     calib_mean_algebraic_Resids_sqrd = array2table((resSquare'./numpts0)','VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop,'VariableNames',loadlist(1:dimFlag))
     calib_algebraic_Std_Dev_pcnt = array2table(stdDevPercentCapacity,'VariableNames',loadlist(1:dimFlag))
@@ -214,8 +218,8 @@ if FLAGS.print == 1
     
     % Prints the minmaxband
     calib_alg_per_minmaxband = array2table(theminmaxband,'VariableNames',loadlist(1:dimFlag))
-    %%%%%%%%%
-    
+
+    %SAME END
 end
 
 if FLAGS.excel == 1
@@ -228,10 +232,12 @@ if FLAGS.excel == 1
     dlmwrite(filename,aprxIN,'precision','%.16f');
 end
 
+%SAME START
 if FLAGS.res == 1
     figure('Name','Algebraic Model Calibration; Residuals of Load Versus Data Point Index','NumberTitle','off')
     plotResPages(series0, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
     %    hold off
 end
+%SAME END
 
 end

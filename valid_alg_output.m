@@ -1,9 +1,9 @@
 %Function creates all the outputs for the validation, algebraic section
 %This simplifies following the main code
 
-function []=valid_alg_output(targetResvalid,loadCapacitiesvalid,FLAGS,fileNamevalid,numptsvalid,nseriesvalid,zapvalid,zapSTDEVvalid,loadlist,resSquarevalid,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlag)
+function []=valid_alg_output(targetResvalid,loadCapacitiesvalid,FLAGS,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,resSquarevalid,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlag)
 
-%OUTPUTS FOR VALIDATION ALGEBRAIC SECTION
+%OUTPUTS FOR VALIDATION ALGEBRAIC SECTION %SAME START
 for k=1:length(targetResvalid(1,:))
     [goopvalid(k),kstarvalid(k)] = max(abs(targetResvalid(:,k)));
     goopValvalid(k) = abs(targetResvalid(kstarvalid(k),k));
@@ -42,6 +42,7 @@ if FLAGS.hist == 1
         xlabel(['\Delta',loadlist{k0},'/\sigma']);
     end
 end
+%END SAME
 
 if FLAGS.print == 1
     %
@@ -74,11 +75,15 @@ if FLAGS.print == 1
     fprintf('\nNumber of validation data points: %i\n',numptsvalid);
     fprintf('\n  ');
     
+    %SAME START
     series_table_valid = table([1:nseriesvalid]','VariableNames',{'SERIES'});
-    alg_Tares_valid = array2table(zapvalid,'VariableNames',loadlist(1:dimFlag));
+    alg_Tares_valid = array2table(taresvalid,'VariableNames',loadlist(1:dimFlag));
     alg_Tares_valid = [series_table_valid, alg_Tares_valid]
-    alg_Tares_stdev_valid = array2table(zapSTDEVvalid,'VariableNames',loadlist(1:dimFlag));
+    alg_Tares_stdev_valid = array2table(tares_STDEV_valid,'VariableNames',loadlist(1:dimFlag));
     alg_Tares_stdev_valid= [series_table_valid, alg_Tares_stdev_valid]
+    %SAME END
+    
+    %SAME START
     mean_alg_Resids_sqrd_valid = array2table(resSquarevalid'./numptsvalid,'VariableNames',loadlist(1:dimFlag))
     alg_Pcnt_Capacity_Max_Mag_Load_Resids_valid = array2table(perGoopvalid,'VariableNames',loadlist(1:dimFlag))
     alg_Std_Dev_pcnt_valid = array2table(stdDevPercentCapacityvalid,'VariableNames',loadlist(1:dimFlag))
@@ -88,6 +93,7 @@ if FLAGS.print == 1
     
     % Prints the minmaxband
     alg_per_minmaxband_valid = array2table(theminmaxbandvalid,'VariableNames',loadlist(1:dimFlag))
+    %SAME END
 end
 
 if FLAGS.excel == 1
@@ -100,10 +106,11 @@ if FLAGS.excel == 1
     dlmwrite(filename,aprxINminGZvalid,'precision','%.16f');
 end
 
+%SAME START
 if FLAGS.res == 1
     figure('Name','Algebraic Model Validation; Residuals of Load Versus Data Point Index','NumberTitle','off')
     plotResPages(seriesvalid, targetResvalid, loadCapacitiesvalid, stdDevPercentCapacityvalid, loadlist)
     %    hold off
 end
-
+%SAME END
 end
