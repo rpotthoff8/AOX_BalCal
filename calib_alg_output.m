@@ -1,17 +1,10 @@
 %Function creates all the outputs for the calibration, algebraic section
 %This simplifies following the main code
 
-function [] = calib_alg_output(FLAGS,coeff,dimFlag,excessVec0,targetRes,voltagelist,reslist,loadCapacities,nterms,nseries0,numpts0,ANOVA,loadlist,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA,tares,tares_STDDEV,xcalib,intercepts,aprxIN,series0)
-% Temp for Tares AJM 4_20_19
-%filename = 'Tares_Double_Precision.csv';
-%dlmwrite(filename,tares,'precision','%.16f');
-%%%%%
+function [] = calib_alg_output(FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,aprxIN,series0,excessVec0,dimFlag,coeff,voltagelist,reslist,nterms,ANOVA,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA,xcalib,intercepts)
 
-%  Creates Matrix for the volts to loads
-%APPROX_AOX_COEFF_MATRIX = coeff;  AJM 4_19_19
-
-%xapprox = coeff;
-if FLAGS.excel == 1
+%Prints coefficients to csv file
+if FLAGS.excel == 1 %ADD HEADER?
     filename = 'APPROX_AOX_COEFF_MATRIX.csv';
     dlmwrite(filename, [coeff;zeros(1,dimFlag)] ,'precision','%.16f'); % AJM 4_18_19
 end
@@ -23,10 +16,6 @@ end
 
 % Calculates the Sum of Squares of the residual
 resSquare = sum(targetRes.^2);
-
-%find the sum of squares of the residual using the dot product
-% resSquare = dot(targetRes,targetRes)';
-%AAM note to self - in matlab, diag(A'*A) is the same as dot(A,A)'
 
 %OUTPUTS FOR ALGEBRAIC SECTION %SAME START
 for k=1:length(targetRes(1,:))
@@ -47,46 +36,134 @@ ratioGoop = goop./standardDev';
 ratioGoop(isnan(ratioGoop)) = realmin;
 
 %    theminmaxband = abs(maxTargets + minTargets);
-theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities);
+%    theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities); %QUESTION: JRP 2 July 19
+theminmaxband = 100*(abs(maxTargets - minTargets)./loadCapacities);
 %SAME END
+
+%START PRINT OUT PERFORMANCE INFORMATION TO CSV
+if FLAGS.print == 1
+    empty_cells=cell(1,dimFlag+1);
+    Header_cells=cell(8,dimFlag+1);
+    Header_cells{1,1}='Algebraic Calibration Results';
+    Header_cells{2,1}=strcat('Performed:',{' '},datestr( datetime(now,'ConvertFrom','datenum')));
+    Header_cells{3,1}=strcat('Calibration Input File:',{' '},fileName);
+    if FLAGS.balCal == 2
+    Header_cells{4,1}='GRBF Addition Performed: TRUE';
+    else
+    Header_cells{4,1}='GRBF Addition Performed: FALSE';
+    end
+    if FLAGS.balOut == 1
+    Header_cells{5,1}='Outliers Flagged: TRUE';
+    else
+    Header_cells{5,1}='Outliers Flagged: FALSE';
+    end
+    if FLAGS.zeroed == 1
+    Header_cells{6,1}='Outliers Removed: TRUE';
+    else
+    Header_cells{6,1}='Outliers Removed: FALSE';
+    end
+    algebraic_models=[{'Full'},{'Truncated'},{'Linear'},{'Custom'}];
+    Header_cells{7,1}=strcat('Algebraic Model Used:',{' '},algebraic_models(FLAGS.model));
+    Header_cells{8,1}=strcat('Number of Datapoints:',{' '},string(numpts0));
+
+    calib_output=[Header_cells;empty_cells];
+
+    calib_twoSigmaALGB = standardDev'.*2;
+    %     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
+    output_name=cell(1,dimFlag+1);
+    load_line=[loadlist(1:dimFlag),cell(1)];
+    output_name{1}='Load Residual 2*(standard deviation)';
+    calib_output=[calib_output;output_name;load_line;num2cell(calib_twoSigmaALGB),cell(1);empty_cells];
+
+    %Should I use strtrim()  ? -AAM 042116
+    %SAME START
+%     series_table = table([1:nseries0]','VariableNames',{'SERIES'});
+%     calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag));
+%     calib_algebraic_Tares = [series_table, calib_algebraic_Tares]
+    output_name{1}='Algebraic Tares';
+    calib_output=[calib_output;output_name;{'Series'},loadlist(1:dimFlag);num2cell([(1:nseries0)', tares]);empty_cells];
+
+%     calib_algebraic_Tares_stdev = array2table(tares_STDDEV,'VariableNames',loadlist(1:dimFlag));
+    output_name{1}='Algebraic Tares Standard Deviation';
+    calib_output=[calib_output;output_name;{'Series'},loadlist(1:dimFlag);num2cell([[1:nseries0]', tares_STDDEV]);empty_cells];
+%     calib_algebraic_Tares_stdev = [series_table, calib_algebraic_Tares_stdev]
+    %SAME END
+
+
+    %SAME START
+%    calib_mean_algebraic_Resids_sqrd = array2table((resSquare'./numpts0)','VariableNames',loadlist(1:dimFlag))
+    output_name{1}='Algebraic Mean Load Residual Squared';
+    calib_output=[calib_output;output_name;load_line;num2cell((resSquare'./numpts0)'),cell(1);empty_cells];
+
+%    calib_algebraic_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop,'VariableNames',loadlist(1:dimFlag))
+    output_name{1}='Algebraic Percent Load Capacity of Maximum Residual';
+    calib_output=[calib_output;output_name;load_line;num2cell(perGoop),cell(1);empty_cells];
+
+%    calib_algebraic_Std_Dev_pcnt = array2table(stdDevPercentCapacity,'VariableNames',loadlist(1:dimFlag))
+    output_name{1}='Algebraic Percent Load Capacity of Residual Standard Deviation';
+    calib_output=[calib_output;output_name;load_line;num2cell(stdDevPercentCapacity),cell(1);empty_cells];
+
+%    calib_algebraic_Max_Load_Resids = array2table(maxTargets,'VariableNames',loadlist(1:dimFlag))
+    output_name{1}='Algebraic Maximum Load Residual';
+    calib_output=[calib_output;output_name;load_line;num2cell(maxTargets),cell(1);empty_cells];
+
+%    calib_algebraic_Min_Load_Resids = array2table(minTargets,'VariableNames',loadlist(1:dimFlag))
+    output_name{1}='Algebraic Minimum Load Residual';
+    calib_output=[calib_output;output_name;load_line;num2cell(minTargets),cell(1);empty_cells];
+
+%    calib_algebraic_Ratio_Max_Mag_Load_Resid_and_Std_Dev = array2table(ratioGoop,'VariableNames',loadlist(1:dimFlag))
+    output_name{1}='Algebraic Ratio (Maximum Load Residual)/(Load Residual Standard Deviation)';
+    calib_output=[calib_output;output_name;load_line;num2cell(ratioGoop),cell(1);empty_cells];
+
+    % Prints the minmaxband
+%    calib_alg_per_minmaxband = array2table(theminmaxband,'VariableNames',loadlist(1:dimFlag))
+    output_name{1}='Algebraic Percent Load Capacity of Band Between Min and Max Residual';
+    calib_output=[calib_output;output_name;load_line;num2cell(theminmaxband),cell(1);empty_cells];
+
+    writetable(cell2table(calib_output),'Calibration_Results.csv','writevariablenames',0)
+    %SAME END
+end
+
+
+
 
 %%% ANOVA Stats AJM 6_12_19
 
 if FLAGS.model ~= 4 && FLAGS.anova==1
-    
+
     totalnum = nterms+nseries0;
     totalnumcoeffs = [1:totalnum];
     totalnumcoeffs2 = [2:totalnum+1];
     dsof = numpts0-nterms-1;
-    
+
     loadstatlist = {'Load', 'Sum_Sqrs', 'PRESS_Stat', 'DOF', 'Mean_Sqrs', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
-    
+
     regresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
-    
-    
+
+
     for k=1:dimFlag
-        
+
         RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
-        
+
         manoa2(k,:) = [loadlist(k), tR2(1,k), ANOVA(k).PRESS, dsof, gee(1,k), ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_adj, ANOVA(k).R_sq_p];
-        
+
         ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';
-        
+
         ANOVA1_2(:,:) = [ANOVA01([1:nterms],:)];
-        
+
         STAT_LOAD = array2table(manoa2(k,:),'VariableNames',loadstatlist(1:10));
-        
+
         REGRESS_COEFFS = array2table(ANOVA1_2(:,:),'VariableNames',regresslist(1:7));
-        
+
         filename = 'DIRECT_ANOVA_STATS.xlsx';
         writetable(STAT_LOAD,filename,'Sheet',k,'Range','A1');
         writetable(REGRESS_COEFFS,filename,'Sheet',k,'Range','A4');
-        
+
     end
-    
+
     filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
     dlmwrite(filename,RECOMM_ALG_EQN,'precision','%.8f');
-    
+
 end
 
 %%% ANOVA Stats AJM 6_8_19
@@ -120,41 +197,41 @@ balfitinterceptlist = [1, 0, 0, 0, 0, 0, 0];
 
 
 if FLAGS.model ~= 4 && FLAGS.anova==1
-    
+
     for k=1:dimFlag
-        
+
         BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig;
-        
+
         balfitANOVA01(:,:) = [totalnumcoeffs2; balfitANOVA(k).beta'; ANOVA(k).beta_CI'; balfitANOVA(k).T'; balfitANOVA(k).p_T'; balfitANOVA(k).VIF'; 1.0*balfitANOVA(k).sig']';
-        
+
         balfitANOVA_intercept1(1,:) = balfitinterceptlist(1,:);
-        
+
         balfitANOVA1([1:nterms+1],:) = [balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)];
-        
+
         toplayer2(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
-        
+
         BALFIT_STAT_VOLTAGE_1 = array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10));
-        
+
         BALFIT_REGRESS_COEFFS_1 = array2table(balfitANOVA1([1:nterms],:),'VariableNames',balfitregresslist(1:7));
-        
+
         filename = 'BALFIT_ANOVA_STATS.xlsx';
         writetable(BALFIT_STAT_VOLTAGE_1,filename,'Sheet',k,'Range','A1');
         writetable(BALFIT_REGRESS_COEFFS_1,filename,'Sheet',k,'Range','A4');
-        
-        
+
+
     end
-    
-    
+
+
     %filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
     %dlmwrite(filename,BALFIT_RECOMM_ALG_EQN,'precision','%.8f');
-    
+
 end
 
 
 %%% Balfit Stats and Matrix AJM 5_31_19
 
 %SAME START
-%OUTPUT HISTOGRAM PLOTS 
+%OUTPUT HISTOGRAM PLOTS
 if FLAGS.hist == 1
     figure('Name','Calibration - ALGB','NumberTitle','off')
     for k0=1:length(targetRes(1,:))
@@ -176,58 +253,12 @@ if FLAGS.hist == 1
 end
 %END SAME
 
-%START PRINT OUT PERFORMANCE INFORMATION TO THE SCREEN
-if FLAGS.print == 1
-
-    % Recalculated Calibration with Reduced Matrices
-    if FLAGS.zeroed == 1
-        fprintf('\n ************************************************************************ \n');
-        fprintf('\nFind the reduced data in zeroed_targetMatrix and zeroed_excessVec\n');
-        fprintf('\n ************************************************************************ \n');
-    end
-    
-    fprintf('\n ');
-    fprintf('\n%%%%%%%%%%%%%%%%%\n');
-    fprintf('\n ');
-    calib_twoSigmaALGB = standardDev'.*2;
-    calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
-    
-    %Should I use strtrim()  ? -AAM 042116
-    %SAME START
-    series_table = table([1:nseries0]','VariableNames',{'SERIES'});
-    calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag));
-    calib_algebraic_Tares = [series_table, calib_algebraic_Tares]
-    calib_algebraic_Tares_stdev = array2table(tares_STDDEV,'VariableNames',loadlist(1:dimFlag));
-    calib_algebraic_Tares_stdev = [series_table, calib_algebraic_Tares_stdev]
-    %SAME END
-    
-    coefficientsALGB = [xcalib;intercepts];
-    for coeffCount=1:size(coefficientsALGB(:,1),1)
-        numCombin(coeffCount) = coeffCount;
-    end
-    numCombinName = cellstr(num2str(numCombin'));
-    numCombinName(nterms+nseries0+1) = cellstr('Intercept');
-    
-    %SAME START
-    calib_mean_algebraic_Resids_sqrd = array2table((resSquare'./numpts0)','VariableNames',loadlist(1:dimFlag))
-    calib_algebraic_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop,'VariableNames',loadlist(1:dimFlag))
-    calib_algebraic_Std_Dev_pcnt = array2table(stdDevPercentCapacity,'VariableNames',loadlist(1:dimFlag))
-    calib_algebraic_Max_Load_Resids = array2table(maxTargets,'VariableNames',loadlist(1:dimFlag))
-    calib_algebraic_Min_Load_Resids = array2table(minTargets,'VariableNames',loadlist(1:dimFlag))
-    calib_algebraic_Ratio_Max_Mag_Load_Resid_and_Std_Dev = array2table(ratioGoop,'VariableNames',loadlist(1:dimFlag))
-    
-    % Prints the minmaxband
-    calib_alg_per_minmaxband = array2table(theminmaxband,'VariableNames',loadlist(1:dimFlag))
-
-    %SAME END
-end
-
 if FLAGS.excel == 1
     % Output results to an excel file
     fprintf('\n  ');
     fprintf('\nALG CALIBRATION MODEL LOAD APPROXIMATION FILE: CALIB_AOX_ALG_RESULT.csv\n'); % AJM 4_19_19
     fprintf('\n ');
-    
+
     filename = 'CALIB_AOX_ALG_RESULT.csv';
     dlmwrite(filename,aprxIN,'precision','%.16f');
 end

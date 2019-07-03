@@ -315,7 +315,10 @@ end
 
 %OUTPUT FUNCTION
 %Function creates all outputs for calibration, algebraic section
-calib_alg_output(FLAGS,coeff,dimFlag,excessVec0,targetRes,voltagelist,reslist,loadCapacities,nterms,nseries0,numpts0,ANOVA,loadlist,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA,tares,tares_STDDEV,xcalib,intercepts,aprxIN,series0);
+% calib_alg_output(FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,aprxIN,series0,excessVec0,dimFlag,coeff,voltagelist,reslist,nterms,ANOVA,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA,xcalib,intercepts);
+section={'Calibration Algebraic'};
+alg_output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,aprxIN,series0,excessVec0,dimFlag,coeff,voltagelist,reslist,nterms,ANOVA,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA)
+
 %END CALIBRATION DIRECT APPROACH ALGEBRAIC SECTION
 
 %%
@@ -451,11 +454,13 @@ if FLAGS.balVal == 1
     
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
-    resSquarevalid = dot(targetResvalid,targetResvalid)';
     
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section
-    valid_alg_output(targetResvalid,loadCapacitiesvalid,FLAGS,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEVvalid,loadlist,resSquarevalid,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlagvalid)
+%     valid_alg_output(FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlag)
+    section={'Validation Algebraic'};
+    alg_output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlag,coeff,voltagelist,reslist,nterms,ANOVA,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA)
+
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
     
     %%
