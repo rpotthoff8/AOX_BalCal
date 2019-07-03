@@ -1,7 +1,10 @@
-% Copyright ©2017 Andrew Meade, Javier Villarreal.  All Rights Reserved.
-function in_comb = balCal_algEqns(model_FLAG,in,series,normFLAG)
+% Copyright ï¿½2017 Andrew Meade, Javier Villarreal.  All Rights Reserved.
+function in_comb = balCal_algEqns(model_FLAG,in,series,intercept_FLAG,normFLAG)
+%validation_FLAG==1 if producing in_comb for the validation section.  The
+%only difference is the series intercept terms are not included for
+%validation
 
-if nargin <4
+if nargin <5
     normFLAG = 0;
 end
 
@@ -20,8 +23,8 @@ if model_FLAG == 3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%LINEAR MODEL
     in_comb = in_n;%                                                        3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    in_comb = interceptTerms(in_comb,series);
-    return 
+    in_comb = interceptTerms(in_comb,series,intercept_FLAG);
+    return
 end
 
 in_sq = in_n.^2;
@@ -39,8 +42,8 @@ if model_FLAG == 2
                in_sq,   ...
                ini_inj];
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    in_comb = interceptTerms(in_comb,series);
-    return 
+    in_comb = interceptTerms(in_comb,series,intercept_FLAG);
+    return
 end
 
 
@@ -50,7 +53,7 @@ if normFLAG == 1
     shift = min(abs_in) + range/2;
     abs_in = (abs_in - shift)./(range/2);
 end
-    
+
 in_absin = in_n.*abs_in;
 j = 1;
 abs_iniinj = zeros(n,(d^2-d)/2);
@@ -78,15 +81,18 @@ in_comb = [in_n,        ...                                                 1
            in_cu,     ...
            abs_incu];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-in_comb = interceptTerms(in_comb,series);
+in_comb = interceptTerms(in_comb,series,intercept_FLAG);
 end
 
-function in_comb = interceptTerms(in_comb,series)
+function in_comb = interceptTerms(in_comb,series,intercept_FLAG)
 n = size(in_comb,1);
 [~,s_1st,s_id] = unique(series);
 nseries = length(s_1st);
 ints = zeros(n,nseries);
 ids = sub2ind(size(ints),[1:n]',s_id);
 ints(ids) = 1;
-in_comb = [in_comb, ints];
+
+if intercept_FLAG==1 %If preference for series intercepts is on, add 1's for intercept terms: (These are not included for validation)
+    in_comb = [in_comb, ints];
+end
 end
