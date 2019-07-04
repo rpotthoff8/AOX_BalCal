@@ -1,4 +1,4 @@
-function [OUTLIER_ROWS,num_outliers,prcnt_outliers]=ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS)
+function [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut]=ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS)
 %function takes in the residual matrix, returns rows of outliers, number of
 %outliers, and percent of datapoints that are outliers
 
@@ -21,20 +21,24 @@ end
 
 outlierIndices = abs(normtargetRes) > thresholdValue;
 
-% ID outlier rows :
-zero_counter = 1;
-for k1 = 1:numpts0
-    for k4 = 1:dimFlag
-        if outlierIndices(k1,k4) == 1
-            outlier_values(zero_counter,1) = k1;
-            zero_counter = zero_counter + 1;
-        end
-    end
-end
-if zero_counter==1
-    outlier_values=[];
-end
-OUTLIER_ROWS = unique(outlier_values,'rows');
+[rowOut,colOut]=find(outlierIndices); %Find row and column indices of outliers
+% 
+% % ID outlier rows :
+% zero_counter = 1;
+% for k1 = 1:numpts0
+%     for k4 = 1:dimFlag
+%         if outlierIndices(k1,k4) == 1
+%             outlier_values(zero_counter,1) = k1;
+%             zero_counter = zero_counter + 1;
+%         end
+%     end
+% end
+% if zero_counter==1
+%     outlier_values=[];
+% end
+% OUTLIER_ROWS = unique(outlier_values,'rows');
+
+OUTLIER_ROWS = unique(rowOut);
 
 num_outliers = length(OUTLIER_ROWS);
 prcnt_outliers = 100.0*num_outliers/numpts0;
@@ -47,6 +51,7 @@ if FLAGS.print == 1
     fprintf(string(num_outliers));
     fprintf('\nOutliers % of Data =');
     fprintf(string(prcnt_outliers));
+    fprintf('\n \n');
 end
 
 end

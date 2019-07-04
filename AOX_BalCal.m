@@ -123,6 +123,8 @@ end
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %             VOLTAGE TO LOAD (DIRECT) - ALGEBRAIC SECTION                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Initialize structure for unique outputs for section
+uniqueOut=struct();
 
 % Finds the average  of the natural zeros (called global zeros)
 globalZeros = mean(natzeros);
@@ -216,7 +218,10 @@ targetRes = targetMatrix0-aprxIN;
 if FLAGS.balOut == 1
     
     %Identify outliers based on residuals
-    [OUTLIER_ROWS,num_outliers,prcnt_outliers]=ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS);
+    [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut]=ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS);
+    
+    newStruct=struct('num_outliers',num_outliers,'prcnt_outliers',prcnt_outliers,'rowOut',rowOut,'colOut',colOut,'numSTD',numSTD);
+    uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     
     % Use the reduced input and target files
     if FLAGS.zeroed == 1
@@ -317,7 +322,10 @@ end
 %Function creates all outputs for calibration, algebraic section
 % calib_alg_output(FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,aprxIN,series0,excessVec0,dimFlag,coeff,voltagelist,reslist,nterms,ANOVA,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA,xcalib,intercepts);
 section={'Calibration Algebraic'};
-alg_output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,aprxIN,series0,excessVec0,dimFlag,coeff,voltagelist,reslist,nterms,ANOVA,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA)
+newStruct=struct('coeff',coeff,'voltagelist',{voltagelist},'reslist',{reslist},'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix,'balfitANOVA',balfitANOVA);
+uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
+
+alg_output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,aprxIN,series0,excessVec0,dimFlag,uniqueOut)
 
 %END CALIBRATION DIRECT APPROACH ALGEBRAIC SECTION
 
@@ -332,6 +340,10 @@ if FLAGS.balCal == 2
     %find centers by finding the index of max residual, using that index to
     %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
     %product of the resulting column vector
+    
+    %Initialize structure for unique outputs for section
+    uniqueOut=struct();
+    
     
     targetRes2=targetRes;
     aprxINminGZ2 = aprxINminGZ;
@@ -405,6 +417,8 @@ if FLAGS.balVal == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                       VALIDATION SECTION      AJM 7/1/17                %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %Initialize structure for unique outputs for section
+    uniqueOut=struct();
     
     load(out.savePathval,'-mat');
     [validSeries,s_1stV,~] = unique(seriesvalid);
@@ -459,7 +473,7 @@ if FLAGS.balVal == 1
     %Function creates all outputs for validation, algebraic section
 %     valid_alg_output(FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlag)
     section={'Validation Algebraic'};
-    alg_output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlag,coeff,voltagelist,reslist,nterms,ANOVA,balfitcomIN,balfitxcalib,balfittargetMatrix,balfitANOVA)
+    alg_output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,aprxINminGZvalid,seriesvalid,excessVecvalidkeep,dimFlag,uniqueOut)
 
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
     
@@ -471,6 +485,9 @@ if FLAGS.balVal == 1
         %goal to use centers, width and coefficients to validate parameters against
         %independent data
         
+        %Initialize structure for unique outputs for section
+        uniqueOut=struct();
+
         targetRes2valid = targetResvalid;
         aprxINminGZ2valid = aprxINminGZvalid;
         
