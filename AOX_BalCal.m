@@ -29,15 +29,15 @@ FLAGS.balCal = out.grbf;
 %DEFINE THE NUMBER OF BASIS FUNCTIONS
 numBasis = out.basis;
 %
-%TO SELECT INDIRECT APPROACH                         set FLAGS.approach = 1;
-FLAGS.approach = 0;%out.approach;
-%
 %SELECT ALGEBRAIC MODEL
 %          set FLAGS.model = 1 (full), 2 (trunc), 3 (linear), or 4 (custom);
 FLAGS.model = out.model;
 %
-%TO PRINT LOAD PERFORMANCE PARAMETERS                   set FLAGS.print = 1;
-FLAGS.print = out.tables;
+%TO PRINT LOAD PERFORMANCE PARAMETERS TO CSV                  set FLAGS.print = 1;
+FLAGS.print = out.print;
+%
+%TO DISPLAY LOAD PERFORMANCE PARAMETERS IN COMMAND WINDOW                  set FLAGS.disp = 1;
+FLAGS.disp= out.disp;
 %
 %TO SAVE DATA TO CSV                                    set FLAGS.excel = 1;
 FLAGS.excel = out.excel;
@@ -67,18 +67,12 @@ numSTD = out.numSTD;  %Number of standard deviations for outlier threshold.
 %TO REMOVE POTENTIAL OUTLIERS                          set FLAGS.zeroed = 1;
 FLAGS.zeroed = out.zeroed;
 %
-%TO USE LATIN HYPERCUBE SAMPLING set                          FLAGS.LHS = 1;
-FLAGS.LHS = out.lhs;
-numLHS = out.numLHS; %Number of times to iterate.
-LHSp = out.LHSp; %Percent of data used to create sample.
-%
 %Uncertainty button outputs
-numBoot=out.numBoot;
-FLAGS.boot=out.bootFlag;
 FLAGS.volt=out.voltFlag;
 voltTrust=out.voltTrust;
 
 FLAGS.anova = out.anova;
+FLAGS.loadPI = out.loadPI;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       INITIALIZATION SECTION
@@ -158,52 +152,16 @@ balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
 balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,1);
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
 
-if FLAGS.LHS == 0
-    numLHS = 1;
-end
-lhs_check = zeros(length(excessVec0),1);
-lhs_ind = 1:length(excessVec0(:,1));
-
-if FLAGS.LHS == 1
-    fprintf('\nNumber of LHS Iterations Selected: %i\n',numLHS)
-end
 fprintf('\nStarting Calculations\n')
 
-for lhs = 1:numLHS
-    
-    % Creates an LHS sub-sample of the data.
-    if FLAGS.LHS == 1
-        sample = AOX_LHS(series0,excessVec0,LHSp);
-        lhs_check(sample) = 1;
-        lhs_ind(find(lhs_check-1)); % This line outputs which data points haven't been sampled yet
-        pct_sampled = sum(lhs_check)/length(lhs_check); % This line outputs what percentage of points have been sampled
-    else
-        sample = (1:length(series0))';
-    end
-    
-    % Uses the sampling indices in "sample" to create the subsamples
-    series = series0(sample);
-    targetMatrix = targetMatrix0(sample,:);
-    comIN = comIN0(sample,:);
-    
-    %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-    balfittargetMatrix = balfittargetMatrix0(sample,:);
-    balfitcomIN = balfitcomIN0(sample,:);
-    %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-    
-    %Calculate xcalib (coefficients)
-    [xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
-    
-    [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
-    
-    if FLAGS.LHS == 1
-        x_all(:,:,lhs) = xcalib;
-    end
-end
-if FLAGS.LHS == 1
-    xcalib = mean(x_all,3);
-    xcalib_std = std(x_all,[],3);
-end
+%Creates vectors that will not have outliers removed for balfit
+series = series0;
+targetMatrix = targetMatrix0;
+comIN = comIN0;
+
+%Calculate xcalib (coefficients)
+[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
 
 % APPROXIMATION
 % define the approximation for inputs minus global zeros (includes
@@ -239,7 +197,7 @@ if FLAGS.balOut == 1
         [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
         
         %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN,balfittargetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
+        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
         if FLAGS.anova==1
             filename = 'Testing_Sig.csv';
             dlmwrite(filename,balfitANOVA(1).sig,'precision','%.16f');
@@ -252,8 +210,7 @@ if FLAGS.balOut == 1
         aprxIN = comIN0*xcalib;
         
         % RESIDUAL
-        targetRes = targetMatrix0-aprxIN;
-        
+        targetRes = targetMatrix0-aprxIN;       
     end
 end
 
@@ -274,7 +231,6 @@ balfit_C1INV = xcalib((1:dimFlag), :); % AJM 5_31_19
 balfit_D1 = zeros(dimFlag,dimFlag); % AJM 5_31_19
 balfit_INTERCEPT = globalZeros; % AJM 6_14_19
 balfit_C1INVC2 = balfitxcalib((dimFlag+1:nterms), :)*balfit_C1INV; % AJM 5_31_19
-
 balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_D1 ; balfit_C1INVC2 ];
 
 filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
@@ -285,19 +241,9 @@ fprintf('\n');
 %%% Balfit Stats and Matrix AJM 5_31_19
 
 %Start uncertainty section
-if FLAGS.boot==1
-    %%start bootstrapfunction
-    bootalpha=.05;
-    f=@calc_xcalib;
-    xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,0});
-else
-    xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
-end
-% END: bootstrap section
-
 %ANOVA data for uncertainty
 beta_CI_comb=zeros(size(xcalib,1),dimFlag);
-y_hat_PI_comb=zeros(size(targetMatrix,1),size(targetMatrix,2));
+y_hat_PI_comb=zeros(size(targetMatrix0));
 if FLAGS.anova==1
     for j=1:dimFlag
         if FLAGS.model == 4
@@ -317,14 +263,13 @@ else
     uncert_comIN=zeros(nterms,numpts0,dimFlag);
 end
 
-[combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero, xcalib_error,coeff_uncert_boot]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
-[combined_uncert_anova,tare_uncert_anova, FL_uncert_anova,coeff_uncert_anova]=uncert_prop_anova(xcalib,beta_CI_comb,comIN,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix,series,voltTrust,FLAGS.anova,FLAGS.volt);
+[combined_uncert_anova,tare_uncert_anova, FL_uncert_anova,coeff_uncert_anova]=uncert_prop_anova(xcalib,beta_CI_comb,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.anova,FLAGS.volt);
 %end uncertainty section
 
 %OUTPUT FUNCTION
 %Function creates all outputs for calibration, algebraic section
 section={'Calibration Algebraic'};
-newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix,'balfitANOVA',balfitANOVA);
+newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA);
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
 output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,uniqueOut)
 

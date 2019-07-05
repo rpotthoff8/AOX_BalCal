@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 15-May-2019 20:51:19
+% Last Modified by GUIDE v2.5 05-Jul-2019 13:31:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,7 +54,7 @@ function AOX_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % varargin   command line arguments to AOX_GUI (see VARARGIN)
 set(handles.figure1, 'units', 'normalized', 'position', [0.15 0.1 0.5 0.8])
 global VERSION
-VERSION = 15;
+VERSION = 16;
 try
     
     [nasalogo,~,aln] = imread('nasa.png','BackgroundColor',[0.941, 0.941, 0.941]);
@@ -75,6 +75,10 @@ guidata(hObject, handles);
 % UIWAIT makes AOX_GUI wait for user response (see UIRESUME)
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
+
+actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
+anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
+
 if exist(fileName,'file')
     try
         load(fileName,'-mat');
@@ -82,11 +86,9 @@ if exist(fileName,'file')
         versionCheck(default);
         
         %set(handles.tares_FLAGcheck,'Value',default.tares);
-        set(handles.coeff_FLAGcheck,'Value',default.coeff);
-        coeff_FLAGcheck_Callback(handles.coeff_FLAGcheck, eventdata, handles);
+        set(handles.disp_FLAGcheck,'Value',default.disp);
         %set(handles.grbftares_FLAGcheck,'Value',default.grbftares);
-        set(handles.tables_FLAGcheck,'Value',default.tables);
-        tables_FLAGcheck_Callback(handles.tables_FLAGcheck, eventdata, handles);
+        set(handles.print_FLAGcheck,'Value',default.print);
         set(handles.res_FLAGcheck,'Value',default.res);
         set(handles.hist_FLAGcheck,'Value',default.hist);
         set(handles.outlier_FLAGcheck,'Value',default.outlier);
@@ -152,28 +154,19 @@ if exist(fileName,'file')
         if default.custom
             modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
         end
-        
-        set(handles.direct,'Value',default.direct);
-        set(handles.indirect,'Value',default.indirect);
-        
+
         set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
         %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
         grbf_Callback(handles.grbf, eventdata, handles);
         
-        set(handles.LHS_FLAGcheck,'Value',default.LHS_FLAGcheck);
-        set(handles.numLHS,'String',default.numLHS);
-        set(handles.LHSp,'String',default.LHSp);
-        LHS_FLAGcheck_Callback(handles.LHS_FLAGcheck, eventdata, handles);
-        
         set(handles.Volt_FLAGcheck,'Value',default.Volt_FLAGcheck);
-        set(handles.Boot_FLAGcheck,'Value',default.Boot_FLAGcheck);
         set(handles.voltTrust,'String',default.voltTrust);
-        set(handles.numBoot,'String',default.numBoot);
-        Boot_FLAGcheck_Callback(handles.Boot_FLAGcheck, eventdata, handles);
         Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
         set(handles.anova_FLAGcheck,'Value',default.anova);
+        anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
+        set(handles.loadPI_FLAGcheck,'Value',default.loadPI);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -251,11 +244,10 @@ function runbutton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 uiresume(handles.figure1);
-outStruct.approach = get(handles.indirect,'Value');
 %outStruct.tares = get(handles.tares_FLAGcheck,'Value');
-outStruct.coeff = get(handles.coeff_FLAGcheck,'Value');
+outStruct.disp = get(handles.disp_FLAGcheck,'Value');
 %outStruct.grbftares = get(handles.grbftares_FLAGcheck,'Value');
-outStruct.tables = 2*get(handles.tables_FLAGcheck,'Value') + get(handles.coeff_FLAGcheck,'Value');
+outStruct.print = get(handles.print_FLAGcheck,'Value');
 outStruct.res = get(handles.res_FLAGcheck,'Value');
 outStruct.hist = get(handles.hist_FLAGcheck,'Value');
 outStruct.outlier = get(handles.outlier_FLAGcheck,'Value');
@@ -279,15 +271,11 @@ end
 outStruct.grbf = 1 + get(handles.grbf,'Value');
 outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 
-outStruct.lhs = get(handles.LHS_FLAGcheck,'Value');
-outStruct.numLHS = str2num(get(handles.numLHS,'String'));
-outStruct.LHSp = str2num(get(handles.LHSp,'String'))/100;
-
-outStruct.bootFlag = get(handles.Boot_FLAGcheck,'Value');
 outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
-outStruct.numBoot = str2num(get(handles.numBoot,'String'));
 outStruct.voltTrust = str2num(get(handles.voltTrust,'String'));
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
+outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
+
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -1147,31 +1135,23 @@ function grbfcoeff_FLAGcheck_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of grbfcoeff_FLAGcheck
 
 
-% --- Executes on button press in coeff_FLAGcheck.
-function coeff_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to coeff_FLAGcheck (see GCBO)
+% --- Executes on button press in disp_FLAGcheck.
+function disp_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to disp_FLAGcheck (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of coeff_FLAGcheck
-if get(hObject,'Value') == 1
-    set(handles.tables_FLAGcheck,'Enable','off');
-else
-    set(handles.tables_FLAGcheck,'Enable','on');
-end
+% Hint: get(hObject,'Value') returns toggle state of disp_FLAGcheck
 
-% --- Executes on button press in tables_FLAGcheck.
-function tables_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to tables_FLAGcheck (see GCBO)
+
+% --- Executes on button press in print_FLAGcheck.
+function print_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to print_FLAGcheck (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of tables_FLAGcheck
-if get(hObject,'Value') == 1
-    set(handles.coeff_FLAGcheck,'Enable','off');
-else
-    set(handles.coeff_FLAGcheck,'Enable','on');
-end
+% Hint: get(hObject,'Value') returns toggle state of print_FLAGcheck
+
 
 
 % --- Executes on button press in ini_button.
@@ -1183,10 +1163,9 @@ global VERSION
 default.version = VERSION;
 
 %default.tares = get(handles.tares_FLAGcheck,'Value');
-%default.approach = get(handles.indirect,'Value');
-default.coeff = get(handles.coeff_FLAGcheck,'Value');
+default.disp = get(handles.disp_FLAGcheck,'Value');
 %default.grbftares = get(handles.grbftares_FLAGcheck,'Value');
-default.tables = get(handles.tables_FLAGcheck,'Value');
+default.print = get(handles.print_FLAGcheck,'Value');
 default.res = get(handles.res_FLAGcheck,'Value');
 default.hist = get(handles.hist_FLAGcheck,'Value');
 default.outlier = get(handles.outlier_FLAGcheck,'Value');
@@ -1245,18 +1224,10 @@ default.basis = get(handles.numBasisIn,'String');
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
 
-default.LHS_FLAGcheck = get(handles.LHS_FLAGcheck,'Value');
-default.numLHS = get(handles.numLHS,'String');
-default.LHSp = get(handles.LHSp,'String');
-
-default.direct = get(handles.direct,'Value');
-default.indirect = get(handles.indirect,'Value');
-
 default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
-default.Boot_FLAGcheck=get(handles.Boot_FLAGcheck,'Value');
 default.voltTrust=get(handles.voltTrust,'String');
-default.numBoot=get(handles.numBoot,'String');
 default.anova = get(handles.anova_FLAGcheck,'Value');
+default.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
@@ -1564,94 +1535,6 @@ switch cva.type
         savePath = savePathapprox;
 end
 
-% --- Executes on button press in indirect.
-function indirect_Callback(hObject, eventdata, handles)
-% hObject    handle to indirect (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of indirect
-if get(hObject,'Value') == 1
-    set(handles.direct,'Value',0);
-else
-    set(handles.direct,'Value',1);
-end
-
-% --- Executes on button press in direct.
-function direct_Callback(hObject, eventdata, handles)
-% hObject    handle to direct (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of direct
-if get(hObject,'Value') == 1
-    set(handles.indirect,'Value',0);
-else
-    set(handles.indirect,'Value',1);
-end
-
-
-% --- Executes on button press in LHS_FLAGcheck.
-function LHS_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to LHS_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of LHS_FLAGcheck
-if get(hObject,'Value') == 1
-    set(handles.numLHS,'Enable','on');
-    set(handles.LHSp,'Enable','on');
-else
-    set(handles.numLHS,'Enable','off');
-    set(handles.LHSp,'Enable','off');
-end
-
-
-function numLHS_Callback(hObject, eventdata, handles)
-% hObject    handle to numLHS (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of numLHS as text
-%        str2double(get(hObject,'String')) returns contents of numLHS as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function numLHS_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to numLHS (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function LHSp_Callback(hObject, eventdata, handles)
-% hObject    handle to LHSp (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of LHSp as text
-%        str2double(get(hObject,'String')) returns contents of LHSp as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function LHSp_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to LHSp (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
 % --- Executes on button press in res_FLAGcheck.
 function res_FLAGcheck_Callback(hObject, eventdata, handles)
 % hObject    handle to res_FLAGcheck (see GCBO)
@@ -1921,27 +1804,6 @@ if FileName ~= 0
     set(handles.customPath,'String',FullPath)
 end
 
-function numBoot_Callback(hObject, eventdata, handles)
-% hObject    handle to numBoot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of numBoot as text
-%        str2double(get(hObject,'String')) returns contents of numBoot as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function numBoot_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to numBoot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 function voltTrust_Callback(hObject, eventdata, handles)
 % hObject    handle to voltTrust (see GCBO)
@@ -1965,19 +1827,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in Boot_FLAGcheck.
-function Boot_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to Boot_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value') == 1
-    set(handles.numBoot,'Enable','on');
-else
-    set(handles.numBoot,'Enable','off');
-end
-% Hint: get(hObject,'Value') returns toggle state of Boot_FLAGcheck
-
-
 % --- Executes on button press in Volt_FLAGcheck.
 function Volt_FLAGcheck_Callback(hObject, eventdata, handles)
 % hObject    handle to Volt_FLAGcheck (see GCBO)
@@ -1998,3 +1847,17 @@ function anova_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of anova_FLAGcheck
+if get(hObject,'Value') == 0
+    set(handles.loadPI_FLAGcheck,'Enable','off','Value',0);
+else
+    set(handles.loadPI_FLAGcheck,'Enable','on');
+end
+
+% --- Executes on button press in loadPI_FLAGcheck.
+function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to loadPI_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of loadPI_FLAGcheck
+
