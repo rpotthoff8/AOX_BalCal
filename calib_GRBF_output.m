@@ -58,6 +58,7 @@ if FLAGS.hist == 1
     end
 end
 
+%start specific
 if FLAGS.excel == 1
     fprintf('\n ***** \n');
     fprintf('\n  ');
@@ -75,15 +76,17 @@ if FLAGS.excel == 1
     filename = 'APPROX_AOX_GRBF_Centers.csv';
     dlmwrite(filename,centerIndexHist,'precision','%.16f');
 end
-
+%end specific
 
 if FLAGS.print == 1
     
+    %start specific
     fprintf('\n ');
     %        fprintf('Number of GRBFs =');
     %        fprintf(string(numBasis));
     fprintf('\nNumber of GRBFs: %i\n',numBasis);
     fprintf('\n ');
+    %end specific
     
     twoSigmaGRBF = standardDev2'.*2;
     calib_GRBF_2Sigma = array2table(twoSigmaGRBF,'VariableNames',loadlist(1:dimFlag))

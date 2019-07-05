@@ -46,12 +46,11 @@ prcnt_outliers = 100.0*num_outliers/numpts0;
 if FLAGS.print == 1
     %% Identify the Possible Outliers
     fprintf(' \n***** \n');
-    fprintf(' ');
-    fprintf('\nNumber of Outliers =');
+    fprintf('Number of Outliers =');
     fprintf(string(num_outliers));
-    fprintf('\nOutliers % of Data =');
+    fprintf('\n%s','Outliers % of Data =');
     fprintf(string(prcnt_outliers));
-    fprintf('\n \n');
+    fprintf('\n ');
 end
 
 end
