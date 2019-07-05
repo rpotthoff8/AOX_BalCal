@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 15-May-2019 20:51:19
+% Last Modified by GUIDE v2.5 05-Jul-2019 12:37:57
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -75,6 +75,10 @@ guidata(hObject, handles);
 % UIWAIT makes AOX_GUI wait for user response (see UIRESUME)
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
+
+actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
+anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
+
 if exist(fileName,'file')
     try
         load(fileName,'-mat');
@@ -166,6 +170,8 @@ if exist(fileName,'file')
         set(handles.voltTrust,'String',default.voltTrust);
         Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
         set(handles.anova_FLAGcheck,'Value',default.anova);
+        anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
+        set(handles.loadPI_FLAGcheck,'Value',default.loadPI);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -274,6 +280,8 @@ outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
 outStruct.voltTrust = str2num(get(handles.voltTrust,'String'));
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
+outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
+
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -1237,6 +1245,7 @@ default.indirect = get(handles.indirect,'Value');
 default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
 default.voltTrust=get(handles.voltTrust,'String');
 default.anova = get(handles.anova_FLAGcheck,'Value');
+default.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
@@ -1882,3 +1891,17 @@ function anova_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of anova_FLAGcheck
+if get(hObject,'Value') == 0
+    set(handles.loadPI_FLAGcheck,'Enable','off','Value',0);
+else
+    set(handles.loadPI_FLAGcheck,'Enable','on');
+end
+
+% --- Executes on button press in loadPI_FLAGcheck.
+function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to loadPI_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of loadPI_FLAGcheck
+

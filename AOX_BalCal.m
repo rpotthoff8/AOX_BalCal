@@ -72,6 +72,7 @@ FLAGS.volt=out.voltFlag;
 voltTrust=out.voltTrust;
 
 FLAGS.anova = out.anova;
+FLAGS.loadPI = out.loadPI;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       INITIALIZATION SECTION
