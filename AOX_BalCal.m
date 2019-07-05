@@ -528,7 +528,7 @@ if FLAGS.balVal == 1
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         section={'Validation GRBF'};
-        newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid);
+        newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid,'numBasis',numBasis);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
         output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,uniqueOut)
     end

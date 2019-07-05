@@ -55,7 +55,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     Header_cells{7,1}=char(strcat('Number of Datapoints:',{' '},string(numpts)));
     if FLAGS.balCal == 2
         Header_cells{8,1}='GRBF Addition Performed: TRUE';
-        if strcmp(section,{'Calibration GRBF'})==1
+        if strcmp(section,{'Calibration GRBF'})==1 || strcmp(section,{'Validation GRBF'})==1
             Header_cells{9,1}=char(strcat('Number GRBFs:',{' '},string(numBasis)));
         end
     else
