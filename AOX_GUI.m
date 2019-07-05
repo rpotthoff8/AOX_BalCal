@@ -156,10 +156,7 @@ if exist(fileName,'file')
         if default.custom
             modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
         end
-        
-        set(handles.direct,'Value',default.direct);
-        set(handles.indirect,'Value',default.indirect);
-        
+
         set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
         %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
@@ -249,7 +246,6 @@ function runbutton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 uiresume(handles.figure1);
-outStruct.approach = get(handles.indirect,'Value');
 %outStruct.tares = get(handles.tares_FLAGcheck,'Value');
 outStruct.coeff = get(handles.coeff_FLAGcheck,'Value');
 %outStruct.grbftares = get(handles.grbftares_FLAGcheck,'Value');
@@ -1177,7 +1173,6 @@ global VERSION
 default.version = VERSION;
 
 %default.tares = get(handles.tares_FLAGcheck,'Value');
-%default.approach = get(handles.indirect,'Value');
 default.coeff = get(handles.coeff_FLAGcheck,'Value');
 %default.grbftares = get(handles.grbftares_FLAGcheck,'Value');
 default.tables = get(handles.tables_FLAGcheck,'Value');
@@ -1238,9 +1233,6 @@ default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
-
-default.direct = get(handles.direct,'Value');
-default.indirect = get(handles.indirect,'Value');
 
 default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
 default.voltTrust=get(handles.voltTrust,'String');
@@ -1551,32 +1543,6 @@ switch cva.type
         clear cva appName CurrentPath
         save(savePathapprox);
         savePath = savePathapprox;
-end
-
-% --- Executes on button press in indirect.
-function indirect_Callback(hObject, eventdata, handles)
-% hObject    handle to indirect (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of indirect
-if get(hObject,'Value') == 1
-    set(handles.direct,'Value',0);
-else
-    set(handles.direct,'Value',1);
-end
-
-% --- Executes on button press in direct.
-function direct_Callback(hObject, eventdata, handles)
-% hObject    handle to direct (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of direct
-if get(hObject,'Value') == 1
-    set(handles.indirect,'Value',0);
-else
-    set(handles.indirect,'Value',1);
 end
 
 % --- Executes on button press in res_FLAGcheck.

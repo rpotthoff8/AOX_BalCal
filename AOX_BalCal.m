@@ -29,9 +29,6 @@ FLAGS.balCal = out.grbf;
 %DEFINE THE NUMBER OF BASIS FUNCTIONS
 numBasis = out.basis;
 %
-%TO SELECT INDIRECT APPROACH                         set FLAGS.approach = 1;
-FLAGS.approach = 0;%out.approach;
-%
 %SELECT ALGEBRAIC MODEL
 %          set FLAGS.model = 1 (full), 2 (trunc), 3 (linear), or 4 (custom);
 FLAGS.model = out.model;
