@@ -68,8 +68,6 @@ numSTD = out.numSTD;  %Number of standard deviations for outlier threshold.
 FLAGS.zeroed = out.zeroed;
 %
 %Uncertainty button outputs
-numBoot=out.numBoot;
-FLAGS.boot=out.bootFlag;
 FLAGS.volt=out.voltFlag;
 voltTrust=out.voltTrust;
 
@@ -242,19 +240,9 @@ fprintf('\n');
 %%% Balfit Stats and Matrix AJM 5_31_19
 
 %Start uncertainty section
-if FLAGS.boot==1
-    %%start bootstrapfunction
-    bootalpha=.05;
-    f=@calc_xcalib;
-    xcalib_ci=bootci(numBoot,{f,comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,0});
-else
-    xcalib_ci=zeros(2, size(xcalib,1),size(xcalib,2));
-end
-% END: bootstrap section
-
 %ANOVA data for uncertainty
 beta_CI_comb=zeros(size(xcalib,1),dimFlag);
-y_hat_PI_comb=zeros(size(targetMatrix,1),size(targetMatrix,2));
+y_hat_PI_comb=zeros(size(targetMatrix0));
 if FLAGS.anova==1
     for j=1:dimFlag
         if FLAGS.model == 4
@@ -274,7 +262,6 @@ else
     uncert_comIN=zeros(nterms,numpts0,dimFlag);
 end
 
-[combined_uncert,tare_uncert, FL_uncert,xcalibCI_includeZero, xcalib_error,coeff_uncert_boot]=uncert_prop(xcalib,xcalib_ci,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.boot,FLAGS.volt);
 [combined_uncert_anova,tare_uncert_anova, FL_uncert_anova,coeff_uncert_anova]=uncert_prop_anova(xcalib,beta_CI_comb,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.anova,FLAGS.volt);
 %end uncertainty section
 
