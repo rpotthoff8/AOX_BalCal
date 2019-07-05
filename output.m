@@ -29,7 +29,7 @@ ratioGoop(isnan(ratioGoop)) = realmin;
 twoSigma = standardDev'.*2;
 
 %% START PRINT OUT PERFORMANCE INFORMATION TO CSV or command window
-if FLAGS.print == 1 || FLAGS.print==1
+if FLAGS.print == 1 || FLAGS.disp==1
     %Initialize cell arrays
     empty_cells=cell(1,dimFlag+1);
     Header_cells=cell(8,dimFlag+1);
@@ -63,7 +63,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     end
     csv_output=[Header_cells;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf('\n ********************************************************************* \n');
         for i=1:size(Header_cells,1)
             fprintf(Header_cells{i,:})
@@ -78,7 +78,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     section_out=[load_line;cell(1),num2cell(twoSigma)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf(output_name{:})
         fprintf('\n')
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
@@ -88,7 +88,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     section_out=[{'Series'},loadlist(1:dimFlag);num2cell([(1:nseries0)', tares])];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf(output_name{:})
         fprintf('\n')
         disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
@@ -98,7 +98,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     section_out=[{'Series'},loadlist(1:dimFlag);num2cell([(1:nseries0)', tares_STDDEV])];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf(output_name{:})
         fprintf('\n')
         disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
@@ -108,7 +108,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     section_out=[load_line;cell(1),num2cell((resSquare'./numpts)')];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf(output_name{:})
         fprintf('\n')
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
@@ -118,7 +118,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     section_out=[load_line;cell(1),num2cell(perGoop)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf(output_name{:})
         fprintf('\n')
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
@@ -128,7 +128,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf(output_name{:})
         fprintf('\n')
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
@@ -138,7 +138,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     section_out=[load_line;cell(1),num2cell(maxTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf(output_name{:})
         fprintf('\n')
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
@@ -148,7 +148,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     section_out=[load_line;cell(1),num2cell(minTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf(output_name{:})
         fprintf('\n')
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
@@ -158,7 +158,7 @@ if FLAGS.print == 1 || FLAGS.print==1
     section_out=[load_line;cell(1),num2cell(ratioGoop)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
-    if FLAGS.print==1
+    if FLAGS.disp==1
         fprintf(output_name{:})
         fprintf('\n')
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
@@ -176,7 +176,7 @@ if FLAGS.print == 1 || FLAGS.print==1
         outlier_sum{3,2}=prcnt_outliers;
         csv_output=[csv_output;output_name;outlier_sum];
         %Command window printing;
-        if FLAGS.print==1
+        if FLAGS.disp==1
             fprintf(output_name{:})
             fprintf('\n')
             for i=1:size(outlier_sum,1)
@@ -195,7 +195,7 @@ if FLAGS.print == 1 || FLAGS.print==1
         section_out=[load_line;outlier_channel_sum];
         csv_output=[csv_output;output_name;section_out;empty_cells];
         %Command window printing;
-        if FLAGS.print==1
+        if FLAGS.disp==1
             fprintf(output_name{:})
             fprintf('\n')
             disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end),'RowNames',section_out(2:end,1)))
@@ -210,7 +210,7 @@ if FLAGS.print == 1 || FLAGS.print==1
         section_out=[load_line;outlier_index];
         csv_output=[csv_output;output_name;section_out;empty_cells];
         %Command window printing;
-        if FLAGS.print==1
+        if FLAGS.disp==1
             fprintf(output_name{:})
             fprintf('\n')
             disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))

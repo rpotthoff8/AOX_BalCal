@@ -33,8 +33,11 @@ numBasis = out.basis;
 %          set FLAGS.model = 1 (full), 2 (trunc), 3 (linear), or 4 (custom);
 FLAGS.model = out.model;
 %
-%TO PRINT LOAD PERFORMANCE PARAMETERS                   set FLAGS.print = 1;
-FLAGS.print = out.tables;
+%TO PRINT LOAD PERFORMANCE PARAMETERS TO CSV                  set FLAGS.print = 1;
+FLAGS.print = out.print;
+%
+%TO DISPLAY LOAD PERFORMANCE PARAMETERS IN COMMAND WINDOW                  set FLAGS.disp = 1;
+FLAGS.disp= out.disp;
 %
 %TO SAVE DATA TO CSV                                    set FLAGS.excel = 1;
 FLAGS.excel = out.excel;

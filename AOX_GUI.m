@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 05-Jul-2019 12:37:57
+% Last Modified by GUIDE v2.5 05-Jul-2019 13:31:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -86,11 +86,9 @@ if exist(fileName,'file')
         versionCheck(default);
         
         %set(handles.tares_FLAGcheck,'Value',default.tares);
-        set(handles.coeff_FLAGcheck,'Value',default.coeff);
-        coeff_FLAGcheck_Callback(handles.coeff_FLAGcheck, eventdata, handles);
+        set(handles.disp_FLAGcheck,'Value',default.disp);
         %set(handles.grbftares_FLAGcheck,'Value',default.grbftares);
-        set(handles.tables_FLAGcheck,'Value',default.tables);
-        tables_FLAGcheck_Callback(handles.tables_FLAGcheck, eventdata, handles);
+        set(handles.print_FLAGcheck,'Value',default.print);
         set(handles.res_FLAGcheck,'Value',default.res);
         set(handles.hist_FLAGcheck,'Value',default.hist);
         set(handles.outlier_FLAGcheck,'Value',default.outlier);
@@ -247,9 +245,9 @@ function runbutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 uiresume(handles.figure1);
 %outStruct.tares = get(handles.tares_FLAGcheck,'Value');
-outStruct.coeff = get(handles.coeff_FLAGcheck,'Value');
+outStruct.disp = get(handles.disp_FLAGcheck,'Value');
 %outStruct.grbftares = get(handles.grbftares_FLAGcheck,'Value');
-outStruct.tables = 2*get(handles.tables_FLAGcheck,'Value') + get(handles.coeff_FLAGcheck,'Value');
+outStruct.print = get(handles.print_FLAGcheck,'Value');
 outStruct.res = get(handles.res_FLAGcheck,'Value');
 outStruct.hist = get(handles.hist_FLAGcheck,'Value');
 outStruct.outlier = get(handles.outlier_FLAGcheck,'Value');
@@ -1137,31 +1135,23 @@ function grbfcoeff_FLAGcheck_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of grbfcoeff_FLAGcheck
 
 
-% --- Executes on button press in coeff_FLAGcheck.
-function coeff_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to coeff_FLAGcheck (see GCBO)
+% --- Executes on button press in disp_FLAGcheck.
+function disp_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to disp_FLAGcheck (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of coeff_FLAGcheck
-if get(hObject,'Value') == 1
-    set(handles.tables_FLAGcheck,'Enable','off');
-else
-    set(handles.tables_FLAGcheck,'Enable','on');
-end
+% Hint: get(hObject,'Value') returns toggle state of disp_FLAGcheck
 
-% --- Executes on button press in tables_FLAGcheck.
-function tables_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to tables_FLAGcheck (see GCBO)
+
+% --- Executes on button press in print_FLAGcheck.
+function print_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to print_FLAGcheck (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of tables_FLAGcheck
-if get(hObject,'Value') == 1
-    set(handles.coeff_FLAGcheck,'Enable','off');
-else
-    set(handles.coeff_FLAGcheck,'Enable','on');
-end
+% Hint: get(hObject,'Value') returns toggle state of print_FLAGcheck
+
 
 
 % --- Executes on button press in ini_button.
@@ -1173,9 +1163,9 @@ global VERSION
 default.version = VERSION;
 
 %default.tares = get(handles.tares_FLAGcheck,'Value');
-default.coeff = get(handles.coeff_FLAGcheck,'Value');
+default.disp = get(handles.disp_FLAGcheck,'Value');
 %default.grbftares = get(handles.grbftares_FLAGcheck,'Value');
-default.tables = get(handles.tables_FLAGcheck,'Value');
+default.print = get(handles.print_FLAGcheck,'Value');
 default.res = get(handles.res_FLAGcheck,'Value');
 default.hist = get(handles.hist_FLAGcheck,'Value');
 default.outlier = get(handles.outlier_FLAGcheck,'Value');
