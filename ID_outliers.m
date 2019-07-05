@@ -13,11 +13,11 @@ out_meanValue = mean(normtargetRes);
 out_standardDev = std(normtargetRes);
 thresholdValue = numSTD * (out_standardDev) - out_meanValue;
 
-for n = 1:dimFlag
-    if thresholdValue(1,n) <= 0.0025
-        thresholdValue(1,n) = 0.0025;
-    end
-end
+% for n = 1:dimFlag
+%     if thresholdValue(1,n) <= 0.0025
+%         thresholdValue(1,n) = 0.0025;
+%     end
+% end
 
 outlierIndices = abs(normtargetRes) > thresholdValue;
 

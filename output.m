@@ -14,8 +14,6 @@ resSquare = sum(targetRes.^2);
 %STATISTIC OUTPUTS %SAME START
 for k=1:length(targetRes(1,:))
     [goop(k),kstar(k)] = max(abs(targetRes(:,k)));
-    goopVal(k) = abs(targetRes(kstar(k),k));
-    xCent(k) = excessVec0(kstar(k),k);
     maxTargets(k) = max(targetRes(:,k));
     minTargets(k) = min(targetRes(:,k));
     tR2(k) = targetRes(:,k)'*targetRes(:,k);     % AJM 6_12_19
