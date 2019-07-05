@@ -1,7 +1,7 @@
 %Function creates all the outputs for the calibration, algebraic section
 %This simplifies following the main code
 
-function [] = alg_output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,uniqueOut)
+function [] = output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,uniqueOut)
 %Split uniqueOut structure into individual variables
 names = fieldnames(uniqueOut);
 for i=1:length(names)
@@ -29,10 +29,6 @@ stdDevPercentCapacity = 100*(standardDev'./loadCapacities);
 ratioGoop = goop./standardDev';
 ratioGoop(isnan(ratioGoop)) = realmin;
 twoSigma = standardDev'.*2;
-
-% %    theminmaxband = abs(maxTargets + minTargets);
-% theminmaxband = 100*(abs(maxTargets + minTargets)./loadCapacities); %QUESTION: JRP 2 July 19
-% % theminmaxband = 100*(abs(maxTargets - minTargets)./loadCapacities);
 
 %% START PRINT OUT PERFORMANCE INFORMATION TO CSV or command window
 if FLAGS.print == 1 || FLAGS.print==1
@@ -78,7 +74,8 @@ if FLAGS.print == 1 || FLAGS.print==1
         fprintf('\n')
     end
     
-    %     calib_algebraic_2Sigma = array2table(calib_twoSigmaALGB,'VariableNames',loadlist(1:dimFlag))
+    %Statistics output section
+    
     output_name{1}='Load Residual 2*(standard deviation)';
     section_out=[load_line;cell(1),num2cell(twoSigma)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -89,11 +86,6 @@ if FLAGS.print == 1 || FLAGS.print==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    %Should I use strtrim()  ? -AAM 042116
-    %SAME START
-    %     series_table = table([1:nseries0]','VariableNames',{'SERIES'});
-    %     calib_algebraic_Tares = array2table(tares,'VariableNames',loadlist(1:dimFlag));
-    %     calib_algebraic_Tares = [series_table, calib_algebraic_Tares]
     output_name{1}='Tares';
     section_out=[{'Series'},loadlist(1:dimFlag);num2cell([(1:nseries0)', tares])];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -104,7 +96,6 @@ if FLAGS.print == 1 || FLAGS.print==1
         disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
     end
     
-    %     calib_algebraic_Tares_stdev = array2table(tares_STDDEV,'VariableNames',loadlist(1:dimFlag));
     output_name{1}='Tares Standard Deviation';
     section_out=[{'Series'},loadlist(1:dimFlag);num2cell([(1:nseries0)', tares_STDDEV])];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -114,9 +105,7 @@ if FLAGS.print == 1 || FLAGS.print==1
         fprintf('\n')
         disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
     end
-    %     calib_algebraic_Tares_stdev = [series_table, calib_algebraic_Tares_stdev]
     
-    %    calib_mean_algebraic_Resids_sqrd = array2table((resSquare'./numpts0)','VariableNames',loadlist(1:dimFlag))
     output_name{1}='Mean Load Residual Squared';
     section_out=[load_line;cell(1),num2cell((resSquare'./numpts)')];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -127,7 +116,6 @@ if FLAGS.print == 1 || FLAGS.print==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    %    calib_algebraic_Pcnt_Capacity_Max_Mag_Load_Resids = array2table(perGoop,'VariableNames',loadlist(1:dimFlag))
     output_name{1}='Percent Load Capacity of Maximum Residual';
     section_out=[load_line;cell(1),num2cell(perGoop)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -138,7 +126,6 @@ if FLAGS.print == 1 || FLAGS.print==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    %    calib_algebraic_Std_Dev_pcnt = array2table(stdDevPercentCapacity,'VariableNames',loadlist(1:dimFlag))
     output_name{1}='Percent Load Capacity of Residual Standard Deviation';
     section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -149,7 +136,6 @@ if FLAGS.print == 1 || FLAGS.print==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    %    calib_algebraic_Max_Load_Resids = array2table(maxTargets,'VariableNames',loadlist(1:dimFlag))
     output_name{1}='Maximum Load Residual';
     section_out=[load_line;cell(1),num2cell(maxTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -160,7 +146,6 @@ if FLAGS.print == 1 || FLAGS.print==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    %    calib_algebraic_Min_Load_Resids = array2table(minTargets,'VariableNames',loadlist(1:dimFlag))
     output_name{1}='Minimum Load Residual';
     section_out=[load_line;cell(1),num2cell(minTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -171,7 +156,6 @@ if FLAGS.print == 1 || FLAGS.print==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    %    calib_algebraic_Ratio_Max_Mag_Load_Resid_and_Std_Dev = array2table(ratioGoop,'VariableNames',loadlist(1:dimFlag))
     output_name{1}='Ratio (Maximum Load Residual)/(Load Residual Standard Deviation)';
     section_out=[load_line;cell(1),num2cell(ratioGoop)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -181,12 +165,7 @@ if FLAGS.print == 1 || FLAGS.print==1
         fprintf('\n')
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
-    
-    % Prints the minmaxband
-    %    calib_alg_per_minmaxband = array2table(theminmaxband,'VariableNames',loadlist(1:dimFlag))
-    %     output_name{1}='Percent Load Capacity of Band Between Min and Max Residual';
-    %     calib_output=[calib_output;output_name;load_line;cell(1),num2cell(theminmaxband);empty_cells];
-    
+
     %Print Outlier Data:
     if strcmp(section,{'Calibration Algebraic'})==1 && FLAGS.balOut==1
         output_name{1}='Outlier Information:';
@@ -208,7 +187,6 @@ if FLAGS.print == 1 || FLAGS.print==1
             end
             fprintf('\n')
         end
-        
         output_name{1}='Channel Specific Outlier Summary:';
         channel_N_out=zeros(1,dimFlag);
         for i=1:dimFlag
@@ -255,7 +233,6 @@ end
 if FLAGS.res == 1
     figure('Name',char(strcat(section,{' '},'Model; Residuals of Load Versus Data Point Index')),'NumberTitle','off','WindowState','maximized')
     plotResPages(series0, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
-    %    hold off
 end
 
 %% OUTPUT HISTOGRAM PLOTS
@@ -289,7 +266,6 @@ end
 %% Algebraic Validation Specific Outputs
 if strcmp(section,{'Validation Algebraic'})==1
     if FLAGS.excel == 1
-        %%%%
         filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
         %        csvwrite(filename,aprxINminGZvalid)
         dlmwrite(filename,aprxINminGZvalid,'precision','%.16f');

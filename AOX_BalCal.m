@@ -326,7 +326,7 @@ end
 section={'Calibration Algebraic'};
 newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix,'balfitANOVA',balfitANOVA);
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-alg_output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,uniqueOut)
+output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,uniqueOut)
 
 %END CALIBRATION DIRECT APPROACH ALGEBRAIC SECTION
 %%
@@ -407,12 +407,10 @@ if FLAGS.balCal == 2
     
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
-%     calib_GRBF_output(FLAGS,targetRes2,loadCapacities,series0,loadlist,aprxINminGZ2,wHist,cHist,centerIndexHist,numBasis,taresGRBF,taresGRBFSTDEV,dainputscalib,dimFlag,nseries0,resSquare2,numpts0);
-    
     section={'Calibration GRBF'};
     newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist,'numBasis',numBasis);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-    alg_output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,uniqueOut)
+    output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,uniqueOut)
 
 end
 %END CALIBRATION GRBF SECTION
@@ -479,7 +477,7 @@ if FLAGS.balVal == 1
     newStruct=struct('aprxINminGZvalid',aprxINminGZvalid);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     section={'Validation Algebraic'};
-    alg_output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,seriesvalid,excessVecvalidkeep,dimFlag,voltagelist,reslist,uniqueOut)
+    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,seriesvalid,excessVecvalidkeep,dimFlag,voltagelist,reslist,uniqueOut)
 
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
     
@@ -529,14 +527,10 @@ if FLAGS.balVal == 1
         
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
-%         valid_GRBF_output(FLAGS,targetResvalid,targetRes2valid,loadCapacitiesvalid,loadlist,dimFlagvalid,numBasis,validSeries,aprxINminGZ2valid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,resSquare2valid,numptsvalid);
-       
         section={'Validation GRBF'};
         newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-        alg_output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,uniqueOut)
-
-    
+        output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,uniqueOut)
     end
     %END GRBF SECTION FOR VALIDATION
 end
