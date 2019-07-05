@@ -22,7 +22,7 @@ thresholdValue = numSTD * (out_standardDev) - out_meanValue;
 outlierIndices = abs(normtargetRes) > thresholdValue;
 
 [rowOut,colOut]=find(outlierIndices); %Find row and column indices of outliers
-% 
+%
 % % ID outlier rows :
 % zero_counter = 1;
 % for k1 = 1:numpts0

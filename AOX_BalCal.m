@@ -198,10 +198,6 @@ if FLAGS.balOut == 1
         
         %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
         [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
-        if FLAGS.anova==1
-            filename = 'Testing_Sig.csv';
-            dlmwrite(filename,balfitANOVA(1).sig,'precision','%.16f');
-        end
         %%% Balfit Stats and Matrix AJM 5_31_19
         
         % APPROXIMATION
@@ -210,7 +206,7 @@ if FLAGS.balOut == 1
         aprxIN = comIN0*xcalib;
         
         % RESIDUAL
-        targetRes = targetMatrix0-aprxIN;       
+        targetRes = targetMatrix0-aprxIN;
     end
 end
 
@@ -232,12 +228,6 @@ balfit_D1 = zeros(dimFlag,dimFlag); % AJM 5_31_19
 balfit_INTERCEPT = globalZeros; % AJM 6_14_19
 balfit_C1INVC2 = balfitxcalib((dimFlag+1:nterms), :)*balfit_C1INV; % AJM 5_31_19
 balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_D1 ; balfit_C1INVC2 ];
-
-filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
-dlmwrite(filename,balfit_regress_matrix,'precision','%.16f');
-fprintf('\nBALFIT DATA REDUCTION MATRIX IN AMES FORMAT FILE: ');
-fprintf(filename);
-fprintf('\n');
 %%% Balfit Stats and Matrix AJM 5_31_19
 
 %Start uncertainty section
@@ -269,9 +259,9 @@ end
 %OUTPUT FUNCTION
 %Function creates all outputs for calibration, algebraic section
 section={'Calibration Algebraic'};
-newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA);
+newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix);
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,uniqueOut)
+output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
 
 %END CALIBRATION DIRECT APPROACH ALGEBRAIC SECTION
 %%
@@ -353,10 +343,10 @@ if FLAGS.balCal == 2
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
-    newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist,'numBasis',numBasis);
+    newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-    output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,uniqueOut)
-
+    output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+    
 end
 %END CALIBRATION GRBF SECTION
 
@@ -422,8 +412,8 @@ if FLAGS.balVal == 1
     newStruct=struct('aprxINminGZvalid',aprxINminGZvalid);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     section={'Validation Algebraic'};
-    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,seriesvalid,excessVecvalidkeep,dimFlag,voltagelist,reslist,uniqueOut)
-
+    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,seriesvalid,excessVecvalidkeep,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+    
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
     
     %%
@@ -436,7 +426,7 @@ if FLAGS.balVal == 1
         
         %Initialize structure for unique outputs for section
         uniqueOut=struct();
-
+        
         targetRes2valid = targetResvalid;
         aprxINminGZ2valid = aprxINminGZvalid;
         
@@ -473,9 +463,9 @@ if FLAGS.balVal == 1
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         section={'Validation GRBF'};
-        newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid,'numBasis',numBasis);
+        newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-        output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,uniqueOut)
+        output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,numBasis,uniqueOut)
     end
     %END GRBF SECTION FOR VALIDATION
 end
@@ -504,14 +494,15 @@ if FLAGS.balApprox == 1
     aprxINapprox = comINapprox*coeff;        %to find approximation AJM111516
     aprxINminGZapprox = aprxINapprox;
     
+    %OUTPUT
     fprintf('\n ********************************************************************* \n');
     if FLAGS.excel == 1
+        %Output approximation load approximation
         filename = 'GLOBAL_ALG_APPROX.csv';
-        csvwrite(filename,aprxINminGZapprox)
-        dlmwrite(filename,aprxINminGZapprox,'precision','%.16f');
-        fprintf('\n APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION FILE: ');
-        fprintf(filename); 
-        fprintf('\n');
+        input=aprxINminGZapprox;
+        precision='%.16f';
+        description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
+        print_dlmwrite(filename,input,precision,description);
     else
         fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
     end
@@ -538,14 +529,15 @@ if FLAGS.balApprox == 1
             
         end
         
+        %OUTPUT
         fprintf('\n ********************************************************************* \n');
         if FLAGS.excel == 1
+            %Output approximation load approximation
             filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
-            csvwrite(filename,aprxINminGZ2approx)
-            dlmwrite(filename,aprxINminGZ2approx,'precision','%.16f');
-            fprintf('\n APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION FILE: ');
-            fprintf(filename);
-            fprintf('\n');
+            input=aprxINminGZ2approx;
+            precision='%.16f';
+            description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
+            print_dlmwrite(filename,input,precision,description);
         else
             fprintf('\nAPPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
         end
