@@ -228,7 +228,7 @@ if FLAGS.print == 1 || FLAGS.disp==1
             sheet=contains(section,'GRBF')+1; %Set sheet to print to: 1 for algebraic, 2 for GRBF
             writetable(cell2table(csv_output),char(filename),'writevariablenames',0,'Sheet',sheet)
             %Write filename to command window
-            fprintf('\n'); fprintf(char(upper(strcat(section,{' '}, 'Model Result Statistics File:', {' '})))); fprintf(char(filename)); fprintf(', Sheet: '); fprintf(char(num2str(sheet))); fprintf('\n')
+            fprintf('\n'); fprintf(char(upper(strcat(section,{' '}, 'MODEL REPORT FILE:', {' '})))); fprintf(char(filename)); fprintf(', Sheet: '); fprintf(char(num2str(sheet))); fprintf('\n')
         catch ME
             fprintf('\nUNABLE TO PRINT PERFORMANCE PARAMETER XLSX FILE. ');
             if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
@@ -336,11 +336,13 @@ if strcmp(section,{'Calibration Algebraic'})==1
         warning('on', 'MATLAB:xlswrite:AddSheet')
         
         %Output recommended custom equation
-        filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
-        input=RECOMM_ALG_EQN;
-        precision='%.8f';
-        description='DIRECT METHOD ANOVA RECOMMENDED CUSTOM EQUATION MATRIX';
-        print_dlmwrite(filename,input,precision,description);
+        if FLAGS.Rec_Model==1
+            filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
+            input=RECOMM_ALG_EQN;
+            precision='%.8f';
+            description='DIRECT METHOD ANOVA RECOMMENDED CUSTOM EQUATION MATRIX';
+            print_dlmwrite(filename,input,precision,description);
+        end
     end
     %%% ANOVA Stats AJM 6_8_19
     
@@ -376,24 +378,27 @@ if strcmp(section,{'Calibration Algebraic'})==1
             BALFIT_REGRESS_COEFFS_1 = array2table(balfitANOVA1([1:nterms],:),'VariableNames',balfitregresslist(1:7));
         end
         
-        warning('off', 'MATLAB:xlswrite:AddSheet')
-        filename = 'BALFIT_ANOVA_STATS.xlsx';
-        try
-            for k=1:dimFlag
-                writetable(BALFIT_STAT_VOLTAGE_1,filename,'Sheet',k,'Range','A1');
-                writetable(BALFIT_REGRESS_COEFFS_1,filename,'Sheet',k,'Range','A4');
+        if FLAGS.BALFIT_ANOVA==1
+            warning('off', 'MATLAB:xlswrite:AddSheet')
+            filename = 'BALFIT_ANOVA_STATS.xlsx';
+            try
+                for k=1:dimFlag
+                    writetable(BALFIT_STAT_VOLTAGE_1,filename,'Sheet',k,'Range','A1');
+                    writetable(BALFIT_REGRESS_COEFFS_1,filename,'Sheet',k,'Range','A4');
+                end
+                fprintf('\nBALFIT ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n');
+                %filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
+                %dlmwrite(filename,BALFIT_RECOMM_ALG_EQN,'precision','%.8f');
+            catch ME
+                fprintf('\nUNABLE TO PRINT BALFIT ANOVA STATISTICS FILE. ');
+                if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
+                    fprintf('ENSURE "'); fprintf(char(filename)); fprintf('" IS NOT OPEN AND TRY AGAIN');
+                end
+                fprintf('\n')
             end
-            fprintf('\nBALFIT ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n');
-            %filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
-            %dlmwrite(filename,BALFIT_RECOMM_ALG_EQN,'precision','%.8f');
-        catch ME
-            fprintf('\nUNABLE TO PRINT BALFIT ANOVA STATISTICS FILE. ');
-            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
-                fprintf('ENSURE "'); fprintf(char(filename)); fprintf('" IS NOT OPEN AND TRY AGAIN');
-            end
-            fprintf('\n')
+            warning('on', 'MATLAB:xlswrite:AddSheet')
         end
-        warning('on', 'MATLAB:xlswrite:AddSheet')
+        
     end
     
     if FLAGS.anova==1
@@ -404,12 +409,15 @@ if strcmp(section,{'Calibration Algebraic'})==1
         print_dlmwrite(filename,input,precision,description);
     end
     
-    filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
-    input=balfit_regress_matrix;
-    precision='%.16f';
-    description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
-    print_dlmwrite(filename,input,precision,description);
-    %%% Balfit Stats and Matrix AJM 5_31_19
+    if FLAGS.BALFIT_Matrix==1
+        filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
+        input=balfit_regress_matrix;
+        precision='%.16f';
+        description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
+        print_dlmwrite(filename,input,precision,description);
+        %%% Balfit Stats and Matrix AJM 5_31_19
+    end
+    
     
     if FLAGS.excel == 1
         %Output calibration load approximation

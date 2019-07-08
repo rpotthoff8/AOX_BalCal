@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 05-Jul-2019 13:31:14
+% Last Modified by GUIDE v2.5 08-Jul-2019 09:03:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -167,6 +167,10 @@ if exist(fileName,'file')
         set(handles.anova_FLAGcheck,'Value',default.anova);
         anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
         set(handles.loadPI_FLAGcheck,'Value',default.loadPI);
+        set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
+        set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
+        set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
+
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -275,6 +279,9 @@ outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
 outStruct.voltTrust = str2num(get(handles.voltTrust,'String'));
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
+outStruct.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
+outStruct.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
+outStruct.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 
 
 cal.type = 'calibrate';
@@ -1228,6 +1235,10 @@ default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
 default.voltTrust=get(handles.voltTrust,'String');
 default.anova = get(handles.anova_FLAGcheck,'Value');
 default.loadPI = get(handles.loadPI_FLAGcheck,'Value');
+default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
+default.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
+default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
+
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
@@ -1849,8 +1860,14 @@ function anova_FLAGcheck_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of anova_FLAGcheck
 if get(hObject,'Value') == 0
     set(handles.loadPI_FLAGcheck,'Enable','off','Value',0);
+    set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','off','Value',0);
+    set(handles.Rec_Model_FLAGcheck,'Enable','off','Value',0);
+    
 else
     set(handles.loadPI_FLAGcheck,'Enable','on');
+    set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','on');
+    set(handles.Rec_Model_FLAGcheck,'Enable','on');
+    
 end
 
 % --- Executes on button press in loadPI_FLAGcheck.
@@ -1861,3 +1878,30 @@ function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of loadPI_FLAGcheck
 
+
+
+% --- Executes on button press in BALFIT_Matrix_FLAGcheck.
+function BALFIT_Matrix_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to BALFIT_Matrix_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of BALFIT_Matrix_FLAGcheck
+
+
+% --- Executes on button press in BALFIT_ANOVA_FLAGcheck.
+function BALFIT_ANOVA_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to BALFIT_ANOVA_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of BALFIT_ANOVA_FLAGcheck
+
+
+% --- Executes on button press in Rec_Model_FLAGcheck.
+function Rec_Model_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to Rec_Model_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Rec_Model_FLAGcheck
