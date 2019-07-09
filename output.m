@@ -219,14 +219,14 @@ if FLAGS.print == 1 || FLAGS.disp==1
     %Write Statistics to xlsx file
     if FLAGS.print==1
         warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
-        filename=strcat(strtok(section),{' '},'Statistics.xlsx');
+        filename=char(strcat(strtok(section),{' '},'Report.xlsx'));
         try
             if contains(section,'Algebraic')==1
                 delete(char(filename))
             end
             %Print statisitics
             sheet=contains(section,'GRBF')+1; %Set sheet to print to: 1 for algebraic, 2 for GRBF
-            writetable(cell2table(csv_output),char(filename),'writevariablenames',0,'Sheet',sheet)
+            writetable(cell2table(csv_output),filename,'writevariablenames',0,'Sheet',sheet,'UseExcel', false)
             %Write filename to command window
             fprintf('\n'); fprintf(char(upper(strcat(section,{' '}, 'MODEL REPORT FILE:', {' '})))); fprintf(char(filename)); fprintf(', Sheet: '); fprintf(char(num2str(sheet))); fprintf('\n')
         catch ME
@@ -235,6 +235,29 @@ if FLAGS.print == 1 || FLAGS.disp==1
                 fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
             end
             fprintf('\n')
+        end
+        
+        try %Rename excel sheets and delete extra sheets, only possible on PC
+            [~,sheets]=xlsfinfo(filename);
+            s = what;
+            e = actxserver('Excel.Application'); % # open Activex server
+            e.DisplayAlerts = false;
+            e.Visible=false;
+            ewb = e.Workbooks.Open(char(strcat(s.path,'\',filename))); % # open file (enter full path!)
+            
+            if contains(section,'Algebraic')==1
+                ewb.Worksheets.Item(sheet).Name = 'Algebraic Results'; % # rename 1st sheet
+                %cycle through, deleting all sheets other than the 1st (Algebraic) sheet
+                for i=sheet+1:max(size(sheets))
+                    ewb.Sheets.Item(sheet+1).Delete;  %Delete 2nd sheet
+                end
+            elseif contains(section,'GRBF')==1
+                ewb.Worksheets.Item(sheet).Name = 'GRBF Results'; % # rename 2nd sheet
+            end
+            ewb.Save % # save to the same file
+            ewb.Close
+            e.Quit
+            delete(e);
         end
         warning('on',  'MATLAB:DELETE:Permission'); warning('on', 'MATLAB:xlswrite:AddSheet'); warning('on', 'MATLAB:DELETE:FileNotFound')
     end
@@ -309,21 +332,24 @@ if strcmp(section,{'Calibration Algebraic'})==1
         loadstatlist = {'Load', 'Sum_Sqrs', 'PRESS_Stat', 'DOF', 'Mean_Sqrs', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
         regresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
         
+        STAT_LOAD=cell(dimFlag,1);
+        REGRESS_COEFFS=cell(dimFlag,1);
         for k=1:dimFlag
             RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
             manoa2(k,:) = [loadlist(k), tR2(1,k), ANOVA(k).PRESS, dsof, gee(1,k), ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_adj, ANOVA(k).R_sq_p];
             ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';
             ANOVA1_2(:,:) = [ANOVA01([1:nterms],:)];
-            STAT_LOAD = array2table(manoa2(k,:),'VariableNames',loadstatlist(1:10));
-            REGRESS_COEFFS = array2table(ANOVA1_2(:,:),'VariableNames',regresslist(1:7));
+            STAT_LOAD{k} = table2cell(array2table(manoa2(k,:),'VariableNames',loadstatlist(1:10)));
+            REGRESS_COEFFS{k} = table2cell(array2table(ANOVA1_2(:,:),'VariableNames',regresslist(1:7)));
         end
         
-        warning('off', 'MATLAB:xlswrite:AddSheet')
+        warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
         filename = 'DIRECT_ANOVA_STATS.xlsx';
         try
+            delete(char(filename))
             for k=1:dimFlag
-                writetable(STAT_LOAD,filename,'Sheet',k,'Range','A1');
-                writetable(REGRESS_COEFFS,filename,'Sheet',k,'Range','A4');
+                writetable(cell2table(STAT_LOAD{k},'VariableNames',loadstatlist(1:10)),filename,'Sheet',k,'Range','A1');
+                writetable(cell2table(REGRESS_COEFFS{k},'VariableNames',regresslist(1:7)),filename,'Sheet',k,'Range','A4');
             end
             fprintf('\nDIRECT METHOD ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n ');
         catch ME
@@ -333,16 +359,25 @@ if strcmp(section,{'Calibration Algebraic'})==1
             end
             fprintf('\n')
         end
-        warning('on', 'MATLAB:xlswrite:AddSheet')
+        warning('on',  'MATLAB:DELETE:Permission'); warning('on', 'MATLAB:xlswrite:AddSheet'); warning('on', 'MATLAB:DELETE:FileNotFound')
         
         %Output recommended custom equation
         if FLAGS.Rec_Model==1
             filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
-            input=RECOMM_ALG_EQN;
-            precision='%.8f';
+            recTable=customMatrix_labels(loadlist,voltagelist,dimFlag,RECOMM_ALG_EQN,FLAGS); %Get label names for custom equation matrix
             description='DIRECT METHOD ANOVA RECOMMENDED CUSTOM EQUATION MATRIX';
-            print_dlmwrite(filename,input,precision,description);
+            try
+                writetable(recTable,filename);
+                fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+            catch ME
+                fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
+                if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
+                    fprintf('ENSURE "'); fprintf(char(filename)); fprintf('" IS NOT OPEN AND TRY AGAIN')
+                end
+                fprintf('\n')
+            end
         end
+        
     end
     %%% ANOVA Stats AJM 6_8_19
     
@@ -367,6 +402,8 @@ if strcmp(section,{'Calibration Algebraic'})==1
     %balfitinterceptlist = ['Intercept', '0', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'];
     balfitinterceptlist = [1, 0, 0, 0, 0, 0, 0];
     
+    BALFIT_STAT_VOLTAGE_1=cell(dimFlag,1);
+    BALFIT_REGRESS_COEFFS_1=cell(dimFlag,1);
     if FLAGS.model ~= 4 && FLAGS.anova==1
         for k=1:dimFlag
             BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig;
@@ -374,17 +411,18 @@ if strcmp(section,{'Calibration Algebraic'})==1
             balfitANOVA_intercept1(1,:) = balfitinterceptlist(1,:);
             balfitANOVA1([1:nterms+1],:) = [balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)];
             toplayer2(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
-            BALFIT_STAT_VOLTAGE_1 = array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10));
-            BALFIT_REGRESS_COEFFS_1 = array2table(balfitANOVA1([1:nterms],:),'VariableNames',balfitregresslist(1:7));
+            BALFIT_STAT_VOLTAGE_1{k} = table2cell(array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10)));
+            BALFIT_REGRESS_COEFFS_1{k} = table2cell(array2table(balfitANOVA1([1:nterms],:),'VariableNames',balfitregresslist(1:7)));
         end
         
         if FLAGS.BALFIT_ANOVA==1
-            warning('off', 'MATLAB:xlswrite:AddSheet')
+            warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
             filename = 'BALFIT_ANOVA_STATS.xlsx';
             try
+                delete(char(filename))
                 for k=1:dimFlag
-                    writetable(BALFIT_STAT_VOLTAGE_1,filename,'Sheet',k,'Range','A1');
-                    writetable(BALFIT_REGRESS_COEFFS_1,filename,'Sheet',k,'Range','A4');
+                    writetable(cell2table(BALFIT_STAT_VOLTAGE_1{k},'VariableNames',voltagestatlist(1:10)),filename,'Sheet',k,'Range','A1');
+                    writetable(cell2table(BALFIT_REGRESS_COEFFS_1{k},'VariableNames',balfitregresslist(1:7)),filename,'Sheet',k,'Range','A4');
                 end
                 fprintf('\nBALFIT ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n');
                 %filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
@@ -396,17 +434,9 @@ if strcmp(section,{'Calibration Algebraic'})==1
                 end
                 fprintf('\n')
             end
-            warning('on', 'MATLAB:xlswrite:AddSheet')
+            warning('on',  'MATLAB:DELETE:Permission'); warning('on', 'MATLAB:xlswrite:AddSheet'); warning('on', 'MATLAB:DELETE:FileNotFound')
         end
         
-    end
-    
-    if FLAGS.anova==1
-        filename = 'Testing_Sig.csv';
-        input=balfitANOVA(1).sig;
-        precision='%.16f';
-        description='BALFIT TESTING SIG';
-        print_dlmwrite(filename,input,precision,description);
     end
     
     if FLAGS.BALFIT_Matrix==1
@@ -472,5 +502,55 @@ if strcmp(section,{'Validation GRBF'})==1
         print_dlmwrite(filename,input,precision,description);
     end
 end
+
+end
+
+
+function [recTable]=customMatrix_labels(loadlist,voltagelist,dimFlag,RECOMM_ALG_EQN,FLAGS)
+%Variable labels are voltages
+topRow=loadlist(1:dimFlag)';
+
+%Initialize counter and empty variables
+count5=1;
+block1=cell(dimFlag,1);
+block2=cell(dimFlag,1);
+block3=cell(dimFlag,1);
+block4=cell(dimFlag,1);
+block5=cell(((dimFlag-1)*dimFlag)/2,1);
+block6=cell(((dimFlag-1)*dimFlag)/2,1);
+block7=cell(((dimFlag-1)*dimFlag)/2,1);
+block8=cell(((dimFlag-1)*dimFlag)/2,1);
+block9=cell(dimFlag,1);
+block10=cell(dimFlag,1);
+
+%write text for variable names and combinations
+for i=1:dimFlag
+    block1(i)=voltagelist(i);
+    block2(i)=strcat('|',voltagelist(i),'|');
+    block3(i)=strcat(voltagelist(i),'^2');
+    block4(i)=strcat(voltagelist(i),'*|',voltagelist(i),'|');
+    
+    for j=i+1:dimFlag
+        block5(count5)=strcat(voltagelist(i),'*',voltagelist(j));
+        block6(count5)=strcat('|',voltagelist(i),'*',voltagelist(j),'|');
+        block7(count5)=strcat(voltagelist(i),'*|',voltagelist(j),'|');
+        block8(count5)=strcat('|',voltagelist(i),'|*',voltagelist(j));
+        count5=count5+1;
+    end
+    block9(i)=strcat(voltagelist(i),'^3');
+    block10(i)=strcat('|',voltagelist(i),'^3|');
+end
+
+%Select Terms based on model type selected
+if FLAGS.model==3
+    leftColumn =block1;
+elseif FLAGS.model==2
+    leftColumn=[block1;block3;block5];
+else
+    leftColumn=[block1;block2;block3;block4;block5;block6;block7;block8;block9;block10];
+end
+
+%Combine in table
+recTable=array2table(RECOMM_ALG_EQN,'VariableNames',topRow,'RowNames',leftColumn(:));
 
 end
