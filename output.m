@@ -367,7 +367,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
             recTable=customMatrix_labels(loadlist,voltagelist,dimFlag,RECOMM_ALG_EQN,FLAGS); %Get label names for custom equation matrix
             description='DIRECT METHOD ANOVA RECOMMENDED CUSTOM EQUATION MATRIX';
             try
-                writetable(recTable,filename);
+                writetable(recTable,filename,'WriteRowNames',true);
                 fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
             catch ME
                 fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
