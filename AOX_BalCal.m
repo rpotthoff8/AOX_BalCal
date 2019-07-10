@@ -114,7 +114,7 @@ end
 
 % Prints output vs. input and calculates correlations
 if FLAGS.corr == 1
-    figure('Name','Correlation plot','NumberTitle','off');
+    figure('Name','Correlation plot','NumberTitle','off','WindowState','maximized');
     correlationPlot(targetMatrix0, excessVec0, loadlist, voltagelist);
 end
 
@@ -242,7 +242,7 @@ y_hat_PI_comb=zeros(size(targetMatrix0));
 if FLAGS.anova==1
     for j=1:dimFlag
         if FLAGS.model == 4
-            beta_CI_comb(boolean(customMatrix(:,j)),j)=ANOVA(j).beta_CI;
+            beta_CI_comb(customMatrix(:,j)==1,j)=ANOVA(j).beta_CI;
         else
             beta_CI_comb(:,j)=ANOVA(j).beta_CI;
         end
