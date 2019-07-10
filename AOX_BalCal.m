@@ -114,7 +114,7 @@ end
 
 % Prints output vs. input and calculates correlations
 if FLAGS.corr == 1
-    figure('Name','Correlation plot','NumberTitle','off');
+    figure('Name','Correlation plot','NumberTitle','off','WindowState','maximized');
     correlationPlot(targetMatrix0, excessVec0, loadlist, voltagelist);
 end
 
