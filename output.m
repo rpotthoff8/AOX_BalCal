@@ -330,17 +330,18 @@ if strcmp(section,{'Calibration Algebraic'})==1
         dsof = numpts-nterms-1;
         
         loadstatlist = {'Load', 'Sum_Sqrs', 'PRESS_Stat', 'DOF', 'Mean_Sqrs', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
-        regresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
+        regresslist = {'Term_Index','Term_Name', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
         
         STAT_LOAD=cell(dimFlag,1);
         REGRESS_COEFFS=cell(dimFlag,1);
+        Term_Names=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
         for k=1:dimFlag
             RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
             manoa2(k,:) = [loadlist(k), tR2(1,k), ANOVA(k).PRESS, dsof, gee(1,k), ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_adj, ANOVA(k).R_sq_p];
             ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';
-            ANOVA1_2(:,:) = [ANOVA01([1:nterms],:)];
-            STAT_LOAD{k} = table2cell(array2table(manoa2(k,:),'VariableNames',loadstatlist(1:10)));
-            REGRESS_COEFFS{k} = table2cell(array2table(ANOVA1_2(:,:),'VariableNames',regresslist(1:7)));
+            ANOVA1_2(:,:) = num2cell([ANOVA01([1:nterms],:)]);
+            STAT_LOAD{k} = array2table(manoa2(k,:),'VariableNames',loadstatlist(1:10));
+            REGRESS_COEFFS{k} = cell2table([ANOVA1_2(:,1),Term_Names,ANOVA1_2(:,2:end)],'VariableNames',regresslist);
         end
         
         warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
@@ -348,8 +349,8 @@ if strcmp(section,{'Calibration Algebraic'})==1
         try
             delete(char(filename))
             for k=1:dimFlag
-                writetable(cell2table(STAT_LOAD{k},'VariableNames',loadstatlist(1:10)),filename,'Sheet',k,'Range','A1');
-                writetable(cell2table(REGRESS_COEFFS{k},'VariableNames',regresslist(1:7)),filename,'Sheet',k,'Range','A4');
+                writetable(STAT_LOAD{k},filename,'Sheet',k,'Range','A1');
+                writetable(REGRESS_COEFFS{k},filename,'Sheet',k,'Range','A4');
             end
             fprintf('\nDIRECT METHOD ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n ');
         catch ME
@@ -398,22 +399,23 @@ if strcmp(section,{'Calibration Algebraic'})==1
     balfitstandardDev = balfitstandardDev10';
     
     voltagestatlist = {'Voltage', 'Sum_Sqrs', 'PRESS_Stat', 'DOF', 'Mean_Sqrs', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
-    balfitregresslist = {'Term', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
+    balfitregresslist = {'Term_Index','Term_Name', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
     
     %balfitinterceptlist = ['Intercept', '0', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'];
     balfitinterceptlist = [1, 0, 0, 0, 0, 0, 0];
     
     BALFIT_STAT_VOLTAGE_1=cell(dimFlag,1);
     BALFIT_REGRESS_COEFFS_1=cell(dimFlag,1);
+    Term_Names=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'loads'); %Get label names for custom equation matrix
     if FLAGS.model ~= 4 && FLAGS.anova==1
         for k=1:dimFlag
             BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig;
             balfitANOVA01(:,:) = [totalnumcoeffs2; balfitANOVA(k).beta'; ANOVA(k).beta_CI'; balfitANOVA(k).T'; balfitANOVA(k).p_T'; balfitANOVA(k).VIF'; 1.0*balfitANOVA(k).sig']';
             balfitANOVA_intercept1(1,:) = balfitinterceptlist(1,:);
-            balfitANOVA1([1:nterms+1],:) = [balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)];
+            balfitANOVA1([1:nterms+1],:) = num2cell([balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)]);
             toplayer2(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
-            BALFIT_STAT_VOLTAGE_1{k} = table2cell(array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10)));
-            BALFIT_REGRESS_COEFFS_1{k} = table2cell(array2table(balfitANOVA1([1:nterms],:),'VariableNames',balfitregresslist(1:7)));
+            BALFIT_STAT_VOLTAGE_1{k} = array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10));
+            BALFIT_REGRESS_COEFFS_1{k} = cell2table([balfitANOVA1(1:nterms+1,1),[{'INTERCEPT'};Term_Names],balfitANOVA1(1:nterms+1,2:dimFlag+1)],'VariableNames',balfitregresslist);
         end
         
         if FLAGS.BALFIT_ANOVA==1
@@ -422,8 +424,8 @@ if strcmp(section,{'Calibration Algebraic'})==1
             try
                 delete(char(filename))
                 for k=1:dimFlag
-                    writetable(cell2table(BALFIT_STAT_VOLTAGE_1{k},'VariableNames',voltagestatlist(1:10)),filename,'Sheet',k,'Range','A1');
-                    writetable(cell2table(BALFIT_REGRESS_COEFFS_1{k},'VariableNames',balfitregresslist(1:7)),filename,'Sheet',k,'Range','A4');
+                    writetable(BALFIT_STAT_VOLTAGE_1{k},filename,'Sheet',k,'Range','A1');
+                    writetable(BALFIT_REGRESS_COEFFS_1{k},filename,'Sheet',k,'Range','A4');
                 end
                 fprintf('\nBALFIT ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n');
                 %filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
@@ -442,7 +444,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
     
     if FLAGS.BALFIT_Matrix==1
         filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
-        [leftColumn_coeff,voltRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,1,'loads'); %Get label names for custom equation matrix
+        [leftColumn_coeff,voltRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'loads'); %Get label names for custom equation matrix
         Header_cells=cell(18,dimFlag);
         dash_row=cell(1,dimFlag);
         dash_row(:,:)={'-'};
