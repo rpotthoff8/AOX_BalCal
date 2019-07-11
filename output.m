@@ -446,6 +446,8 @@ if strcmp(section,{'Calibration Algebraic'})==1
         Header_cells=cell(18,dimFlag);
         dash_row=cell(1,dimFlag);
         dash_row(:,:)={'-'};
+        Header_cells(1,1)={'DATA_REDUCTION_MATRIX_IN_AMES_FORMAT'};
+        Header_cells(5,1)={datestr(now,'yyyy-mmdd-HHMMSS')};
         Header_cells(6,1)={'Primary Load Iteration Method'};
         Header_cells(7,:)=loadlist(1:dimFlag);
         Header_cells(8,:)=loadunits;
@@ -459,34 +461,29 @@ if strcmp(section,{'Calibration Algebraic'})==1
         Header_cells(16,:)={'DEFINED'};
         Header_cells(17:18,:)=num2cell(balfit_regress_matrix(1:2,:));
         leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'ITERATION_METHOD'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_SENSITIVITY'};{'NATURAL_ZERO'};{'INTERCEPT'}]; 
-        leftColumn=[leftColumn_head;{'D0[TRANSPONSE (C1INV)]'};voltRow;{'D1[MATRIX IS NOT USED'};leftColumn_coeff(1:dimFlag);'D2[TRANSPOSE(C1INVC2)';leftColumn_coeff(dimFlag+1:end)];
+        leftColumn=[leftColumn_head;{'D0[TRANSPONSE (C1INV)]'};voltRow;{'D1[MATRIX IS NOT USED]'};leftColumn_coeff(1:dimFlag);'D2[TRANSPOSE(C1INVC2)]';leftColumn_coeff(dimFlag+1:end)];
         D0=balfit_regress_matrix(3:2+dimFlag,:);
         D1=balfit_regress_matrix(3+dimFlag:2+2*dimFlag,:);
         D2=balfit_regress_matrix(3+2*dimFlag:end,:);
         
         content=[Header_cells;dash_row;num2cell(D0);dash_row;num2cell(D1);dash_row;num2cell(D2)];
         balfit_matrix=[leftColumn,content];
-        input=balfit_regress_matrix;
+        
         precision='%.16f';
         description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
-        print_dlmwrite(filename,input,precision,description);
         %%% Balfit Stats and Matrix AJM 5_31_19
-        
         try
             %Print Results
-            writetable(cell2table(csv_output),filename,'writevariablenames',0,'Sheet',sheet,'UseExcel', false)
+            writetable(cell2table(balfit_matrix),filename,'writevariablenames',0)
             %Write filename to command window
-            fprintf('\n'); fprintf(char(upper(strcat(section,{' '}, 'MODEL REPORT FILE:', {' '})))); fprintf(char(filename)); fprintf(', Sheet: '); fprintf(char(num2str(sheet))); fprintf('\n')
+            fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
         catch ME
-            fprintf('\nUNABLE TO PRINT PERFORMANCE PARAMETER XLSX FILE. ');
-            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
+            fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
+            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
                 fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
             end
             fprintf('\n')
         end
-        
-        
-        
     end
     
     
