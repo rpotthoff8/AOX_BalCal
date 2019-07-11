@@ -112,6 +112,11 @@ else
     reslist = strcat('res',loadlist);
 end
 
+if exist('loadunits','var')==0
+    loadunits = {'lbs','in-lbs','lbs','lbs','in-lbs','lbs','in-lbs', 'in-lbs', 'in-lbs', 'in-lbs'};
+    voltunits = {'microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V'};
+end
+
 % Prints output vs. input and calculates correlations
 if FLAGS.corr == 1
     figure('Name','Correlation plot','NumberTitle','off','WindowState','maximized');
@@ -264,7 +269,7 @@ end
 %OUTPUT FUNCTION
 %Function creates all outputs for calibration, algebraic section
 section={'Calibration Algebraic'};
-newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix);
+newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix,'targetMatrix0',targetMatrix0,'loadunits',{loadunits(:)},'voltunits',{voltunits(:)});
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
 output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
 
@@ -411,6 +416,20 @@ if FLAGS.balVal == 1
     
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
+    
+    %CALCULATE PREDICTION INTERVAL FOR POINTS
+    if FLAGS.loadPI==1
+        % Creates the algebraic combination terms of the inputs.
+        % Also creates intercept terms; a different intercept for each series.        
+        comINvalid_PI=[comINvalid,zeros(size(comINvalid,1),size(comIN0,2)-size(comINvalid,2))]; %NOT SURE IF THIS IS VALID
+        for i=1:dimFlag
+            for j = 1:numptsvalid
+                loadPI_valid(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINvalid_PI(j,:)*ANOVA(i).PI.invXtX*comINvalid_PI(j,:)')));
+            end
+        end
+    end
+    
+    
     
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section

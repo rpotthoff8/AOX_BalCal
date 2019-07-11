@@ -364,7 +364,8 @@ if strcmp(section,{'Calibration Algebraic'})==1
         %Output recommended custom equation
         if FLAGS.Rec_Model==1
             filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
-            recTable=customMatrix_labels(loadlist,voltagelist,dimFlag,RECOMM_ALG_EQN,FLAGS); %Get label names for custom equation matrix
+            [leftColumn,topRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
+            recTable=array2table(RECOMM_ALG_EQN,'VariableNames',topRow,'RowNames',leftColumn(:));
             description='DIRECT METHOD ANOVA RECOMMENDED CUSTOM EQUATION MATRIX';
             try
                 writetable(recTable,filename,'WriteRowNames',true);
@@ -441,11 +442,51 @@ if strcmp(section,{'Calibration Algebraic'})==1
     
     if FLAGS.BALFIT_Matrix==1
         filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
+        [leftColumn_coeff,voltRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,1,'loads'); %Get label names for custom equation matrix
+        Header_cells=cell(18,dimFlag);
+        dash_row=cell(1,dimFlag);
+        dash_row(:,:)={'-'};
+        Header_cells(6,1)={'Primary Load Iteration Method'};
+        Header_cells(7,:)=loadlist(1:dimFlag);
+        Header_cells(8,:)=loadunits;
+        Header_cells(9,:)=num2cell(min(targetMatrix0));
+        Header_cells(10,:)=num2cell(max(targetMatrix0));
+        Header_cells(11,:)=num2cell(loadCapacities);
+        Header_cells(12,:)=voltRow;
+        Header_cells(13,:)=voltunits';
+        Header_cells(14,:)=num2cell(min(excessVec0));
+        Header_cells(15,:)=num2cell(max(excessVec0));
+        Header_cells(16,:)={'DEFINED'};
+        Header_cells(17:18,:)=num2cell(balfit_regress_matrix(1:2,:));
+        leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'ITERATION_METHOD'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_SENSITIVITY'};{'NATURAL_ZERO'};{'INTERCEPT'}]; 
+        leftColumn=[leftColumn_head;{'D0[TRANSPONSE (C1INV)]'};voltRow;{'D1[MATRIX IS NOT USED'};leftColumn_coeff(1:dimFlag);'D2[TRANSPOSE(C1INVC2)';leftColumn_coeff(dimFlag+1:end)];
+        D0=balfit_regress_matrix(3:2+dimFlag,:);
+        D1=balfit_regress_matrix(3+dimFlag:2+2*dimFlag,:);
+        D2=balfit_regress_matrix(3+2*dimFlag:end,:);
+        
+        content=[Header_cells;dash_row;num2cell(D0);dash_row;num2cell(D1);dash_row;num2cell(D2)];
+        balfit_matrix=[leftColumn,content];
         input=balfit_regress_matrix;
         precision='%.16f';
         description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
         print_dlmwrite(filename,input,precision,description);
         %%% Balfit Stats and Matrix AJM 5_31_19
+        
+        try
+            %Print Results
+            writetable(cell2table(csv_output),filename,'writevariablenames',0,'Sheet',sheet,'UseExcel', false)
+            %Write filename to command window
+            fprintf('\n'); fprintf(char(upper(strcat(section,{' '}, 'MODEL REPORT FILE:', {' '})))); fprintf(char(filename)); fprintf(', Sheet: '); fprintf(char(num2str(sheet))); fprintf('\n')
+        catch ME
+            fprintf('\nUNABLE TO PRINT PERFORMANCE PARAMETER XLSX FILE. ');
+            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
+                fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
+            end
+            fprintf('\n')
+        end
+        
+        
+        
     end
     
     
@@ -506,9 +547,19 @@ end
 end
 
 
-function [recTable]=customMatrix_labels(loadlist,voltagelist,dimFlag,RECOMM_ALG_EQN,FLAGS)
+function [leftColumn, topRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,model,combined_terms)
+
+%Determine what terms should be combined: voltages or loads;
+if strcmp(combined_terms,{'voltages'})==1
+    toplist=loadlist;
+    leftlist=voltagelist;
+else
+    toplist=voltagelist;
+    leftlist=loadlist;
+end
+
 %Variable labels are voltages
-topRow=loadlist(1:dimFlag)';
+topRow=toplist(1:dimFlag)';
 
 %Initialize counter and empty variables
 count5=1;
@@ -525,32 +576,29 @@ block10=cell(dimFlag,1);
 
 %write text for variable names and combinations
 for i=1:dimFlag
-    block1(i)=voltagelist(i);
-    block2(i)=strcat('|',voltagelist(i),'|');
-    block3(i)=strcat(voltagelist(i),'^2');
-    block4(i)=strcat(voltagelist(i),'*|',voltagelist(i),'|');
+    block1(i)=leftlist(i);
+    block2(i)=strcat('|',leftlist(i),'|');
+    block3(i)=strcat(leftlist(i),'^2');
+    block4(i)=strcat(leftlist(i),'*|',leftlist(i),'|');
     
     for j=i+1:dimFlag
-        block5(count5)=strcat(voltagelist(i),'*',voltagelist(j));
-        block6(count5)=strcat('|',voltagelist(i),'*',voltagelist(j),'|');
-        block7(count5)=strcat(voltagelist(i),'*|',voltagelist(j),'|');
-        block8(count5)=strcat('|',voltagelist(i),'|*',voltagelist(j));
+        block5(count5)=strcat(leftlist(i),'*',leftlist(j));
+        block6(count5)=strcat('|',leftlist(i),'*',leftlist(j),'|');
+        block7(count5)=strcat(leftlist(i),'*|',leftlist(j),'|');
+        block8(count5)=strcat('|',leftlist(i),'|*',leftlist(j));
         count5=count5+1;
     end
-    block9(i)=strcat(voltagelist(i),'^3');
-    block10(i)=strcat('|',voltagelist(i),'^3|');
+    block9(i)=strcat(leftlist(i),'^3');
+    block10(i)=strcat('|',leftlist(i),'^3|');
 end
 
 %Select Terms based on model type selected
-if FLAGS.model==3
+if model==3
     leftColumn =block1;
-elseif FLAGS.model==2
+elseif model==2
     leftColumn=[block1;block3;block5];
 else
     leftColumn=[block1;block2;block3;block4;block5;block6;block7;block8;block9;block10];
 end
-
-%Combine in table
-recTable=array2table(RECOMM_ALG_EQN,'VariableNames',topRow,'RowNames',leftColumn(:));
 
 end

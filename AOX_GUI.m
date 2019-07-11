@@ -1469,14 +1469,19 @@ switch cva.type
             %             [~,loadlabels,~] = csvread(cal.Path,[l_label1,':',l_label2]);
             
             %START: new approach, JRP 11 June 19
-            file=fopen(cal.Path);
-            label_text1 = textscan(file,'%s','Delimiter','\n');
-            splitlabelRow=cellstr(strsplit(string(label_text1{1}{cal.CSV(1,1)-3}),',','CollapseDelimiters',false));
-            fclose(file);
-            loadlabels=splitlabelRow(cal.CSV(1,2)+1:cal.loadend(2)+1);
-            voltlabels=splitlabelRow(cal.CSV(2,2)+1:cal.voltend(2)+1);
-            clear file label_text1 splitlabelRow
+            file=fopen(cal.Path); %open file
+            label_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
+            splitlabelRow=cellstr(strsplit(string(label_text1{1}{cal.CSV(1,1)-3}),',','CollapseDelimiters',false)); %Extract row with labels
+            fclose(file); %close file
+            loadlabels=splitlabelRow(cal.CSV(1,2)+1:cal.loadend(2)+1); %extract load labels
+            voltlabels=splitlabelRow(cal.CSV(2,2)+1:cal.voltend(2)+1); %extract voltage labels
+            % read in load and voltage units, JRP 11 July 19
+            splitunitRow=cellstr(strsplit(string(label_text1{1}{cal.CSV(1,1)-1}),',','CollapseDelimiters',false)); %extract row with units
+            loadunits=splitunitRow(cal.CSV(1,2)+1:cal.loadend(2)+1); %extract load units 
+            voltunits=splitunitRow(cal.CSV(2,2)+1:cal.voltend(2)+1); %extract voltage units
+            clear file label_text1 splitlabelRow splitunitRow
             %END: new approach, JRP 11 June 19
+           
             
             %             v_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(2,2)]);
             %             v_label2         = rc2a1([cal.CSV(1,1)-4, cal.voltend(2)]);
