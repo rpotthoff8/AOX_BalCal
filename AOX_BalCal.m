@@ -76,6 +76,7 @@ FLAGS.loadPI = out.loadPI;
 FLAGS.BALFIT_Matrix=out.BALFIT_Matrix;
 FLAGS.BALFIT_ANOVA=out.BALFIT_ANOVA;
 FLAGS.Rec_Model=out.Rec_Model;
+anova_pct=out.anova_pct;
 
 
 %                       END USER INPUT SECTION
@@ -170,8 +171,8 @@ targetMatrix = targetMatrix0;
 comIN = comIN0;
 
 %Calculate xcalib (coefficients)
-[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
-[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct);
+[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct);
 
 % APPROXIMATION
 % define the approximation for inputs minus global zeros (includes
@@ -204,10 +205,10 @@ if FLAGS.balOut == 1
         nseries0 = length(s_1st0);
         
         %Calculate xcalib (coefficients)
-        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct);
         
         %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
+        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct); % AJM 5_31_19
         %%% Balfit Stats and Matrix AJM 5_31_19
         
         % APPROXIMATION
@@ -246,11 +247,7 @@ beta_CI_comb=zeros(size(xcalib,1),dimFlag);
 y_hat_PI_comb=zeros(size(targetMatrix0));
 if FLAGS.anova==1
     for j=1:dimFlag
-        if FLAGS.model == 4
-            beta_CI_comb(boolean(customMatrix(:,j)),j)=ANOVA(j).beta_CI;
-        else
-            beta_CI_comb(:,j)=ANOVA(j).beta_CI;
-        end
+        beta_CI_comb(:,j)=ANOVA(j).beta_CI;
         y_hat_PI_comb(:,j)=ANOVA(j).y_hat_PI;
     end
 end

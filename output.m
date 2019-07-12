@@ -322,7 +322,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
     end
     
     %%% ANOVA Stats AJM 6_12_19
-    if FLAGS.model ~= 4 && FLAGS.anova==1
+    if FLAGS.anova==1
         
         totalnum = nterms+nseries0;
         totalnumcoeffs = [1:totalnum];
@@ -407,7 +407,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
     BALFIT_STAT_VOLTAGE_1=cell(dimFlag,1);
     BALFIT_REGRESS_COEFFS_1=cell(dimFlag,1);
     Term_Names=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'loads'); %Get label names for custom equation matrix
-    if FLAGS.model ~= 4 && FLAGS.anova==1
+    if FLAGS.anova==1
         for k=1:dimFlag
             BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig;
             balfitANOVA01(:,:) = [totalnumcoeffs2; balfitANOVA(k).beta'; ANOVA(k).beta_CI'; balfitANOVA(k).T'; balfitANOVA(k).p_T'; balfitANOVA(k).VIF'; 1.0*balfitANOVA(k).sig']';
@@ -452,12 +452,12 @@ if strcmp(section,{'Calibration Algebraic'})==1
         Header_cells(5,1)={datestr(now,'yyyy-mmdd-HHMMSS')};
         Header_cells(6,1)={'Primary Load Iteration Method'};
         Header_cells(7,:)=loadlist(1:dimFlag);
-        Header_cells(8,:)=loadunits;
+        Header_cells(8,:)=loadunits(1:dimFlag);
         Header_cells(9,:)=num2cell(min(targetMatrix0));
         Header_cells(10,:)=num2cell(max(targetMatrix0));
         Header_cells(11,:)=num2cell(loadCapacities);
         Header_cells(12,:)=voltRow;
-        Header_cells(13,:)=voltunits';
+        Header_cells(13,:)=voltunits(1:dimFlag)';
         Header_cells(14,:)=num2cell(min(excessVec0));
         Header_cells(15,:)=num2cell(max(excessVec0));
         Header_cells(16,:)={'DEFINED'};

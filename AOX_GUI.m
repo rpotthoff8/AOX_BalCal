@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 08-Jul-2019 09:03:34
+% Last Modified by GUIDE v2.5 12-Jul-2019 13:06:13
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -170,7 +170,7 @@ if exist(fileName,'file')
         set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
         set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
         set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
-
+        set(handles.anova_pct,'String',default.anova_pct);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -282,7 +282,7 @@ outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 outStruct.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
 outStruct.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 outStruct.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
-
+outStruct.anova_pct= str2num(get(handles.anova_pct,'String'));
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -1238,6 +1238,7 @@ default.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
 default.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
+default.anova_pct = get(handles.anova_pct,'String');
 
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
@@ -1292,9 +1293,12 @@ function outlier_FLAGcheck_Callback(hObject, eventdata, handles)
 if get(hObject,'Value') == 1
     set(handles.zeroed_FLAGcheck,'Enable','on');
     set(handles.numSTD,'Enable','on');
+    set(handles.std_text,'Enable','on');
+
 else
     set(handles.zeroed_FLAGcheck,'Enable','off');
     set(handles.numSTD,'Enable','off');
+    set(handles.std_text,'Enable','off');
 end
 
 
@@ -1867,12 +1871,16 @@ if get(hObject,'Value') == 0
     set(handles.loadPI_FLAGcheck,'Enable','off','Value',0);
     set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','off','Value',0);
     set(handles.Rec_Model_FLAGcheck,'Enable','off','Value',0);
+    set(handles.anova_pct,'Enable','off');
+    set(handles.anova_pct_text,'Enable','off');
     
 else
     set(handles.loadPI_FLAGcheck,'Enable','on');
     set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','on');
     set(handles.Rec_Model_FLAGcheck,'Enable','on');
-    
+    set(handles.anova_pct,'Enable','on');
+    set(handles.anova_pct_text,'Enable','on');
+
 end
 
 % --- Executes on button press in loadPI_FLAGcheck.
@@ -1910,3 +1918,59 @@ function Rec_Model_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of Rec_Model_FLAGcheck
+
+% --- Executes during object creation, after setting all properties.
+function anova_pct_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to anova_pct_text (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function anova_pct_Callback(hObject, eventdata, handles)
+% hObject    handle to anova_pct_text (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of anova_pct_text as text
+%        str2double(get(hObject,'String')) returns contents of anova_pct_text as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function anova_pct_text_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to anova_pct_text (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit57_Callback(hObject, eventdata, handles)
+% hObject    handle to anova_pct_text (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of anova_pct_text as text
+%        str2double(get(hObject,'String')) returns contents of anova_pct_text as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit57_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to anova_pct_text (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
