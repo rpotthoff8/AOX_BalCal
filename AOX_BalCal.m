@@ -76,6 +76,7 @@ FLAGS.loadPI = out.loadPI;
 FLAGS.BALFIT_Matrix=out.BALFIT_Matrix;
 FLAGS.BALFIT_ANOVA=out.BALFIT_ANOVA;
 FLAGS.Rec_Model=out.Rec_Model;
+anova_pct=out.anova_pct;
 
 
 %                       END USER INPUT SECTION
@@ -110,6 +111,11 @@ else
     loadlist = {'NF','BM','S1','S2','RM','AF','PLM', 'PCM', 'MLM', 'MCM'};
     voltagelist = {'rNF','rBM','rS1','rS2','rRM','rAF','rPLM','rPCM','rMLM','rMCM'};
     reslist = strcat('res',loadlist);
+end
+
+if exist('loadunits','var')==0
+    loadunits = {'lbs','in-lbs','lbs','lbs','in-lbs','lbs','in-lbs', 'in-lbs', 'in-lbs', 'in-lbs'};
+    voltunits = {'microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V'};
 end
 
 % Prints output vs. input and calculates correlations
@@ -165,8 +171,8 @@ targetMatrix = targetMatrix0;
 comIN = comIN0;
 
 %Calculate xcalib (coefficients)
-[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
-[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct);
+[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct);
 
 % APPROXIMATION
 % define the approximation for inputs minus global zeros (includes
@@ -199,10 +205,10 @@ if FLAGS.balOut == 1
         nseries0 = length(s_1st0);
         
         %Calculate xcalib (coefficients)
-        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova);
+        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct);
         
         %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS.model,customMatrix,FLAGS.anova); % AJM 5_31_19
+        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct); % AJM 5_31_19
         %%% Balfit Stats and Matrix AJM 5_31_19
         
         % APPROXIMATION
@@ -241,11 +247,7 @@ beta_CI_comb=zeros(size(xcalib,1),dimFlag);
 y_hat_PI_comb=zeros(size(targetMatrix0));
 if FLAGS.anova==1
     for j=1:dimFlag
-        if FLAGS.model == 4
-            beta_CI_comb(customMatrix(:,j)==1,j)=ANOVA(j).beta_CI;
-        else
-            beta_CI_comb(:,j)=ANOVA(j).beta_CI;
-        end
+        beta_CI_comb(:,j)=ANOVA(j).beta_CI;
         y_hat_PI_comb(:,j)=ANOVA(j).y_hat_PI;
     end
 end
@@ -264,7 +266,7 @@ end
 %OUTPUT FUNCTION
 %Function creates all outputs for calibration, algebraic section
 section={'Calibration Algebraic'};
-newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix);
+newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix,'targetMatrix0',targetMatrix0,'loadunits',{loadunits(:)},'voltunits',{voltunits(:)});
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
 output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
 
@@ -411,6 +413,20 @@ if FLAGS.balVal == 1
     
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
+    
+    %CALCULATE PREDICTION INTERVAL FOR POINTS
+    if FLAGS.loadPI==1
+        % Creates the algebraic combination terms of the inputs.
+        % Also creates intercept terms; a different intercept for each series.        
+        comINvalid_PI=[comINvalid,zeros(size(comINvalid,1),size(comIN0,2)-size(comINvalid,2))]; %NOT SURE IF THIS IS VALID
+        for i=1:dimFlag
+            for j = 1:numptsvalid
+                loadPI_valid(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINvalid_PI(j,:)*ANOVA(i).PI.invXtX*comINvalid_PI(j,:)')));
+            end
+        end
+    end
+    
+    
     
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section

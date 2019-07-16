@@ -1,4 +1,4 @@
-function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,model_FLAG,customMatrix, anova_Flag)
+function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix, anova_pct)
 %Function calculates coefficient matrix (xcalib)
 
 %Orders data by series (needed for bootstrap)
@@ -26,7 +26,7 @@ targetMatrix=targetMatrix(sortI,:);
     for k = 1:dimFlag
         comIN_k = comIN;
         
-        if model_FLAG == 4
+        if FLAGS.model == 4
             comIN_k(:,customMatrix(:,k)==0) = [];
         end
 
@@ -36,19 +36,32 @@ targetMatrix=targetMatrix(sortI,:);
         else
             xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
         end
-        if model_FLAG == 4
+        if FLAGS.model == 4
             xcalib(customMatrix(:,k)==1,k) = xcalib_k;
         else
             xcalib(:,k) = xcalib_k;
         end
         
         %Call Anova
-        if anova_Flag==1
-            ANOVA(k)=anova(comIN_k,targetMatrix(:,k));
+        if FLAGS.anova==1
+            ANOVA(k)=anova(comIN_k,targetMatrix(:,k),0,anova_pct);
         end
     end
-        if anova_Flag==0
-            ANOVA='ANOVA NOT PERFORMED';
-        end
     
+    if FLAGS.anova==0
+        ANOVA='ANOVA NOT PERFORMED';
+    else
+        if FLAGS.model==4 %If custom equation, expand ANOVA statistics to standard 96 term matrix
+            ANOVA_exp=ANOVA;
+            ExpandList=["beta","beta_CI","T","p_T","VIF","sig"]; %List of ANOVA structure elements that should be expanded
+            for i=1:size(ExpandList,2)
+                for j=1:dimFlag
+                    eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'=zeros(size(xcalib,1),1);')); %initialize zeros
+                    eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'(customMatrix(:,j)==1,:)=ANOVA(',num2str(j),').',ExpandList(i),';')); %fill with ANOVA statistics
+                end
+            end
+            ANOVA=ANOVA_exp;
+        end
+        
+    end
 end 
