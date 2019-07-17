@@ -1,5 +1,4 @@
 function ANOVA = anova(X,y,test_FLAG,pct)
-fprintf('\nCalculating The Statistics ...\n')
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not

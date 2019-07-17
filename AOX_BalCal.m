@@ -171,8 +171,8 @@ targetMatrix = targetMatrix0;
 comIN = comIN0;
 
 %Calculate xcalib (coefficients)
-[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct);
-[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct);
+[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlabels,'Direct');
+[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlabels,'BALFIT');
 
 % APPROXIMATION
 % define the approximation for inputs minus global zeros (includes
@@ -187,14 +187,15 @@ targetRes = targetMatrix0-aprxIN;
 if FLAGS.balOut == 1
     
     %Identify outliers based on residuals
+    fprintf('\n Identifying Outliers....')
     [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut]=ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS);
-    
     newStruct=struct('num_outliers',num_outliers,'prcnt_outliers',prcnt_outliers,'rowOut',rowOut,'colOut',colOut,'numSTD',numSTD);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-    
+    fprintf('Complete\n')
+        
     % Use the reduced input and target files
     if FLAGS.zeroed == 1
-        
+        fprintf('\n Removing Outliers....')
         % Remove outlier rows for recalculation and all future calculations:
         numpts0 =  numpts0 - num_outliers;
         targetMatrix0(OUTLIER_ROWS,:) = [];
@@ -203,12 +204,13 @@ if FLAGS.balOut == 1
         comIN0(OUTLIER_ROWS,:) = [];
         [~,s_1st0,~] = unique(series0);
         nseries0 = length(s_1st0);
-        
+        fprintf('Complete\n')
+
         %Calculate xcalib (coefficients)
-        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct);
+        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlabels,'Direct');
         
         %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct); % AJM 5_31_19
+        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlabels,'BALFIT'); % AJM 5_31_19
         %%% Balfit Stats and Matrix AJM 5_31_19
         
         % APPROXIMATION
