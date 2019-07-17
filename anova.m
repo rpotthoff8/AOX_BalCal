@@ -63,7 +63,7 @@ e = y - y_hat;
 %% Covariance matrix and standard error
 % The covariance matrix is calculated as C = sigma_hat^2 (X' X)^-1
 % sigma_hat is an estimate of the variance (std dev), based on the MSE
-%% 
+%%
 % (mean square error).
 % MSE = SSE / dof(SSE)
 % SSE is the sum square error, and dof() is the degrees of freedom of that
@@ -194,7 +194,7 @@ ANOVA.R_sq = R_sq;         % R-square
 ANOVA.R_sq_adj = R_sq_adj; % Adjusted R-Square
 ANOVA.R_sq_p = R_sq_p;     % PRESS R-square
 
-ANOVA.beta_CI  = beta_CI;  % Coefficient Confidence Intervals 
+ANOVA.beta_CI  = beta_CI;  % Coefficient Confidence Intervals
 ANOVA.T = T;               % T-statistic of coefficients
 ANOVA.p_T = p_T;           % P-value of coefficients
 ANOVA.VIF = VIF;           % Variance Inflation Factors
@@ -205,7 +205,7 @@ ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
 % Saving variables to calculate prediction intervals live in approximation
 ANOVA.PI.T_cr = T_cr;
 ANOVA.PI.sigma_hat_sq = sigma_hat_sq;
-ANOVA.PI.invXtX = invXtX;
+ANOVA.PI.invXtX = invXtX(1:nterms,1:nterms);
 ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
 
 %% Coded values for polynomial regressions
@@ -226,13 +226,13 @@ for j = 1:k
     y = X(:,j);
     X_j = X; X_j(:,j) = []; %x_vif = [ones(n_data,1),x_vif];
     H = X_j*inv(X_j'*X_j)*X_j';
-    
+
     y_bar = mean(y);
     y_hat = H*y;
-    
+
     SSE = sum((y-y_hat).^2);
     SST = sum((y-y_bar).^2);
-    
+
     R_sq = 1 - SSE/SST;
     VIF(j,1) = 1/(1-R_sq);
 end

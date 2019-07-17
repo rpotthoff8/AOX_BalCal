@@ -25,11 +25,11 @@ xcalib = zeros(nterms+nseries0,dimFlag);
 % different depending on the channel.
 for k = 1:dimFlag
     comIN_k = comIN;
-    
+
     if FLAGS.model == 4
         comIN_k(:,customMatrix(:,k)==0) = [];
     end
-    
+
     % SOLUTION
     if nseries==nseries0
         xcalib_k = comIN_k\targetMatrix(:,k);
@@ -41,14 +41,14 @@ for k = 1:dimFlag
     else
         xcalib(:,k) = xcalib_k;
     end
-    
+
     %Call Anova
     if FLAGS.anova==1
         fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....'])
         ANOVA(k)=anova(comIN_k,targetMatrix(:,k),0,anova_pct);
         fprintf('Complete')
     end
-    
+
 end
 fprintf('\n')
 
@@ -66,6 +66,6 @@ else
         end
         ANOVA=ANOVA_exp;
     end
-    
+
 end
 end

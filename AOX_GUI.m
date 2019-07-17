@@ -77,7 +77,6 @@ guidata(hObject, handles);
 fileName = [CurrentPath,filesep,'default.ini'];
 
 actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
-anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
 
 if exist(fileName,'file')
     try
