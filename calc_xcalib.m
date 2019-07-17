@@ -1,4 +1,4 @@
-function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix, anova_pct, loadlabels,method)
+function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix, anova_pct, labels,method)
 %Function calculates coefficient matrix (xcalib)
 
 %Orders data by series (needed for bootstrap)
@@ -44,7 +44,7 @@ for k = 1:dimFlag
     
     %Call Anova
     if FLAGS.anova==1
-        fprintf(['\nCalculating ', method,' ANOVA statistics for load channel ', num2str(k), ' (',loadlabels{k},')....'])
+        fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....'])
         ANOVA(k)=anova(comIN_k,targetMatrix(:,k),0,anova_pct);
         fprintf('Complete')
     end

@@ -171,8 +171,8 @@ targetMatrix = targetMatrix0;
 comIN = comIN0;
 
 %Calculate xcalib (coefficients)
-[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlabels,'Direct');
-[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlabels,'BALFIT');
+[xcalib, ANOVA] = calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
+[balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT');
 
 % APPROXIMATION
 % define the approximation for inputs minus global zeros (includes
@@ -207,10 +207,10 @@ if FLAGS.balOut == 1
         fprintf('Complete\n')
 
         %Calculate xcalib (coefficients)
-        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlabels,'Direct');
+        [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
         
         %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlabels,'BALFIT'); % AJM 5_31_19
+        [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT'); % AJM 5_31_19
         %%% Balfit Stats and Matrix AJM 5_31_19
         
         % APPROXIMATION
