@@ -44,7 +44,7 @@ targetMatrix=targetMatrix(sortI,:);
         
         %Call Anova
         if FLAGS.anova==1
-            ANOVA(k)=anova(comIN_k,targetMatrix(:,k),0,anova_pct);
+            ANOVA(k)=anova(comIN_k,targetMatrix(:,k),size(comIN_k,2)-nseries0,0,anova_pct);
         end
     end
     

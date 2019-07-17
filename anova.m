@@ -1,4 +1,4 @@
-function ANOVA = anova(X,y,test_FLAG,pct)
+function ANOVA = anova(X,y,nterms,test_FLAG,pct)
 fprintf('\nCalculating The Statistics ...\n')
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
@@ -206,7 +206,7 @@ ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
 % Saving variables to calculate prediction intervals live in approximation
 ANOVA.PI.T_cr = T_cr;
 ANOVA.PI.sigma_hat_sq = sigma_hat_sq;
-ANOVA.PI.invXtX = invXtX;
+ANOVA.PI.invXtX = invXtX(1:nterms,1:nterms);
 ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
 
 %% Coded values for polynomial regressions
