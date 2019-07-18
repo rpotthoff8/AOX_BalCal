@@ -1,4 +1,4 @@
-function ANOVA = anova(X,y,test_FLAG,pct)
+function ANOVA = anova(X,y,nseries,test_FLAG,pct)
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not
@@ -10,10 +10,10 @@ function ANOVA = anova(X,y,test_FLAG,pct)
 % before continuing statistical analysis. If the maximum VIF is => 4, then
 % the data is becoming too collinear and that term should be "banned" from
 % testing. Otherwise, resume ANOVA.
-if nargin < 3
+if nargin < 4
     test_FLAG = 0;
     pct = 95;
-elseif nargin < 4
+elseif nargin < 5
     pct = 95;
 end
 
@@ -205,7 +205,7 @@ ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
 % Saving variables to calculate prediction intervals live in approximation
 ANOVA.PI.T_cr = T_cr;
 ANOVA.PI.sigma_hat_sq = sigma_hat_sq;
-ANOVA.PI.invXtX = invXtX(1:nterms,1:nterms);
+ANOVA.PI.invXtX = invXtX(1:(size(X,2)-nseries),1:(size(X,2)-nseries));
 ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
 
 %% Coded values for polynomial regressions

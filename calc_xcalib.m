@@ -45,7 +45,7 @@ for k = 1:dimFlag
     %Call Anova
     if FLAGS.anova==1
         fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....'])
-        ANOVA(k)=anova(comIN_k,targetMatrix(:,k),0,anova_pct);
+        ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,0,anova_pct);
         fprintf('Complete')
     end
 
@@ -64,6 +64,12 @@ else
                 eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'(customMatrix(:,j)==1,:)=ANOVA(',num2str(j),').',ExpandList(i),';')); %fill with ANOVA statistics
             end
         end
+        %Expand to 96x96 matrix for invXtX
+        for j=1:dimFlag
+            ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);
+            ANOVA_exp(j).PI.invXtX(customMatrix((1:nterms),j)==1,customMatrix((1:nterms),j)==1)=ANOVA(j).PI.invXtX;
+        end
+   
         ANOVA=ANOVA_exp;
     end
 

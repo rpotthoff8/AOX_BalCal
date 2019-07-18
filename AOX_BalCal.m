@@ -418,17 +418,13 @@ if FLAGS.balVal == 1
     
     %CALCULATE PREDICTION INTERVAL FOR POINTS
     if FLAGS.loadPI==1
-        % Creates the algebraic combination terms of the inputs.
-        % Also creates intercept terms; a different intercept for each series.        
-        comINvalid_PI=[comINvalid,zeros(size(comINvalid,1),size(comIN0,2)-size(comINvalid,2))]; %NOT SURE IF THIS IS VALID
+        loadPI_valid=zeros(size(aprxINvalid,1),size(aprxINvalid,2));
         for i=1:dimFlag
             for j = 1:numptsvalid
-                loadPI_valid(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINvalid_PI(j,:)*ANOVA(i).PI.invXtX*comINvalid_PI(j,:)')));
+                loadPI_valid(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINvalid(j,:)*ANOVA(i).PI.invXtX*comINvalid(j,:)')));
             end
         end
     end
-    
-    
     
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section
@@ -516,6 +512,15 @@ if FLAGS.balApprox == 1
     %define the approximation for inputs minus global zeros
     aprxINapprox = comINapprox*coeff;        %to find approximation AJM111516
     aprxINminGZapprox = aprxINapprox;
+    
+    if FLAGS.loadPI==1
+        loadPI_approx=zeros(size(aprxINapprox,1),size(aprxINapprox,2));
+        for i=1:dimFlag
+            for j = 1:size(aprxINapprox,1)
+                loadPI_approx(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINapprox(j,:)*ANOVA(i).PI.invXtX*comINapprox(j,:)')));
+            end
+        end
+    end
     
     %OUTPUT
     fprintf('\n ********************************************************************* \n');
