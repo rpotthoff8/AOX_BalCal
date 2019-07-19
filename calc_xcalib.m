@@ -44,7 +44,7 @@ for k = 1:dimFlag
 
     %Call Anova
     if FLAGS.anova==1
-        fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....'])
+        fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
         ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,0,anova_pct);
         fprintf('Complete')
     end

@@ -135,7 +135,7 @@ uniqueOut=struct();
 globalZeros = mean(natzeros);
 
 % Subtracts global zeros from signal.
-dainputs0 = excessVec0 - ones(numpts0,1)*globalZeros;
+dainputs0 = excessVec0 - globalZeros;
 
 % Determines how many terms are in the algebraic model; this will help
 % determine the size of the calibration matrix
