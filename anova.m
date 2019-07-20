@@ -17,18 +17,7 @@ elseif nargin < 5
     pct = 95;
 end
 
-%% Multicollinearity detection / VIF calcualtion
-% Variance inflation factor is calculated first so that when we're
-% iterating through test terms in the model, we can eliminate collinear
-% data right away, before wasting computer time on unnecessary statistical
-% calculations.
 
-VIF = vif(X);
-
-if test_FLAG == 1 && max(VIF) >= 4
-    ANOVA.test = -1;
-    return
-end
 
 %% Multiple Linear Regression
 % Instead of calculating the coefficient matrix using pinv or backslash,
@@ -50,6 +39,19 @@ if ~isempty(warnMsg)
     lastwarn('');
 end
 %%
+
+%% Multicollinearity detection / VIF calcualtion
+% Variance inflation factor is calculated first so that when we're
+% iterating through test terms in the model, we can eliminate collinear
+% data right away, before wasting computer time on unnecessary statistical
+% calculations.
+
+VIF = vif(X);
+
+if test_FLAG == 1 && max(VIF) >= 4
+    ANOVA.test = -1;
+    return
+end
 
 % The approximation can then be made with
 % y_hat = X b = X (X' X)^-1 X' y = H y,
