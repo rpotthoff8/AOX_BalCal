@@ -307,6 +307,32 @@ if strcmp(section,{'Validation Algebraic'})==1
         description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
         print_dlmwrite(filename,input,precision,description);
     end
+    
+    %OUTPUTING APPROXIMATION WITH PI
+    if FLAGS.approx_and_PI_print==1
+        PI_approx=cellstr(string(aprxINminGZvalid)+' +/- '+string(loadPI_valid));
+        try
+            filename = 'VALID_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
+            description='ALG VALID APPROX WITH PREDICTION INTERVALS';
+            writetable(cell2table(PI_approx),filename,'writevariablenames',0);
+            fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+        catch ME
+            fprintf('\nUNABLE TO PRINT APPROX WITH PREDICTION INTERVALS CSV FILE. ');
+            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
+                fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
+            end
+            fprintf('\n')
+        end
+    end
+    
+    %OUTPUTING PI VALUE
+    if FLAGS.PI_print==1
+        filename = 'VALID_ALG_PREDICTION_INTERVAL.csv';
+        input=loadPI_valid;
+        precision='%.16f';
+        description='VALIDATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
+        print_dlmwrite(filename,input,precision,description);
+    end
 end
 
 %% Algebraic Calibration Specific Outputs

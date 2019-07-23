@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 12-Jul-2019 13:06:13
+% Last Modified by GUIDE v2.5 23-Jul-2019 13:57:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -165,11 +165,15 @@ if exist(fileName,'file')
         Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
         set(handles.anova_FLAGcheck,'Value',default.anova);
         anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
+        
         set(handles.loadPI_FLAGcheck,'Value',default.loadPI);
+        loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
         set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
         set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
         set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
         set(handles.anova_pct,'String',default.anova_pct);
+        set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
+        set(handles.PI_print_Callback,'Value',default.PI_print_Callback);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -282,6 +286,9 @@ outStruct.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
 outStruct.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 outStruct.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 outStruct.anova_pct= str2num(get(handles.anova_pct,'String'));
+outStruct.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
+outStruct.PI_print = get(handles.PI_print,'Value');
+
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -1238,6 +1245,10 @@ default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
 default.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 default.anova_pct = get(handles.anova_pct,'String');
+default.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
+default.PI_print = get(handles.PI_print,'Value');
+
+
 
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
@@ -1881,6 +1892,7 @@ else
     set(handles.anova_pct_text,'Enable','on');
 
 end
+loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles);
 
 % --- Executes on button press in loadPI_FLAGcheck.
 function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
@@ -1889,6 +1901,13 @@ function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of loadPI_FLAGcheck
+if get(hObject,'Value') == 0
+    set(handles.approx_and_PI_print,'Enable','off','Value',0);
+    set(handles.PI_print,'Enable','off','Value',0);
+else
+     set(handles.approx_and_PI_print,'Enable','on');
+     set(handles.PI_print,'Enable','on');
+end
 
 
 
@@ -1973,3 +1992,21 @@ function edit57_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in approx_and_PI_print.
+function approx_and_PI_print_Callback(hObject, eventdata, handles)
+% hObject    handle to approx_and_PI_print (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of approx_and_PI_print
+
+
+% --- Executes on button press in PI_print.
+function PI_print_Callback(hObject, eventdata, handles)
+% hObject    handle to PI_print (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of PI_print

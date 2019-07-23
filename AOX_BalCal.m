@@ -77,6 +77,8 @@ FLAGS.BALFIT_Matrix=out.BALFIT_Matrix;
 FLAGS.BALFIT_ANOVA=out.BALFIT_ANOVA;
 FLAGS.Rec_Model=out.Rec_Model;
 anova_pct=out.anova_pct;
+FLAGS.approx_and_PI_print=out.approx_and_PI_print;
+FLAGS.PI_print=out.PI_print;
 
 
 %                       END USER INPUT SECTION
@@ -424,6 +426,8 @@ if FLAGS.balVal == 1
                 loadPI_valid(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINvalid(j,:)*ANOVA(i).PI.invXtX*comINvalid(j,:)')));
             end
         end
+        newStruct=struct('loadPI_valid',loadPI_valid);
+        uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     end
     
     %OUTPUT FUNCTION
@@ -533,6 +537,32 @@ if FLAGS.balApprox == 1
         print_dlmwrite(filename,input,precision,description);
     else
         fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
+    end
+    
+        %OUTPUTING APPROXIMATION WITH PI
+    if FLAGS.approx_and_PI_print==1
+        PI_approx=cellstr(string(aprxINminGZapprox)+' +/- '+string(loadPI_approx));
+        try
+            filename = 'APPROX_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
+            description='ALG APPROXIMATION LOAD APPROX WITH PREDICTION INTERVALS';
+            writetable(cell2table(PI_approx),filename,'writevariablenames',0);
+            fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+        catch ME
+            fprintf('\nUNABLE TO PRINT APPROX WITH PREDICTION INTERVALS CSV FILE. ');
+            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
+                fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
+            end
+            fprintf('\n')
+        end
+    end
+    
+    %OUTPUTING PI VALUE
+    if FLAGS.PI_print==1
+        filename = 'APPROX_ALG_PREDICTION_INTERVAL.csv';
+        input=loadPI_approx;
+        precision='%.16f';
+        description='APPROXIMATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
+        print_dlmwrite(filename,input,precision,description);
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
