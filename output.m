@@ -1,7 +1,7 @@
 %Function creates all the outputs for the calibration, algebraic section
 %This simplifies following the main code
 
-function [] = output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+function [] = output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID,series2,uniqueOut)
 %Split uniqueOut structure into individual variables
 names = fieldnames(uniqueOut);
 for i=1:length(names)
@@ -267,7 +267,7 @@ end
 %% Residual vs datapoint plot
 if FLAGS.res == 1
     figure('Name',char(strcat(section,{' '},'Model; Residuals of Load Versus Data Point Index')),'NumberTitle','off','WindowState','maximized')
-    plotResPages(series0, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
+    plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
 end
 
 %% OUTPUT HISTOGRAM PLOTS
@@ -298,42 +298,6 @@ if FLAGS.rescorr == 1
     correlationPlot(excessVec0, targetRes, voltagelist, reslist);
 end
 
-%% Algebraic Validation Specific Outputs
-if strcmp(section,{'Validation Algebraic'})==1
-    if FLAGS.excel == 1
-        filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
-        input=aprxINminGZvalid;
-        precision='%.16f';
-        description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
-    end
-    
-    %OUTPUTING APPROXIMATION WITH PI
-    if FLAGS.approx_and_PI_print==1
-        PI_approx=cellstr(string(aprxINminGZvalid)+' +/- '+string(loadPI_valid));
-        try
-            filename = 'VALID_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
-            description='ALG VALID APPROX WITH PREDICTION INTERVALS';
-            writetable(cell2table(PI_approx),filename,'writevariablenames',0);
-            fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
-        catch ME
-            fprintf('\nUNABLE TO PRINT APPROX WITH PREDICTION INTERVALS CSV FILE. ');
-            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
-                fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
-            end
-            fprintf('\n')
-        end
-    end
-    
-    %OUTPUTING PI VALUE
-    if FLAGS.PI_print==1
-        filename = 'VALID_ALG_PREDICTION_INTERVAL.csv';
-        input=loadPI_valid;
-        precision='%.16f';
-        description='VALIDATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
-        print_dlmwrite(filename,input,precision,description);
-    end
-end
 
 %% Algebraic Calibration Specific Outputs
 if strcmp(section,{'Calibration Algebraic'})==1
@@ -518,10 +482,9 @@ if strcmp(section,{'Calibration Algebraic'})==1
     if FLAGS.excel == 1
         %Output calibration load approximation
         filename = 'CALIB_AOX_ALG_RESULT.csv';
-        input=aprxIN;
-        precision='%.16f';
+        approxinput=aprxIN;
         description='CALIBRATION ALGEBRAIC MODEL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist);
     end
 end
 
@@ -530,10 +493,9 @@ if strcmp(section,{'Calibration GRBF'})==1
     if FLAGS.excel == 1
         %Output calibration load approximation
         filename = 'CALIB_AOX_GRBF_RESULT.csv';
-        input=aprxINminGZ2;
-        precision='%.16f';
+        approxinput=aprxINminGZ2;
         description='CALIBRATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist);
         
         %Output GRBF Widths
         filename = 'APPROX_AOX_GRBF_ws.csv';
@@ -557,18 +519,44 @@ if strcmp(section,{'Calibration GRBF'})==1
         print_dlmwrite(filename,input,precision,description);
     end
 end
+
+%% Algebraic Validation Specific Outputs
+if strcmp(section,{'Validation Algebraic'})==1
+    if FLAGS.excel == 1
+        filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
+        approxinput=aprxINminGZvalid;
+        description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist);
+    end
+    
+    %OUTPUTING APPROXIMATION WITH PI
+    if FLAGS.approx_and_PI_print==1
+        filename = 'VALID_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
+        description='ALG VALID APPROX WITH PREDICTION INTERVALS';
+        approxinput=cellstr(string(aprxINminGZvalid)+' +/- '+string(loadPI_valid));
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist);
+    end
+    
+    %OUTPUTING PI VALUE
+    if FLAGS.PI_print==1
+        filename = 'VALID_ALG_PREDICTION_INTERVAL.csv';
+        description='VALIDATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
+        approxinput=loadPI_valid;
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist);
+    end
+end
+
 %% GRBF Validation Specific Outputs
 if strcmp(section,{'Validation GRBF'})==1
     if FLAGS.excel == 1
         %Output validation load approximation
         filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
-        input=aprxINminGZ2valid;
-        precision='%.16f';
+        approxinput=aprxINminGZ2valid;
         description='VALIDATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist);
+
     end
 end
-
 end
 
 

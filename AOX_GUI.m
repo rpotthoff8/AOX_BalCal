@@ -173,7 +173,7 @@ if exist(fileName,'file')
         set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
         set(handles.anova_pct,'String',default.anova_pct);
         set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
-        set(handles.PI_print_Callback,'Value',default.PI_print_Callback);
+        set(handles.PI_print,'Value',default.PI_print);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -1469,6 +1469,8 @@ switch cva.type
         opts=delimitedTextImportOptions('DataLines',[cal.CSV(3,1)+1 bottom]);
         series_bulk=readtable(cal.Path,opts);
         series=str2double(table2array(series_bulk(:,cal.CSV(3,2)+1)));
+        series2=table2array(series_bulk(:,cal.CSV(3,2)+2));
+        pointID=table2array(series_bulk(:,cal.CSV(3,2)));
         clear A bottom opts series_bulk
 
         %         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
@@ -1524,6 +1526,8 @@ switch cva.type
         opts=delimitedTextImportOptions('DataLines',[val.CSV(3,1)+1 bottom]);
         series_bulk=readtable(val.Path,opts);
         seriesvalid=str2double(table2array(series_bulk(:,val.CSV(3,2)+1)));
+        series2valid=table2array(series_bulk(:,val.CSV(3,2)+2));
+        pointIDvalid=table2array(series_bulk(:,val.CSV(3,2)));
         clear A bottom opts series_bulk
 %         seriesvalid =            csvread(val.Path,val.CSV(3,1),val.CSV(3,2),val.Range{3});
 
@@ -1550,6 +1554,8 @@ switch cva.type
         opts=delimitedTextImportOptions('DataLines',[app.CSV(3,1)+1 bottom]);
         series_bulk=readtable(app.Path,opts);
         seriesapprox=str2double(table2array(series_bulk(:,app.CSV(3,2)+1)));
+        series2approx=table2array(series_bulk(:,app.CSV(3,2)+2));
+        pointIDapprox=table2array(series_bulk(:,app.CSV(3,2)));
         clear A bottom opts series_bulk 
 %         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
         

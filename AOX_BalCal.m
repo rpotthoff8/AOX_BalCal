@@ -10,7 +10,7 @@
 clc;
 clearvars;
 close all;
-workspace;
+% workspace;
 fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.\n')
 % The mean of the approximation residual (testmatrix minus local approximation) for each section is taken as the tare for that channel and section. The tare is subtracted from the global values to make the local loads. The accuracy of the validation, when compared to the known loads, is very sensitive to the value of the tares (which is unknown) and NOT the order of the calibration equations.
 % Because of measurement noise in the voltage the APPROXIMATION tare is computed by post-processing. The average and stddev is taken of all channels per section. If the stddev is less than 0.25% of the capacity for any station the tare is equal to the average for that channel. If the stddev is greater than 0.25% then the approximation at the local zero is taken as the tare for that channel and section. The global approximation is left alone but the tare is subtracted from the values to make the local loads. Line 3133.
@@ -88,6 +88,8 @@ fprintf('\nWorking ...\n')
 % Load data and characterize series
 load(out.savePathcal,'-mat');
 series0 = series;
+series20=series2;
+pointID0=pointID;
 [~,s_1st0,~] = unique(series0);
 nseries0 = length(s_1st0);
 [numpts0, dimFlag] = size(excessVec0);
@@ -203,6 +205,8 @@ if FLAGS.balOut == 1
         targetMatrix0(OUTLIER_ROWS,:) = [];
         excessVec0(OUTLIER_ROWS,:) = [];
         series0(OUTLIER_ROWS) = [];
+        series20(OUTLIER_ROWS)=[];
+        pointID0(OUTLIER_ROWS)=[];
         comIN0(OUTLIER_ROWS,:) = [];
         [~,s_1st0,~] = unique(series0);
         nseries0 = length(s_1st0);
@@ -272,7 +276,7 @@ end
 section={'Calibration Algebraic'};
 newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix,'targetMatrix0',targetMatrix0,'loadunits',{loadunits(:)},'voltunits',{voltunits(:)});
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,uniqueOut)
 
 %END CALIBRATION DIRECT APPROACH ALGEBRAIC SECTION
 %%
@@ -356,7 +360,7 @@ if FLAGS.balCal == 2
     section={'Calibration GRBF'};
     newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-    output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+    output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,uniqueOut)
     
 end
 %END CALIBRATION GRBF SECTION
@@ -435,7 +439,7 @@ if FLAGS.balVal == 1
     newStruct=struct('aprxINminGZvalid',aprxINminGZvalid);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     section={'Validation Algebraic'};
-    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,seriesvalid,excessVecvalidkeep,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,dimFlag,voltagelist,reslist,numBasis,pointIDvalid,series2valid,uniqueOut)
     
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
     
@@ -488,7 +492,7 @@ if FLAGS.balVal == 1
         section={'Validation GRBF'};
         newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-        output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,numBasis,uniqueOut)
+        output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,numBasis,pointIDvalid,series2valid,uniqueOut)
     end
     %END GRBF SECTION FOR VALIDATION
 end
@@ -531,38 +535,27 @@ if FLAGS.balApprox == 1
     if FLAGS.excel == 1
         %Output approximation load approximation
         filename = 'GLOBAL_ALG_APPROX.csv';
-        input=aprxINminGZapprox;
-        precision='%.16f';
+        approxinput=aprxINminGZapprox;
         description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
+        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist);
     else
         fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
     end
     
-        %OUTPUTING APPROXIMATION WITH PI
+    %OUTPUTING APPROXIMATION WITH PI
     if FLAGS.approx_and_PI_print==1
-        PI_approx=cellstr(string(aprxINminGZapprox)+' +/- '+string(loadPI_approx));
-        try
-            filename = 'APPROX_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
-            description='ALG APPROXIMATION LOAD APPROX WITH PREDICTION INTERVALS';
-            writetable(cell2table(PI_approx),filename,'writevariablenames',0);
-            fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
-        catch ME
-            fprintf('\nUNABLE TO PRINT APPROX WITH PREDICTION INTERVALS CSV FILE. ');
-            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
-                fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
-            end
-            fprintf('\n')
-        end
+        approxinput=cellstr(string(aprxINminGZapprox)+' +/- '+string(loadPI_approx));
+        filename = 'APPROX_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
+        description='ALG APPROXIMATION LOAD APPROX WITH PREDICTION INTERVALS';
+        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist);
     end
     
     %OUTPUTING PI VALUE
     if FLAGS.PI_print==1
         filename = 'APPROX_ALG_PREDICTION_INTERVAL.csv';
-        input=loadPI_approx;
-        precision='%.16f';
+        approxinput=loadPI_approx;
         description='APPROXIMATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
-        print_dlmwrite(filename,input,precision,description);
+        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist);
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -592,10 +585,9 @@ if FLAGS.balApprox == 1
         if FLAGS.excel == 1
             %Output approximation load approximation
             filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
-            input=aprxINminGZ2approx;
-            precision='%.16f';
+            approxinput=aprxINminGZ2approx;
             description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
-            print_dlmwrite(filename,input,precision,description);
+            print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist);
         else
             fprintf('\nAPPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
         end
