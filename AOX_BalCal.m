@@ -274,7 +274,7 @@ end
 %OUTPUT FUNCTION
 %Function creates all outputs for calibration, algebraic section
 section={'Calibration Algebraic'};
-newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix,'targetMatrix0',targetMatrix0,'loadunits',{loadunits(:)},'voltunits',{voltunits(:)});
+newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix,'targetMatrix0',targetMatrix0,'loadunits',{loadunits(:)},'voltunits',{voltunits(:)},'balance_type',balance_type,'description',description);
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
 output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,uniqueOut)
 

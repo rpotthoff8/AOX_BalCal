@@ -1495,6 +1495,28 @@ switch cva.type
             splitunitRow=cellstr(strsplit(string(label_text1{1}{cal.CSV(1,1)-1}),',','CollapseDelimiters',false)); %extract row with units
             loadunits=splitunitRow(cal.CSV(1,2)+1:cal.loadend(2)+1); %extract load units 
             voltunits=splitunitRow(cal.CSV(2,2)+1:cal.voltend(2)+1); %extract voltage units
+            
+            try
+                %START: find file description and balance name: JRP 25 July 19
+                description_i=find(contains(label_text1{1},'DESCRIPTION'));
+                assert(any(description_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
+                descriptionRow=cellstr(strsplit(string(label_text1{1}{description_i}),',','CollapseDelimiters',false)); %Extract row with data description
+                description=descriptionRow(find(contains(descriptionRow,'DESCRIPTION'))+1);          
+            catch
+                description={'NO DESCRIPTION FOUND'};
+            end
+            clear description_i descriptionRow
+            
+            try
+                balance_i=find(contains(label_text1{1},'BALANCE_NAME'));
+                assert(any(balance_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
+                balanceRow=cellstr(strsplit(string(label_text1{1}{balance_i}),',','CollapseDelimiters',false)); %Extract row with balance name
+                balance_type=balanceRow(find(contains(balanceRow,'BALANCE_NAME'))+1);
+            catch
+                balance_type={'NO BALANCE NAME FOUND'};
+            end
+            clear balance_i balanceRow
+            %END:find file description and balance name: JRP 25 July 19
             clear file label_text1 splitlabelRow splitunitRow
             %END: new approach, JRP 11 June 19
            

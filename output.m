@@ -433,12 +433,14 @@ if strcmp(section,{'Calibration Algebraic'})==1
     end
     
     if FLAGS.BALFIT_Matrix==1
-        filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
         [leftColumn_coeff,voltRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'loads'); %Get label names for custom equation matrix
         Header_cells=cell(18,dimFlag);
         dash_row=cell(1,dimFlag);
-        dash_row(:,:)={'-'};
+        dash_row(:,:)={'- - - - - - - -'};
+        dash_row{1,1}=repmat('- ',1,round(15*dimFlag/2));
         Header_cells(1,1)={'DATA_REDUCTION_MATRIX_IN_AMES_FORMAT'};
+        Header_cells(2,1)={balance_type};
+        Header_cells(3,1)={description};
         Header_cells(5,1)={datestr(now,'yyyy-mmdd-HHMMSS')};
         Header_cells(6,1)={'Primary Load Iteration Method'};
         Header_cells(7,:)=loadlist(1:dimFlag);
@@ -452,7 +454,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
         Header_cells(15,:)=num2cell(max(excessVec0));
         Header_cells(16,:)={'DEFINED'};
         Header_cells(17:18,:)=num2cell(balfit_regress_matrix(1:2,:));
-        leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'ITERATION_METHOD'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_SENSITIVITY'};{'NATURAL_ZERO'};{'INTERCEPT'}]; 
+        leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'ITERATION_METHOD'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_SENSITIVITY'};{'NATURAL_ZERO'};{'INTERCEPT'}];
         leftColumn=[leftColumn_head;{'D0[TRANSPONSE (C1INV)]'};voltRow;{'D1[MATRIX IS NOT USED]'};leftColumn_coeff(1:dimFlag);'D2[TRANSPOSE(C1INVC2)]';leftColumn_coeff(dimFlag+1:end)];
         D0=balfit_regress_matrix(3:2+dimFlag,:);
         D1=balfit_regress_matrix(3+dimFlag:2+2*dimFlag,:);
@@ -461,21 +463,72 @@ if strcmp(section,{'Calibration Algebraic'})==1
         content=[Header_cells;dash_row;num2cell(D0);dash_row;num2cell(D1);dash_row;num2cell(D2)];
         balfit_matrix=[leftColumn,content];
         
-        precision='%.16f';
+        % Text file to output data
+        filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.txt';
         description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
-        %%% Balfit Stats and Matrix AJM 5_31_19
+        
         try
-            %Print Results
-            writetable(cell2table(balfit_matrix),filename,'writevariablenames',0)
+            % Open file for writing
+            fid = fopen(filename, 'w');
+            header_lines=[1:6];
+            text_lines=[7,8,12,13,16];
+            dash_lines=[19,19+dimFlag+1,19+2*dimFlag+2];
+            
+            for i=1:size(content,1) %Printing to text file
+                fprintf(fid,'%23s',leftColumn{i});
+                if ismember(i,header_lines) %Printing header cells
+                    fprintf(fid, ' %s \r\n', content{i,1});
+                elseif ismember(i,text_lines) %Printing text only lines
+                    for j=1:size(content,2)
+                        fprintf(fid, ' %14s', content{i,j});
+                    end
+                    fprintf(fid,'\r\n');
+                elseif ismember(i,dash_lines) %Printing dashed break lines
+                    dash_length=num2str(15*dimFlag);
+                    dash_format=" %"+dash_length+"s";
+                    for j=1:1
+                        fprintf(fid, char(dash_format), content{i,1});
+                    end
+                    fprintf(fid,'\r\n');
+                else %Printing numerical results in scientific notation
+                    for j=1:size(content,2)
+                        A_str = sprintf('% 10.6e',content{i,j});
+                        exp_portion=extractAfter(A_str,'e');
+                        num_portion=extractBefore(A_str,'e');
+                        if strlength(exp_portion)<4
+                            zeros_needed=4-strlength(exp_portion);
+                            zeros_add{1}=repmat('0',1,zeros_needed);
+                            exp_portion=[exp_portion(1),zeros_add{1},exp_portion(2:end)];
+                            A_str=[num_portion,'e',exp_portion];
+                        end
+                        fprintf(fid,' %s',A_str);
+                    end
+                    fprintf(fid,'\r\n');
+                end
+                
+            end
+            fclose(fid);
             %Write filename to command window
             fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
-        catch ME
+        catch
             fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
-            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
-                fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
-            end
-            fprintf('\n')
         end
+        
+%         precision='%.16f';
+%         description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
+%         %%% Balfit Stats and Matrix AJM 5_31_19
+%         try
+%             %Print Results
+%             writetable(cell2table(balfit_matrix),filename,'writevariablenames',0)
+%             %Write filename to command window
+%             fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+%         catch ME
+%             fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
+%             if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
+%                 fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
+%             end
+%             fprintf('\n')
+%         end
     end
     
     
@@ -591,7 +644,7 @@ block10=cell(dimFlag,1);
 for i=1:dimFlag
     block1(i)=leftlist(i);
     block2(i)=strcat('|',leftlist(i),'|');
-    block3(i)=strcat(leftlist(i),'^2');
+    block3(i)=strcat(leftlist(i),'*',leftlist(i));
     block4(i)=strcat(leftlist(i),'*|',leftlist(i),'|');
     
     for j=i+1:dimFlag
@@ -601,8 +654,8 @@ for i=1:dimFlag
         block8(count5)=strcat('|',leftlist(i),'|*',leftlist(j));
         count5=count5+1;
     end
-    block9(i)=strcat(leftlist(i),'^3');
-    block10(i)=strcat('|',leftlist(i),'^3|');
+    block9(i)=strcat(leftlist(i),'*',leftlist(i),'*',leftlist(i));
+    block10(i)=strcat('|',leftlist(i),'*',leftlist(i),'*',leftlist(i),'|');
 end
 
 %Select Terms based on model type selected
