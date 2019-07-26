@@ -441,6 +441,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
         Header_cells(1,1)={'DATA_REDUCTION_MATRIX_IN_AMES_FORMAT'};
         Header_cells(2,1)={balance_type};
         Header_cells(3,1)={description};
+        Header_cells(4,1)={'PREPARED_BY AOX_BalCal'};
         Header_cells(5,1)={datestr(now,'yyyy-mmdd-HHMMSS')};
         Header_cells(6,1)={'Primary Load Iteration Method'};
         Header_cells(7,:)=loadlist(1:dimFlag);
