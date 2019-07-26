@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 23-Jul-2019 13:57:39
+% Last Modified by GUIDE v2.5 26-Jul-2019 13:23:30
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -53,6 +53,7 @@ function AOX_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to AOX_GUI (see VARARGIN)
 set(handles.figure1, 'units', 'normalized', 'position', [0.15 0.1 0.5 0.8])
+set(handles.output_location,'String',pwd);
 global VERSION
 VERSION = 16;
 try
@@ -174,6 +175,11 @@ if exist(fileName,'file')
         set(handles.anova_pct,'String',default.anova_pct);
         set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
         set(handles.PI_print,'Value',default.PI_print);
+        
+        set(handles.output_location,'String',default.output_location);
+        set(handles.output_to_calib_FLAG,'Value',default.output_to_calib_FLAG);
+        set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
+        output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -289,6 +295,8 @@ outStruct.anova_pct= str2num(get(handles.anova_pct,'String'));
 outStruct.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
 outStruct.PI_print = get(handles.PI_print,'Value');
 
+outStruct.output_location=get(handles.output_location,'String');
+outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -449,6 +457,7 @@ try
         set(handles.c51, 'Enable', 'off', 'String', splitrange{1,5,1});
         set(handles.c52, 'Enable', 'off', 'String', splitrange{1,5,2});
     end
+    output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
 catch
     disp('Problem occurred while reading Calibration file')
 end
@@ -571,11 +580,13 @@ function grbf_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of grbf
 if get(hObject,'Value') == 1
     set(handles.numBasisIn,'Enable','on');
+    set(handles.RBF_text,'Enable','on');
     %set(handles.loglog_FLAGcheck,'Enable','on');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','on');
     %set(handles.grbftares_FLAGcheck,'Enable','on');
 else
     set(handles.numBasisIn,'Enable','off');
+    set(handles.RBF_text,'Enable','off');
     %set(handles.loglog_FLAGcheck,'Enable','off');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','off');
     %set(handles.grbftares_FLAGcheck,'Enable','off');
@@ -1248,8 +1259,9 @@ default.anova_pct = get(handles.anova_pct,'String');
 default.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
 default.PI_print = get(handles.PI_print,'Value');
 
-
-
+default.output_location=get(handles.output_location,'String');
+default.output_to_calib_FLAG=get(handles.output_to_calib_FLAG,'Value');
+default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
@@ -2038,3 +2050,70 @@ function PI_print_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of PI_print
+
+
+
+function output_location_Callback(hObject, eventdata, handles)
+% hObject    handle to output_location (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of output_location as text
+%        str2double(get(hObject,'String')) returns contents of output_location as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function output_location_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to output_location (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+
+% --- Executes on button press in output_location_button.
+function output_location_button_Callback(hObject, eventdata, handles)
+% hObject    handle to output_location_button (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+selpath=uigetdir;
+set(handles.output_location,'String',selpath);
+
+
+% --- Executes on button press in output_to_calib_FLAG.
+function output_to_calib_FLAG_Callback(hObject, eventdata, handles)
+% hObject    handle to output_to_calib_FLAG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of output_to_calib_FLAG
+if get(hObject,'Value') == 0
+    set(handles.output_location_button,'Enable','on');
+    set(handles.output_location,'Enable','on');
+    set(handles.output_location,'String',pwd);
+else
+    set(handles.output_location_button,'Enable','off');
+    set(handles.output_location,'Enable','off');
+    calib_path=get(handles.calPath,'String');
+    if isempty(find(calib_path == '\',1))==0
+        calib_path=extractBefore(calib_path,find(calib_path == '\', 1, 'last'));
+    else
+        calib_path=pwd;
+    end
+    set(handles.output_location,'String',calib_path);
+end
+
+
+% --- Executes on button press in subfolder_FLAG.
+function subfolder_FLAG_Callback(hObject, eventdata, handles)
+% hObject    handle to subfolder_FLAG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of subfolder_FLAG

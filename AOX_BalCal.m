@@ -80,7 +80,17 @@ anova_pct=out.anova_pct;
 FLAGS.approx_and_PI_print=out.approx_and_PI_print;
 FLAGS.PI_print=out.PI_print;
 
-
+REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
+output_location=[out.output_location,filesep];
+if out.subfolder_FLAG==1
+    try
+        new_subpath=fullfile(output_location,['AOX_BalCal_Results_',REPORT_NO]);
+        mkdir(char(new_subpath));
+        output_location=new_subpath;
+    catch
+        fprintf('Unable to create new subfolder. Saving results in: '); fprintf('%s',output_location); fprintf('\n');
+    end
+end
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       INITIALIZATION SECTION
@@ -276,7 +286,7 @@ end
 section={'Calibration Algebraic'};
 newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix,'targetMatrix0',targetMatrix0,'loadunits',{loadunits(:)},'voltunits',{voltunits(:)},'balance_type',balance_type,'description',description);
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,uniqueOut)
+output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
 
 %END CALIBRATION DIRECT APPROACH ALGEBRAIC SECTION
 %%
@@ -360,7 +370,7 @@ if FLAGS.balCal == 2
     section={'Calibration GRBF'};
     newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-    output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,uniqueOut)
+    output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
     
 end
 %END CALIBRATION GRBF SECTION
@@ -439,7 +449,7 @@ if FLAGS.balVal == 1
     newStruct=struct('aprxINminGZvalid',aprxINminGZvalid);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     section={'Validation Algebraic'};
-    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,dimFlag,voltagelist,reslist,numBasis,pointIDvalid,series2valid,uniqueOut)
+    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,dimFlag,voltagelist,reslist,numBasis,pointIDvalid,series2valid,output_location,REPORT_NO,uniqueOut)
     
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
     
@@ -492,7 +502,7 @@ if FLAGS.balVal == 1
         section={'Validation GRBF'};
         newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-        output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,numBasis,pointIDvalid,series2valid,uniqueOut)
+        output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,numBasis,pointIDvalid,series2valid,output_location,REPORT_NO,uniqueOut)
     end
     %END GRBF SECTION FOR VALIDATION
 end
@@ -537,7 +547,7 @@ if FLAGS.balApprox == 1
         filename = 'GLOBAL_ALG_APPROX.csv';
         approxinput=aprxINminGZapprox;
         description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
-        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist);
+        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
     else
         fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
     end
@@ -547,7 +557,7 @@ if FLAGS.balApprox == 1
         approxinput=cellstr(string(aprxINminGZapprox)+' +/- '+string(loadPI_approx));
         filename = 'APPROX_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
         description='ALG APPROXIMATION LOAD APPROX WITH PREDICTION INTERVALS';
-        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist);
+        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
     end
     
     %OUTPUTING PI VALUE
@@ -555,7 +565,7 @@ if FLAGS.balApprox == 1
         filename = 'APPROX_ALG_PREDICTION_INTERVAL.csv';
         approxinput=loadPI_approx;
         description='APPROXIMATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
-        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist);
+        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -587,7 +597,7 @@ if FLAGS.balApprox == 1
             filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
             approxinput=aprxINminGZ2approx;
             description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
-            print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist);
+            print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
         else
             fprintf('\nAPPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
         end
@@ -600,4 +610,5 @@ end
 
 fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
+fprintf('%s',strcat('Check '," ",output_location,' for output files.'))
 fprintf('\n');
