@@ -122,16 +122,6 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Load Residual 2*(standard deviation)';
-    section_out=[load_line;cell(1),num2cell(twoSigma)];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
-    end
-    
     output_name{1}='Maximum Load Residual';
     section_out=[load_line;cell(1),num2cell(maxTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -144,6 +134,16 @@ if FLAGS.print == 1 || FLAGS.disp==1
     
     output_name{1}='Minimum Load Residual';
     section_out=[load_line;cell(1),num2cell(minTargets)];
+    csv_output=[csv_output;output_name;section_out;empty_cells];
+    %Command window printing;
+    if FLAGS.disp==1
+        fprintf(output_name{:})
+        fprintf('\n')
+        disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+    end
+    
+    output_name{1}='Load Residual 2*(standard deviation)';
+    section_out=[load_line;cell(1),num2cell(twoSigma)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
     if FLAGS.disp==1
@@ -576,6 +576,19 @@ if strcmp(section,{'Calibration GRBF'})==1
         precision='%.16f';
         description='CALIBRATION GRBF CENTER INDICES';
         print_dlmwrite(filename,input,precision,description,output_location);
+        
+    end
+    
+    %Output all GRBF parameters
+    filename = 'APPROX_AOX_GRBF_parameters.mat';
+    fullpath=fullfile(output_location,filename);
+    description='GRBF PARAMETERS';
+    try
+        save(fullpath,'cHist','wHist','center_daHist');
+        fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+    catch ME
+        fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');
+        fprintf('\n')
     end
 end
 

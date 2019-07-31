@@ -372,7 +372,7 @@ if FLAGS.balCal == 2
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
-    newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist);
+    newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist,'center_daHist',center_daHist);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
     
@@ -396,7 +396,7 @@ if FLAGS.balVal == 1
     dimFlagvalid = length(excessVecvalid(1,:));
     
     %find the average natural zeros (also called global zeros)
-    globalZerosvalid = mean(natzerosvalid);
+    globalZerosvalid = mean(natzerosvalid,1);
     
     %load capacities
     loadCapacitiesvalid(loadCapacitiesvalid == 0) = realmin;
@@ -521,93 +521,17 @@ if FLAGS.balApprox == 1
     %DEFINE THE PRODUCTION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
     load(out.savePathapp,'-mat');
     
-    %natural zeros (also called global zeros)
-    globalZerosapprox = mean(natzerosapprox);
-    
-    % Subtract the Global Zeros from the Inputs
-    dainputsapprox = excessVecapprox-globalZerosapprox;
-    
-    % Call the Algebraic Subroutine
-    comINapprox = balCal_algEqns(FLAGS.model,dainputsapprox,seriesapprox,0);
-    
-    %LOAD APPROXIMATION
-    %define the approximation for inputs minus global zeros
-    aprxINapprox = comINapprox*coeff;        %to find approximation AJM111516
-    aprxINminGZapprox = aprxINapprox;
-    
-    if FLAGS.loadPI==1
-        loadPI_approx=zeros(size(aprxINapprox,1),size(aprxINapprox,2));
-        for i=1:dimFlag
-            for j = 1:size(aprxINapprox,1)
-                loadPI_approx(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINapprox(j,:)*ANOVA(i).PI.invXtX*comINapprox(j,:)')));
-            end
-        end
-    end
-    
-    %OUTPUT
-    fprintf('\n ********************************************************************* \n');
-    if FLAGS.excel == 1
-        %Output approximation load approximation
-        filename = 'GLOBAL_ALG_APPROX.csv';
-        approxinput=aprxINminGZapprox;
-        description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
-        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
+    if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
+        GRBF.wHist=wHist;
+        GRBF.cHist=cHist;
+        GRBF.center_daHist=center_daHist;
+        
     else
-        fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
+        GRBF='GRBFS NOT PLACED';
     end
     
-    %OUTPUTING APPROXIMATION WITH PI
-    if FLAGS.approx_and_PI_print==1
-        approxinput=cellstr(string(aprxINminGZapprox)+' +/- '+string(loadPI_approx));
-        filename = 'APPROX_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
-        description='ALG APPROXIMATION LOAD APPROX WITH PREDICTION INTERVALS';
-        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
-    end
-    
-    %OUTPUTING PI VALUE
-    if FLAGS.PI_print==1
-        filename = 'APPROX_ALG_PREDICTION_INTERVAL.csv';
-        approxinput=loadPI_approx;
-        description='APPROXIMATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
-        print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
-    end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %                    RBF SECTION FOR APPROXIMATION     AJM 6/29/17                         %
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %goal to use centers, width and coefficients to approxate parameters against
-    %independent data
-    
-    if FLAGS.balCal == 2
-        
-        aprxINminGZ2approx = aprxINminGZapprox;
-        aprxINminGZ_Histapprox = cell(numBasis,1);
-        
-        for u=1:numBasis
-            
-            %Call function to place single GRBF
-            [rbfc_INminGZapprox]=place_GRBF(u,dainputsapprox,wHist,cHist,center_daHist);
-            
-            %update the approximation
-            aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
-            aprxINminGZ_Histapprox{u} = aprxINminGZ2approx;
-            
-        end
-        
-        %OUTPUT
-        fprintf('\n ********************************************************************* \n');
-        if FLAGS.excel == 1
-            %Output approximation load approximation
-            filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
-            approxinput=aprxINminGZ2approx;
-            description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
-            print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
-        else
-            fprintf('\nAPPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
-        end
-        
-    end
-    % END APPROXIMATION GRBF SECTION
+    %Function that performs all ANOVA calculations and outputs
+    AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA);
     
 end
 %END APPROXIMATION SECTION
