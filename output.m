@@ -72,9 +72,8 @@ if FLAGS.print == 1 || FLAGS.disp==1
     end
     
     %Statistics output section
-    
-    output_name{1}='Load Residual 2*(standard deviation)';
-    section_out=[load_line;cell(1),num2cell(twoSigma)];
+    output_name{1}='Percent Load Capacity of Residual Standard Deviation';
+    section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
     if FLAGS.disp==1
@@ -123,8 +122,8 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Percent Load Capacity of Residual Standard Deviation';
-    section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
+    output_name{1}='Load Residual 2*(standard deviation)';
+    section_out=[load_line;cell(1),num2cell(twoSigma)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
     if FLAGS.disp==1
