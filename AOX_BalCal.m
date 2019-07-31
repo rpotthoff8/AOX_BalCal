@@ -322,6 +322,7 @@ if FLAGS.balCal == 2
     wHist=zeros(numBasis,dimFlag);
     cHist=zeros(numBasis,dimFlag);
     centerIndexHist=zeros(numBasis,dimFlag);
+    center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
     
     for u=1:numBasis
@@ -346,6 +347,9 @@ if FLAGS.balCal == 2
         wHist(u,:) = w;
         cHist(u,:) = coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
+        for s=1:dimFlag
+            center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.  Dim 1= RBF #, Dim 2= Channel for voltage, Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
+        end
         etaHist{u} = eta;
         
         %update the approximation
@@ -477,7 +481,7 @@ if FLAGS.balVal == 1
         
         for u=1:numBasis
             %Call function to place single GRBF
-            [rbfc_INminGZvalid]=place_GRBF(u,dainputscalib,dainputsvalid,centerIndexHist,wHist,cHist);
+            [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,wHist,cHist,center_daHist);
             
             %update the approximation
             aprxINminGZ2valid = aprxINminGZ2valid+rbfc_INminGZvalid;
@@ -582,7 +586,7 @@ if FLAGS.balApprox == 1
         for u=1:numBasis
             
             %Call function to place single GRBF
-            [rbfc_INminGZapprox]=place_GRBF(u,dainputscalib,dainputsapprox,centerIndexHist,wHist,cHist);
+            [rbfc_INminGZapprox]=place_GRBF(u,dainputsapprox,wHist,cHist,center_daHist);
             
             %update the approximation
             aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
