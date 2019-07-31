@@ -146,7 +146,7 @@ end
 uniqueOut=struct();
 
 % Finds the average  of the natural zeros (called global zeros)
-globalZeros = mean(natzeros);
+globalZeros = mean(natzeros,1);
 
 % Subtracts global zeros from signal.
 dainputs0 = excessVec0 - globalZeros;
