@@ -274,7 +274,7 @@ end
 if FLAGS.hist == 1
     figure('Name',char(section),'NumberTitle','off','WindowState','maximized')
     for k0=1:length(targetRes(1,:))
-        subplot(2,3,k0)
+        subplot(2,ceil(dimFlag/2),k0)
         binWidth = 0.25;
         edges = [-4.125:binWidth:4.125];
         h = histogram(targetRes(:,k0)/standardDev(k0,:),edges,'Normalization','probability');
