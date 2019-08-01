@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 26-Jul-2019 13:23:30
+% Last Modified by GUIDE v2.5 31-Jul-2019 16:35:04
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -180,6 +180,7 @@ if exist(fileName,'file')
         set(handles.output_to_calib_FLAG,'Value',default.output_to_calib_FLAG);
         set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
         output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
+        set(handles.calib_model_save_FLAG,'Value',default.calib_model_save_FLAG);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -297,6 +298,7 @@ outStruct.PI_print = get(handles.PI_print,'Value');
 
 outStruct.output_location=get(handles.output_location,'String');
 outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
+outStruct.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -1262,6 +1264,7 @@ default.PI_print = get(handles.PI_print,'Value');
 default.output_location=get(handles.output_location,'String');
 default.output_to_calib_FLAG=get(handles.output_to_calib_FLAG,'Value');
 default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
+default.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
@@ -2101,8 +2104,8 @@ else
     set(handles.output_location_button,'Enable','off');
     set(handles.output_location,'Enable','off');
     calib_path=get(handles.calPath,'String');
-    if isempty(find(calib_path == '\',1))==0
-        calib_path=extractBefore(calib_path,find(calib_path == '\', 1, 'last'));
+    if isempty(calib_path)==0
+        [calib_path,~,~] = fileparts(calib_path);
     else
         calib_path=pwd;
     end
@@ -2117,3 +2120,12 @@ function subfolder_FLAG_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of subfolder_FLAG
+
+
+% --- Executes on button press in calib_model_save_FLAG.
+function calib_model_save_FLAG_Callback(hObject, eventdata, handles)
+% hObject    handle to calib_model_save_FLAG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of calib_model_save_FLAG

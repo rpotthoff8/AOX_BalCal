@@ -408,7 +408,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
             balfitANOVA1([1:nterms+1],:) = num2cell([balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)]);
             toplayer2(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
             BALFIT_STAT_VOLTAGE_1{k} = array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10));
-            BALFIT_REGRESS_COEFFS_1{k} = cell2table([balfitANOVA1(1:nterms+1,1),[{'INTERCEPT'};Term_Names],balfitANOVA1(1:nterms+1,2:dimFlag+1)],'VariableNames',balfitregresslist);
+            BALFIT_REGRESS_COEFFS_1{k} = cell2table([balfitANOVA1(1:nterms+1,1),[{'INTERCEPT'};Term_Names],balfitANOVA1(1:nterms+1,2:end)],'VariableNames',balfitregresslist);
         end
         
         if FLAGS.BALFIT_ANOVA==1
@@ -545,6 +545,20 @@ if strcmp(section,{'Calibration Algebraic'})==1
         description='CALIBRATION ALGEBRAIC MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
     end
+    
+    if FLAGS.calib_model_save==1
+        %Output all calibration parameters
+        filename = ['APPROX_AOX_CALIBRATION_MODEL_',REPORT_NO,'.mat'];
+        fullpath=fullfile(output_location,filename);
+        description='CALIBRATION MODEL';
+        try
+            save(fullpath,'coeff','ANOVA');
+            fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+        catch ME
+            fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');
+            fprintf('\n')
+        end
+    end
 end
 
 %% GRBF Calibration Specific Outputs
@@ -576,20 +590,22 @@ if strcmp(section,{'Calibration GRBF'})==1
         precision='%.16f';
         description='CALIBRATION GRBF CENTER INDICES';
         print_dlmwrite(filename,input,precision,description,output_location);
-        
     end
     
-    %Output all GRBF parameters
-    filename = 'APPROX_AOX_GRBF_parameters.mat';
-    fullpath=fullfile(output_location,filename);
-    description='GRBF PARAMETERS';
-    try
-        save(fullpath,'cHist','wHist','center_daHist');
-        fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
-    catch ME
-        fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');
-        fprintf('\n')
+    if FLAGS.calib_model_save==1
+        %Output all calibration parameters
+        filename = ['APPROX_AOX_CALIBRATION_MODEL_',REPORT_NO,'.mat'];
+        fullpath=fullfile(output_location,filename);
+        description='CALIBRATION MODEL';
+        try
+            save(fullpath,'coeff','ANOVA','cHist','wHist','center_daHist');
+            fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+        catch ME
+            fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');
+            fprintf('\n')
+        end
     end
+    
 end
 
 %% Algebraic Validation Specific Outputs
