@@ -79,3 +79,6 @@ if FLAGS.save_files==1
     fprintf('%s',strcat('Check '," ",output_location,' for output files.'))
 end
 fprintf('\n');
+if isdeployed % Optional, use if you want the non-deployed version to exit immediately
+  input('Press enter to finish and close');
+end

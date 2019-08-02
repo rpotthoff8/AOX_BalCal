@@ -11,7 +11,7 @@ clc;
 clearvars;
 close all;
 % workspace;
-fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.\n')
+fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh, Javier Villarreal, and John Potthoff.  All Rights Reserved.\n')
 % The mean of the approximation residual (testmatrix minus local approximation) for each section is taken as the tare for that channel and section. The tare is subtracted from the global values to make the local loads. The accuracy of the validation, when compared to the known loads, is very sensitive to the value of the tares (which is unknown) and NOT the order of the calibration equations.
 % Because of measurement noise in the voltage the APPROXIMATION tare is computed by post-processing. The average and stddev is taken of all channels per section. If the stddev is less than 0.25% of the capacity for any station the tare is equal to the average for that channel. If the stddev is greater than 0.25% then the approximation at the local zero is taken as the tare for that channel and section. The global approximation is left alone but the tare is subtracted from the values to make the local loads. Line 3133.
 %
@@ -539,3 +539,7 @@ fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
 fprintf('%s',strcat('Check '," ",output_location,' for output files.'))
 fprintf('\n');
+
+if isdeployed % Optional, use if you want the non-deployed version to exit immediately
+  input('Press enter to finish and close');
+end
