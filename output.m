@@ -552,7 +552,8 @@ if strcmp(section,{'Calibration Algebraic'})==1
         fullpath=fullfile(output_location,filename);
         description='CALIBRATION MODEL';
         try
-            save(fullpath,'coeff','ANOVA');
+            model=FLAGS.model;
+            save(fullpath,'coeff','ANOVA','loadlist','model');
             fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
         catch ME
             fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');
@@ -598,7 +599,8 @@ if strcmp(section,{'Calibration GRBF'})==1
         fullpath=fullfile(output_location,filename);
         description='CALIBRATION MODEL';
         try
-            save(fullpath,'coeff','ANOVA','cHist','wHist','center_daHist');
+            model=FLAGS.model;
+            save(fullpath,'coeff','ANOVA','loadlist','model','cHist','wHist','center_daHist');
             fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
         catch ME
             fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');
