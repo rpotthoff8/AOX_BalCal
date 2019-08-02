@@ -441,12 +441,9 @@ if FLAGS.balVal == 1
     
     %CALCULATE PREDICTION INTERVAL FOR POINTS
     if FLAGS.loadPI==1
-        loadPI_valid=zeros(size(aprxINvalid,1),size(aprxINvalid,2));
-        for i=1:dimFlag
-            for j = 1:numptsvalid
-                loadPI_valid(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINvalid(j,:)*ANOVA(i).PI.invXtX*comINvalid(j,:)')));
-            end
-        end
+        
+        [loadPI_valid]=calc_alg_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
+       
         newStruct=struct('loadPI_valid',loadPI_valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     end
@@ -527,14 +524,13 @@ if FLAGS.balApprox == 1
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
         GRBF.wHist=wHist;
         GRBF.cHist=cHist;
-        GRBF.center_daHist=center_daHist;
-        
+        GRBF.center_daHist=center_daHist; 
     else
         GRBF='GRBFS NOT PLACED';
     end
     
     %Function that performs all ANOVA calculations and outputs
-    AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA);
+    [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA,anova_pct);
     
 end
 %END APPROXIMATION SECTION

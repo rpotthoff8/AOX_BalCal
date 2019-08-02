@@ -1,4 +1,4 @@
-function []=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA)
+function [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA,pct)
 %Function performs all calculations and outputs for approximation.  This
 %function can be called by both the main AOX_balcal code or the standalone
 %approximation code
@@ -15,6 +15,7 @@ function []=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesap
 %  output_location  =  save location for output files
 %  GRBF  =  Structure containing GRBF centers, widths, and coefficients if RBFs were placed in calibration
 %  ANOVA  =  ANOVA results needed for calculating PI
+%  pct  =  Percent confidence level for PI
 
 %OUTPUTS:
 
@@ -33,15 +34,12 @@ comINapprox = balCal_algEqns(FLAGS.model,dainputsapprox,seriesapprox,0);
 %LOAD APPROXIMATION
 %define the approximation for inputs minus global zeros
 aprxINapprox = comINapprox*coeff;        %to find approximation AJM111516
-aprxINminGZapprox = aprxINapprox;
+aprxINminGZapprox.ALG = aprxINapprox;
 
 if FLAGS.loadPI==1
-    loadPI_approx=zeros(size(aprxINapprox,1),size(aprxINapprox,2));
-    for i=1:dimFlag
-        for j = 1:size(aprxINapprox,1)
-            loadPI_approx(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINapprox(j,:)*ANOVA(i).PI.invXtX*comINapprox(j,:)')));
-        end
-    end
+    loadPI_approx.ALG=calc_alg_PI(ANOVA,pct,comINapprox,aprxINapprox); %Calculate load PI
+else
+    loadPI_approx='PI NOT COMPUTED';
 end
 
 %OUTPUT
@@ -49,7 +47,7 @@ fprintf('\n ********************************************************************
 if FLAGS.excel == 1
     %Output approximation load approximation
     filename = 'GLOBAL_ALG_APPROX.csv';
-    approxinput=aprxINminGZapprox;
+    approxinput=aprxINminGZapprox.ALG;
     description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
     print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
 else
@@ -58,7 +56,7 @@ end
 
 %OUTPUTING APPROXIMATION WITH PI
 if FLAGS.approx_and_PI_print==1
-    approxinput=cellstr(string(aprxINminGZapprox)+' +/- '+string(loadPI_approx));
+    approxinput=cellstr(string(aprxINminGZapprox.ALG)+' +/- '+string(loadPI_approx.ALG));
     filename = 'APPROX_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
     description='ALG APPROXIMATION LOAD APPROX WITH PREDICTION INTERVALS';
     print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
@@ -67,7 +65,7 @@ end
 %OUTPUTING PI VALUE
 if FLAGS.PI_print==1
     filename = 'APPROX_ALG_PREDICTION_INTERVAL.csv';
-    approxinput=loadPI_approx;
+    approxinput=loadPI_approx.ALG;
     description='APPROXIMATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
     print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
 end
@@ -82,7 +80,7 @@ if FLAGS.balCal == 2
     
     numBasis=size(GRBF.wHist,1);
     
-    aprxINminGZ2approx = aprxINminGZapprox;
+    aprxINminGZ2approx = aprxINminGZapprox.ALG;
     aprxINminGZ_Histapprox = cell(numBasis,1);
     
     for u=1:numBasis
@@ -97,6 +95,9 @@ if FLAGS.balCal == 2
     end
     
     %OUTPUT
+    aprxINminGZapprox.GRBF=aprxINminGZ2approx;
+    
+    
     fprintf('\n ********************************************************************* \n');
     if FLAGS.excel == 1
         %Output approximation load approximation
