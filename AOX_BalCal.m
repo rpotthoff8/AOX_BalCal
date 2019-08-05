@@ -10,8 +10,8 @@
 clc;
 clearvars;
 close all;
-workspace;
-fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh and Javier Villarreal.  All Rights Reserved.\n')
+% workspace;
+fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh, Javier Villarreal, and John Potthoff.  All Rights Reserved.\n')
 % The mean of the approximation residual (testmatrix minus local approximation) for each section is taken as the tare for that channel and section. The tare is subtracted from the global values to make the local loads. The accuracy of the validation, when compared to the known loads, is very sensitive to the value of the tares (which is unknown) and NOT the order of the calibration equations.
 % Because of measurement noise in the voltage the APPROXIMATION tare is computed by post-processing. The average and stddev is taken of all channels per section. If the stddev is less than 0.25% of the capacity for any station the tare is equal to the average for that channel. If the stddev is greater than 0.25% then the approximation at the local zero is taken as the tare for that channel and section. The global approximation is left alone but the tare is subtracted from the values to make the local loads. Line 3133.
 %
@@ -77,8 +77,23 @@ FLAGS.BALFIT_Matrix=out.BALFIT_Matrix;
 FLAGS.BALFIT_ANOVA=out.BALFIT_ANOVA;
 FLAGS.Rec_Model=out.Rec_Model;
 anova_pct=out.anova_pct;
+FLAGS.approx_and_PI_print=out.approx_and_PI_print;
+FLAGS.PI_print=out.PI_print;
 
+REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
+output_location=[out.output_location,filesep];
+if out.subfolder_FLAG==1
+    try
+        new_subpath=fullfile(output_location,['AOX_BalCal_Results_',REPORT_NO]);
+        mkdir(char(new_subpath));
+        output_location=new_subpath;
+    catch
+        fprintf('Unable to create new subfolder. Saving results in: '); fprintf('%s',output_location); fprintf('\n');
+    end
+end
 
+%TO SAVE .MAT FILE OF CALIBRATION MODEL
+FLAGS.calib_model_save=out.calib_model_save_FLAG;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       INITIALIZATION SECTION
@@ -86,6 +101,8 @@ fprintf('\nWorking ...\n')
 % Load data and characterize series
 load(out.savePathcal,'-mat');
 series0 = series;
+series20=series2;
+pointID0=pointID;
 [~,s_1st0,~] = unique(series0);
 nseries0 = length(s_1st0);
 [numpts0, dimFlag] = size(excessVec0);
@@ -132,7 +149,7 @@ end
 uniqueOut=struct();
 
 % Finds the average  of the natural zeros (called global zeros)
-globalZeros = mean(natzeros);
+globalZeros = mean(natzeros,1);
 
 % Subtracts global zeros from signal.
 dainputs0 = excessVec0 - globalZeros;
@@ -201,6 +218,8 @@ if FLAGS.balOut == 1
         targetMatrix0(OUTLIER_ROWS,:) = [];
         excessVec0(OUTLIER_ROWS,:) = [];
         series0(OUTLIER_ROWS) = [];
+        series20(OUTLIER_ROWS)=[];
+        pointID0(OUTLIER_ROWS)=[];
         comIN0(OUTLIER_ROWS,:) = [];
         [~,s_1st0,~] = unique(series0);
         nseries0 = length(s_1st0);
@@ -268,9 +287,9 @@ end
 %OUTPUT FUNCTION
 %Function creates all outputs for calibration, algebraic section
 section={'Calibration Algebraic'};
-newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix,'targetMatrix0',targetMatrix0,'loadunits',{loadunits(:)},'voltunits',{voltunits(:)});
+newStruct=struct('aprxIN',aprxIN,'coeff',coeff,'nterms',nterms,'ANOVA',ANOVA,'balfitcomIN',balfitcomIN0,'balfitxcalib',balfitxcalib,'balfittargetMatrix',balfittargetMatrix0,'balfitANOVA',balfitANOVA,'balfit_regress_matrix',balfit_regress_matrix,'targetMatrix0',targetMatrix0,'loadunits',{loadunits(:)},'voltunits',{voltunits(:)},'balance_type',balance_type,'description',description);
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
 
 %END CALIBRATION DIRECT APPROACH ALGEBRAIC SECTION
 %%
@@ -306,6 +325,7 @@ if FLAGS.balCal == 2
     wHist=zeros(numBasis,dimFlag);
     cHist=zeros(numBasis,dimFlag);
     centerIndexHist=zeros(numBasis,dimFlag);
+    center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
     
     for u=1:numBasis
@@ -330,6 +350,9 @@ if FLAGS.balCal == 2
         wHist(u,:) = w;
         cHist(u,:) = coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
+        for s=1:dimFlag
+            center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.  Dim 1= RBF #, Dim 2= Channel for voltage, Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
+        end
         etaHist{u} = eta;
         
         %update the approximation
@@ -352,9 +375,9 @@ if FLAGS.balCal == 2
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
-    newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist);
+    newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist,'center_daHist',center_daHist,'ANOVA',ANOVA,'coeff',coeff);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-    output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+    output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
     
 end
 %END CALIBRATION GRBF SECTION
@@ -376,7 +399,7 @@ if FLAGS.balVal == 1
     dimFlagvalid = length(excessVecvalid(1,:));
     
     %find the average natural zeros (also called global zeros)
-    globalZerosvalid = mean(natzerosvalid);
+    globalZerosvalid = mean(natzerosvalid,1);
     
     %load capacities
     loadCapacitiesvalid(loadCapacitiesvalid == 0) = realmin;
@@ -418,12 +441,11 @@ if FLAGS.balVal == 1
     
     %CALCULATE PREDICTION INTERVAL FOR POINTS
     if FLAGS.loadPI==1
-        loadPI_valid=zeros(size(aprxINvalid,1),size(aprxINvalid,2));
-        for i=1:dimFlag
-            for j = 1:numptsvalid
-                loadPI_valid(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINvalid(j,:)*ANOVA(i).PI.invXtX*comINvalid(j,:)')));
-            end
-        end
+        
+        [loadPI_valid]=calc_alg_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
+       
+        newStruct=struct('loadPI_valid',loadPI_valid);
+        uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     end
     
     %OUTPUT FUNCTION
@@ -431,7 +453,7 @@ if FLAGS.balVal == 1
     newStruct=struct('aprxINminGZvalid',aprxINminGZvalid);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     section={'Validation Algebraic'};
-    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist,seriesvalid,excessVecvalidkeep,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,dimFlag,voltagelist,reslist,numBasis,pointIDvalid,series2valid,output_location,REPORT_NO,uniqueOut)
     
     %END VALIDATION DIRECT APPROACH ALGEBRAIC SECTION
     
@@ -459,7 +481,7 @@ if FLAGS.balVal == 1
         
         for u=1:numBasis
             %Call function to place single GRBF
-            [rbfc_INminGZvalid]=place_GRBF(u,dainputscalib,dainputsvalid,centerIndexHist,wHist,cHist);
+            [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,wHist,cHist,center_daHist);
             
             %update the approximation
             aprxINminGZ2valid = aprxINminGZ2valid+rbfc_INminGZvalid;
@@ -484,7 +506,7 @@ if FLAGS.balVal == 1
         section={'Validation GRBF'};
         newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
-        output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,numBasis,uniqueOut)
+        output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,reslist,numBasis,pointIDvalid,series2valid,output_location,REPORT_NO,uniqueOut)
     end
     %END GRBF SECTION FOR VALIDATION
 end
@@ -499,83 +521,25 @@ if FLAGS.balApprox == 1
     %DEFINE THE PRODUCTION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
     load(out.savePathapp,'-mat');
     
-    %natural zeros (also called global zeros)
-    globalZerosapprox = mean(natzerosapprox);
-    
-    % Subtract the Global Zeros from the Inputs
-    dainputsapprox = excessVecapprox-globalZerosapprox;
-    
-    % Call the Algebraic Subroutine
-    comINapprox = balCal_algEqns(FLAGS.model,dainputsapprox,seriesapprox,0);
-    
-    %LOAD APPROXIMATION
-    %define the approximation for inputs minus global zeros
-    aprxINapprox = comINapprox*coeff;        %to find approximation AJM111516
-    aprxINminGZapprox = aprxINapprox;
-    
-    if FLAGS.loadPI==1
-        loadPI_approx=zeros(size(aprxINapprox,1),size(aprxINapprox,2));
-        for i=1:dimFlag
-            for j = 1:size(aprxINapprox,1)
-                loadPI_approx(j,i)=ANOVA(i).PI.T_cr*sqrt(ANOVA(i).PI.sigma_hat_sq*(1+(comINapprox(j,:)*ANOVA(i).PI.invXtX*comINapprox(j,:)')));
-            end
-        end
-    end
-    
-    %OUTPUT
-    fprintf('\n ********************************************************************* \n');
-    if FLAGS.excel == 1
-        %Output approximation load approximation
-        filename = 'GLOBAL_ALG_APPROX.csv';
-        input=aprxINminGZapprox;
-        precision='%.16f';
-        description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
+    if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
+        GRBF.wHist=wHist;
+        GRBF.cHist=cHist;
+        GRBF.center_daHist=center_daHist; 
     else
-        fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
+        GRBF='GRBFS NOT PLACED';
     end
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %                    RBF SECTION FOR APPROXIMATION     AJM 6/29/17                         %
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %goal to use centers, width and coefficients to approxate parameters against
-    %independent data
-    
-    if FLAGS.balCal == 2
-        
-        aprxINminGZ2approx = aprxINminGZapprox;
-        aprxINminGZ_Histapprox = cell(numBasis,1);
-        
-        for u=1:numBasis
-            
-            %Call function to place single GRBF
-            [rbfc_INminGZapprox]=place_GRBF(u,dainputscalib,dainputsapprox,centerIndexHist,wHist,cHist);
-            
-            %update the approximation
-            aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
-            aprxINminGZ_Histapprox{u} = aprxINminGZ2approx;
-            
-        end
-        
-        %OUTPUT
-        fprintf('\n ********************************************************************* \n');
-        if FLAGS.excel == 1
-            %Output approximation load approximation
-            filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
-            input=aprxINminGZ2approx;
-            precision='%.16f';
-            description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
-            print_dlmwrite(filename,input,precision,description);
-        else
-            fprintf('\nAPPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
-        end
-        
-    end
-    % END APPROXIMATION GRBF SECTION
+    %Function that performs all ANOVA calculations and outputs
+    [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA,anova_pct);
     
 end
 %END APPROXIMATION SECTION
 
 fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
+fprintf('%s',strcat('Check '," ",output_location,' for output files.'))
 fprintf('\n');
+
+if isdeployed % Optional, use if you want the non-deployed version to exit immediately
+  input('Press enter to finish and close');
+end

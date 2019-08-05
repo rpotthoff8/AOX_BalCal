@@ -1,10 +1,10 @@
 %Function prints provided input to file using dlmwrite.  Error handling
 %included to catch if the file is open and unable to write
 
-function []=print_dlmwrite(filename,input,precision,description)
-
+function []=print_dlmwrite(filename,input,precision,description,output_location)
+fullpath=fullfile(output_location,filename);
 try
-    dlmwrite(filename,input,'precision',precision);
+    dlmwrite(fullpath,input,'precision',precision);
     fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
 catch ME
     fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
