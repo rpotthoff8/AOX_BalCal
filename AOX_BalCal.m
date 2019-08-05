@@ -311,10 +311,9 @@ if FLAGS.balCal == 2
     for u=1:numBasis
         for s=1:dimFlag
             [~,centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
+            x_c = dainputscalib(centerIndexLoop(s),:);
             
-            for r=1:length(excessVec0(:,1))
-                eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
-            end
+            eta(:,s) = sum((dainputscalib-x_c).^2,2);
             
             %find widths 'w' by optimization routine
             w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),0,1 );
