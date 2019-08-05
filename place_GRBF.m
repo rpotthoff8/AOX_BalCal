@@ -1,4 +1,4 @@
-function [rbfc_INminGZ]=place_GRBF(u,dainputscalib,dainputs,centerIndexHist,wHist,cHist)
+function [rbfc_INminGZ]=place_GRBF(u,dainputs,wHist,cHist,center_daHist)
 %Function places a single GRBF for the validation or approximation section.
 
 %INPUTS:
@@ -8,6 +8,7 @@ function [rbfc_INminGZ]=place_GRBF(u,dainputscalib,dainputs,centerIndexHist,wHis
 %  centerIndexHist  =  History of GRBF centers, as determined from calibration section 
 %  wHist  =  History of GRBF widths, as determined from calibration section 
 %  cHist  =  History of GRBF coefficients, as determined from calibration section 
+%  center_daHist = Voltages of GRBF centers. Dim 1= RBF #, Dim 2= Channel for voltage, Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
 
 %OUTPUTS:
 %  rbfc_INminGZvalid  =  GRBF contribution for load approximation (aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ)
@@ -19,7 +20,8 @@ rbfc_INminGZ=zeros(size(dainputs));
 
 for s=1:size(dainputs,2) % loops through the components
     
-    adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputs;
+    adiffervalid=center_daHist(u,:,s)-dainputs;
+%     adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputs;
     etavalid(:,s) = dot(adiffervalid,adiffervalid,2);
     
     rbfINminGZvalid(:,s)=exp(etavalid(:,s)*log(abs(wHist(u,s))));
