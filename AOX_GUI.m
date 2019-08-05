@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 12-Jul-2019 13:06:13
+% Last Modified by GUIDE v2.5 31-Jul-2019 16:35:04
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -53,6 +53,7 @@ function AOX_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to AOX_GUI (see VARARGIN)
 set(handles.figure1, 'units', 'normalized', 'position', [0.15 0.1 0.5 0.8])
+set(handles.output_location,'String',pwd);
 global VERSION
 VERSION = 16;
 try
@@ -165,11 +166,21 @@ if exist(fileName,'file')
         Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
         set(handles.anova_FLAGcheck,'Value',default.anova);
         anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
+        
         set(handles.loadPI_FLAGcheck,'Value',default.loadPI);
+        loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
         set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
         set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
         set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
         set(handles.anova_pct,'String',default.anova_pct);
+        set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
+        set(handles.PI_print,'Value',default.PI_print);
+        
+        set(handles.output_location,'String',default.output_location);
+        set(handles.output_to_calib_FLAG,'Value',default.output_to_calib_FLAG);
+        set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
+        output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
+        set(handles.calib_model_save_FLAG,'Value',default.calib_model_save_FLAG);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
@@ -282,6 +293,12 @@ outStruct.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
 outStruct.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 outStruct.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 outStruct.anova_pct= str2num(get(handles.anova_pct,'String'));
+outStruct.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
+outStruct.PI_print = get(handles.PI_print,'Value');
+
+outStruct.output_location=get(handles.output_location,'String');
+outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
+outStruct.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -442,6 +459,7 @@ try
         set(handles.c51, 'Enable', 'off', 'String', splitrange{1,5,1});
         set(handles.c52, 'Enable', 'off', 'String', splitrange{1,5,2});
     end
+    output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
 catch
     disp('Problem occurred while reading Calibration file')
 end
@@ -564,11 +582,13 @@ function grbf_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of grbf
 if get(hObject,'Value') == 1
     set(handles.numBasisIn,'Enable','on');
+    set(handles.RBF_text,'Enable','on');
     %set(handles.loglog_FLAGcheck,'Enable','on');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','on');
     %set(handles.grbftares_FLAGcheck,'Enable','on');
 else
     set(handles.numBasisIn,'Enable','off');
+    set(handles.RBF_text,'Enable','off');
     %set(handles.loglog_FLAGcheck,'Enable','off');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','off');
     %set(handles.grbftares_FLAGcheck,'Enable','off');
@@ -1238,7 +1258,13 @@ default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
 default.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 default.anova_pct = get(handles.anova_pct,'String');
+default.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
+default.PI_print = get(handles.PI_print,'Value');
 
+default.output_location=get(handles.output_location,'String');
+default.output_to_calib_FLAG=get(handles.output_to_calib_FLAG,'Value');
+default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
+default.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
@@ -1458,6 +1484,8 @@ switch cva.type
         opts=delimitedTextImportOptions('DataLines',[cal.CSV(3,1)+1 bottom]);
         series_bulk=readtable(cal.Path,opts);
         series=str2double(table2array(series_bulk(:,cal.CSV(3,2)+1)));
+        series2=table2array(series_bulk(:,cal.CSV(3,2)+2));
+        pointID=table2array(series_bulk(:,cal.CSV(3,2)));
         clear A bottom opts series_bulk
 
         %         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
@@ -1482,6 +1510,28 @@ switch cva.type
             splitunitRow=cellstr(strsplit(string(label_text1{1}{cal.CSV(1,1)-1}),',','CollapseDelimiters',false)); %extract row with units
             loadunits=splitunitRow(cal.CSV(1,2)+1:cal.loadend(2)+1); %extract load units 
             voltunits=splitunitRow(cal.CSV(2,2)+1:cal.voltend(2)+1); %extract voltage units
+            
+            try
+                %START: find file description and balance name: JRP 25 July 19
+                description_i=find(contains(label_text1{1},'DESCRIPTION'));
+                assert(any(description_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
+                descriptionRow=cellstr(strsplit(string(label_text1{1}{description_i}),',','CollapseDelimiters',false)); %Extract row with data description
+                description=descriptionRow(find(contains(descriptionRow,'DESCRIPTION'))+1);          
+            catch
+                description={'NO DESCRIPTION FOUND'};
+            end
+            clear description_i descriptionRow
+            
+            try
+                balance_i=find(contains(label_text1{1},'BALANCE_NAME'));
+                assert(any(balance_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
+                balanceRow=cellstr(strsplit(string(label_text1{1}{balance_i}),',','CollapseDelimiters',false)); %Extract row with balance name
+                balance_type=balanceRow(find(contains(balanceRow,'BALANCE_NAME'))+1);
+            catch
+                balance_type={'NO BALANCE NAME FOUND'};
+            end
+            clear balance_i balanceRow
+            %END:find file description and balance name: JRP 25 July 19
             clear file label_text1 splitlabelRow splitunitRow
             %END: new approach, JRP 11 June 19
            
@@ -1513,6 +1563,8 @@ switch cva.type
         opts=delimitedTextImportOptions('DataLines',[val.CSV(3,1)+1 bottom]);
         series_bulk=readtable(val.Path,opts);
         seriesvalid=str2double(table2array(series_bulk(:,val.CSV(3,2)+1)));
+        series2valid=table2array(series_bulk(:,val.CSV(3,2)+2));
+        pointIDvalid=table2array(series_bulk(:,val.CSV(3,2)));
         clear A bottom opts series_bulk
 %         seriesvalid =            csvread(val.Path,val.CSV(3,1),val.CSV(3,2),val.Range{3});
 
@@ -1539,6 +1591,8 @@ switch cva.type
         opts=delimitedTextImportOptions('DataLines',[app.CSV(3,1)+1 bottom]);
         series_bulk=readtable(app.Path,opts);
         seriesapprox=str2double(table2array(series_bulk(:,app.CSV(3,2)+1)));
+        series2approx=table2array(series_bulk(:,app.CSV(3,2)+2));
+        pointIDapprox=table2array(series_bulk(:,app.CSV(3,2)));
         clear A bottom opts series_bulk 
 %         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
         
@@ -1881,6 +1935,7 @@ else
     set(handles.anova_pct_text,'Enable','on');
 
 end
+loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles);
 
 % --- Executes on button press in loadPI_FLAGcheck.
 function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
@@ -1889,6 +1944,13 @@ function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of loadPI_FLAGcheck
+if get(hObject,'Value') == 0
+    set(handles.approx_and_PI_print,'Enable','off','Value',0);
+    set(handles.PI_print,'Enable','off','Value',0);
+else
+     set(handles.approx_and_PI_print,'Enable','on');
+     set(handles.PI_print,'Enable','on');
+end
 
 
 
@@ -1973,3 +2035,97 @@ function edit57_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in approx_and_PI_print.
+function approx_and_PI_print_Callback(hObject, eventdata, handles)
+% hObject    handle to approx_and_PI_print (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of approx_and_PI_print
+
+
+% --- Executes on button press in PI_print.
+function PI_print_Callback(hObject, eventdata, handles)
+% hObject    handle to PI_print (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of PI_print
+
+
+
+function output_location_Callback(hObject, eventdata, handles)
+% hObject    handle to output_location (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of output_location as text
+%        str2double(get(hObject,'String')) returns contents of output_location as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function output_location_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to output_location (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+
+% --- Executes on button press in output_location_button.
+function output_location_button_Callback(hObject, eventdata, handles)
+% hObject    handle to output_location_button (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+selpath=uigetdir;
+set(handles.output_location,'String',selpath);
+
+
+% --- Executes on button press in output_to_calib_FLAG.
+function output_to_calib_FLAG_Callback(hObject, eventdata, handles)
+% hObject    handle to output_to_calib_FLAG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of output_to_calib_FLAG
+if get(hObject,'Value') == 0
+    set(handles.output_location_button,'Enable','on');
+    set(handles.output_location,'Enable','on');
+    set(handles.output_location,'String',pwd);
+else
+    set(handles.output_location_button,'Enable','off');
+    set(handles.output_location,'Enable','off');
+    calib_path=get(handles.calPath,'String');
+    if isempty(calib_path)==0
+        [calib_path,~,~] = fileparts(calib_path);
+    else
+        calib_path=pwd;
+    end
+    set(handles.output_location,'String',calib_path);
+end
+
+
+% --- Executes on button press in subfolder_FLAG.
+function subfolder_FLAG_Callback(hObject, eventdata, handles)
+% hObject    handle to subfolder_FLAG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of subfolder_FLAG
+
+
+% --- Executes on button press in calib_model_save_FLAG.
+function calib_model_save_FLAG_Callback(hObject, eventdata, handles)
+% hObject    handle to calib_model_save_FLAG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of calib_model_save_FLAG

@@ -21,10 +21,12 @@ end
 sub = 0; 
 r = min(n_dim,6);
 for i = 1:n_dim
-    if i == 7
-        figure
+    if i>1 && rem(i,6) == 1
+        h1=gcf;
+        figure('Name',h1.Name,'NumberTitle','off','WindowState','maximized');
         sub = 6;
-        r = n_dim - 6;
+%         r = n_dim - 6;
+        r = 6;
     end
     subplot(r, 1, i-sub); hold on
     axis([1 n_data -1 1])
@@ -40,7 +42,7 @@ for i = 1:n_dim
     xlabel('Data point index');
     ylabel(strcat('\Delta',loadlist{i}));
     title(sprintf('Residual; %% of Load Capacity; Standard Deviation = %0.4f%%',stdDevPercentCapacity(i)));
-    set(gcf,'Position',[100 50 825 min(r*175.5,900)]);
+%     set(gcf,'Position',[100 50 825 min(r*175.5,900)]);
     hold off
 end
 

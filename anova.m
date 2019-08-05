@@ -209,6 +209,7 @@ ANOVA.PI.T_cr = T_cr;
 ANOVA.PI.sigma_hat_sq = sigma_hat_sq;
 ANOVA.PI.invXtX = invXtX(1:(size(X,2)-nseries),1:(size(X,2)-nseries));
 ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
+ANOVA.PI.dof_e=dof_e;
 
 %% Coded values for polynomial regressions
 % Values of the variables are coded by centering or expressing the levels

@@ -1,7 +1,7 @@
 %Function creates all the outputs for the calibration, algebraic section
 %This simplifies following the main code
 
-function [] = output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,uniqueOut)
+function [] = output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID,series2,output_location,REPORT_NO,uniqueOut)
 %Split uniqueOut structure into individual variables
 names = fieldnames(uniqueOut);
 for i=1:length(names)
@@ -38,7 +38,7 @@ if FLAGS.print == 1 || FLAGS.disp==1
     
     %Define Header section
     Header_cells{1,1}=char(strcat(section, {' '},'Results'));
-    Header_cells{2,1}=char(strcat('Performed:',{' '},datestr( datetime(now,'ConvertFrom','datenum'))));
+    Header_cells{2,1}=char(strcat('REPORT NO:',{' '},REPORT_NO));
     Header_cells{3,1}=char(strcat(strtok(section),{' '}, 'Input File:',{' '},fileName));
     if FLAGS.balOut == 1
         Header_cells{4,1}='Calibration Outliers Flagged: TRUE';
@@ -72,9 +72,8 @@ if FLAGS.print == 1 || FLAGS.disp==1
     end
     
     %Statistics output section
-    
-    output_name{1}='Load Residual 2*(standard deviation)';
-    section_out=[load_line;cell(1),num2cell(twoSigma)];
+    output_name{1}='Percent Load Capacity of Residual Standard Deviation';
+    section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
     if FLAGS.disp==1
@@ -123,16 +122,6 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Percent Load Capacity of Residual Standard Deviation';
-    section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
-    end
-    
     output_name{1}='Maximum Load Residual';
     section_out=[load_line;cell(1),num2cell(maxTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
@@ -145,6 +134,16 @@ if FLAGS.print == 1 || FLAGS.disp==1
     
     output_name{1}='Minimum Load Residual';
     section_out=[load_line;cell(1),num2cell(minTargets)];
+    csv_output=[csv_output;output_name;section_out;empty_cells];
+    %Command window printing;
+    if FLAGS.disp==1
+        fprintf(output_name{:})
+        fprintf('\n')
+        disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+    end
+    
+    output_name{1}='Load Residual 2*(standard deviation)';
+    section_out=[load_line;cell(1),num2cell(twoSigma)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
     if FLAGS.disp==1
@@ -220,13 +219,14 @@ if FLAGS.print == 1 || FLAGS.disp==1
     if FLAGS.print==1
         warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
         filename=char(strcat(strtok(section),{' '},'Report.xlsx'));
+        fullpath=fullfile(output_location,filename);
         try
             if contains(section,'Algebraic')==1
-                delete(char(filename))
+                delete(char(fullpath))
             end
             %Print statisitics
             sheet=contains(section,'GRBF')+1; %Set sheet to print to: 1 for algebraic, 2 for GRBF
-            writetable(cell2table(csv_output),filename,'writevariablenames',0,'Sheet',sheet,'UseExcel', false)
+            writetable(cell2table(csv_output),fullpath,'writevariablenames',0,'Sheet',sheet,'UseExcel', false)
             %Write filename to command window
             fprintf('\n'); fprintf(char(upper(strcat(section,{' '}, 'MODEL REPORT FILE:', {' '})))); fprintf(char(filename)); fprintf(', Sheet: '); fprintf(char(num2str(sheet))); fprintf('\n')
         catch ME
@@ -238,12 +238,12 @@ if FLAGS.print == 1 || FLAGS.disp==1
         end
         
         try %Rename excel sheets and delete extra sheets, only possible on PC
-            [~,sheets]=xlsfinfo(filename);
+            [~,sheets]=xlsfinfo(fullpath);
             s = what;
             e = actxserver('Excel.Application'); % # open Activex server
             e.DisplayAlerts = false;
             e.Visible=false;
-            ewb = e.Workbooks.Open(char(strcat(s.path,'\',filename))); % # open file (enter full path!)
+            ewb = e.Workbooks.Open(char(fullpath)); % # open file (enter full path!)
             
             if contains(section,'Algebraic')==1
                 ewb.Worksheets.Item(sheet).Name = 'Algebraic Results'; % # rename 1st sheet
@@ -267,14 +267,14 @@ end
 %% Residual vs datapoint plot
 if FLAGS.res == 1
     figure('Name',char(strcat(section,{' '},'Model; Residuals of Load Versus Data Point Index')),'NumberTitle','off','WindowState','maximized')
-    plotResPages(series0, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
+    plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
 end
 
 %% OUTPUT HISTOGRAM PLOTS
 if FLAGS.hist == 1
     figure('Name',char(section),'NumberTitle','off','WindowState','maximized')
     for k0=1:length(targetRes(1,:))
-        subplot(2,3,k0)
+        subplot(2,ceil(dimFlag/2),k0)
         binWidth = 0.25;
         edges = [-4.125:binWidth:4.125];
         h = histogram(targetRes(:,k0)/standardDev(k0,:),edges,'Normalization','probability');
@@ -298,16 +298,6 @@ if FLAGS.rescorr == 1
     correlationPlot(excessVec0, targetRes, voltagelist, reslist);
 end
 
-%% Algebraic Validation Specific Outputs
-if strcmp(section,{'Validation Algebraic'})==1
-    if FLAGS.excel == 1
-        filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
-        input=aprxINminGZvalid;
-        precision='%.16f';
-        description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
-    end
-end
 
 %% Algebraic Calibration Specific Outputs
 if strcmp(section,{'Calibration Algebraic'})==1
@@ -318,7 +308,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
         input=[coeff;zeros(1,dimFlag)];
         precision='%.16f';
         description='CALIBRATION ALGEBRAIC MODEL COEFFICIENT MATRIX';
-        print_dlmwrite(filename,input,precision,description);
+        print_dlmwrite(filename,input,precision,description,output_location);
     end
     
     %%% ANOVA Stats AJM 6_12_19
@@ -346,11 +336,13 @@ if strcmp(section,{'Calibration Algebraic'})==1
         
         warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
         filename = 'DIRECT_ANOVA_STATS.xlsx';
+        fullpath=fullfile(output_location,filename); 
+
         try
-            delete(char(filename))
+            delete(char(fullpath))
             for k=1:dimFlag
-                writetable(STAT_LOAD{k},filename,'Sheet',k,'Range','A1');
-                writetable(REGRESS_COEFFS{k},filename,'Sheet',k,'Range','A4');
+                writetable(STAT_LOAD{k},fullpath,'Sheet',k,'Range','A1');
+                writetable(REGRESS_COEFFS{k},fullpath,'Sheet',k,'Range','A4');
             end
             fprintf('\nDIRECT METHOD ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n ');
         catch ME
@@ -365,11 +357,12 @@ if strcmp(section,{'Calibration Algebraic'})==1
         %Output recommended custom equation
         if FLAGS.Rec_Model==1
             filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
+            fullpath=fullfile(output_location,filename); 
             [leftColumn,topRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
             recTable=array2table(RECOMM_ALG_EQN,'VariableNames',topRow,'RowNames',leftColumn(:));
             description='DIRECT METHOD ANOVA RECOMMENDED CUSTOM EQUATION MATRIX';
             try
-                writetable(recTable,filename,'WriteRowNames',true);
+                writetable(recTable,fullpath,'WriteRowNames',true);
                 fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
             catch ME
                 fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
@@ -415,17 +408,18 @@ if strcmp(section,{'Calibration Algebraic'})==1
             balfitANOVA1([1:nterms+1],:) = num2cell([balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)]);
             toplayer2(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
             BALFIT_STAT_VOLTAGE_1{k} = array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10));
-            BALFIT_REGRESS_COEFFS_1{k} = cell2table([balfitANOVA1(1:nterms+1,1),[{'INTERCEPT'};Term_Names],balfitANOVA1(1:nterms+1,2:dimFlag+1)],'VariableNames',balfitregresslist);
+            BALFIT_REGRESS_COEFFS_1{k} = cell2table([balfitANOVA1(1:nterms+1,1),[{'INTERCEPT'};Term_Names],balfitANOVA1(1:nterms+1,2:end)],'VariableNames',balfitregresslist);
         end
         
         if FLAGS.BALFIT_ANOVA==1
             warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
             filename = 'BALFIT_ANOVA_STATS.xlsx';
+            fullpath=fullfile(output_location,filename); 
             try
-                delete(char(filename))
+                delete(char(fullpath))
                 for k=1:dimFlag
-                    writetable(BALFIT_STAT_VOLTAGE_1{k},filename,'Sheet',k,'Range','A1');
-                    writetable(BALFIT_REGRESS_COEFFS_1{k},filename,'Sheet',k,'Range','A4');
+                    writetable(BALFIT_STAT_VOLTAGE_1{k},fullpath,'Sheet',k,'Range','A1');
+                    writetable(BALFIT_REGRESS_COEFFS_1{k},fullpath,'Sheet',k,'Range','A4');
                 end
                 fprintf('\nBALFIT ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n');
                 %filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
@@ -443,13 +437,16 @@ if strcmp(section,{'Calibration Algebraic'})==1
     end
     
     if FLAGS.BALFIT_Matrix==1
-        filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.csv';
         [leftColumn_coeff,voltRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'loads'); %Get label names for custom equation matrix
         Header_cells=cell(18,dimFlag);
         dash_row=cell(1,dimFlag);
-        dash_row(:,:)={'-'};
+        dash_row(:,:)={'- - - - - - - -'};
+        dash_row{1,1}=repmat('- ',1,round(15*dimFlag/2));
         Header_cells(1,1)={'DATA_REDUCTION_MATRIX_IN_AMES_FORMAT'};
-        Header_cells(5,1)={datestr(now,'yyyy-mmdd-HHMMSS')};
+        Header_cells(2,1)={balance_type};
+        Header_cells(3,1)={description};
+        Header_cells(4,1)={'AOX_BalCal'};
+        Header_cells(5,1)={REPORT_NO};
         Header_cells(6,1)={'Primary Load Iteration Method'};
         Header_cells(7,:)=loadlist(1:dimFlag);
         Header_cells(8,:)=loadunits(1:dimFlag);
@@ -462,7 +459,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
         Header_cells(15,:)=num2cell(max(excessVec0));
         Header_cells(16,:)={'DEFINED'};
         Header_cells(17:18,:)=num2cell(balfit_regress_matrix(1:2,:));
-        leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'ITERATION_METHOD'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_SENSITIVITY'};{'NATURAL_ZERO'};{'INTERCEPT'}]; 
+        leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'ITERATION_METHOD'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_SENSITIVITY'};{'NATURAL_ZERO'};{'INTERCEPT'}];
         leftColumn=[leftColumn_head;{'D0[TRANSPONSE (C1INV)]'};voltRow;{'D1[MATRIX IS NOT USED]'};leftColumn_coeff(1:dimFlag);'D2[TRANSPOSE(C1INVC2)]';leftColumn_coeff(dimFlag+1:end)];
         D0=balfit_regress_matrix(3:2+dimFlag,:);
         D1=balfit_regress_matrix(3+dimFlag:2+2*dimFlag,:);
@@ -471,31 +468,97 @@ if strcmp(section,{'Calibration Algebraic'})==1
         content=[Header_cells;dash_row;num2cell(D0);dash_row;num2cell(D1);dash_row;num2cell(D2)];
         balfit_matrix=[leftColumn,content];
         
-        precision='%.16f';
+        % Text file to output data
+        filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.txt';
+        fullpath=fullfile(output_location,filename); 
         description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
-        %%% Balfit Stats and Matrix AJM 5_31_19
+        
         try
-            %Print Results
-            writetable(cell2table(balfit_matrix),filename,'writevariablenames',0)
+            % Open file for writing
+            fid = fopen(fullpath, 'w');
+            header_lines=[1:6];
+            text_lines=[7,8,12,13,16];
+            dash_lines=[19,19+dimFlag+1,19+2*dimFlag+2];
+            
+            for i=1:size(content,1) %Printing to text file
+                fprintf(fid,'%23s',leftColumn{i});
+                if ismember(i,header_lines) %Printing header cells
+                    fprintf(fid, ' %s \r\n', content{i,1});
+                elseif ismember(i,text_lines) %Printing text only lines
+                    for j=1:size(content,2)
+                        fprintf(fid, ' %14s', content{i,j});
+                    end
+                    fprintf(fid,'\r\n');
+                elseif ismember(i,dash_lines) %Printing dashed break lines
+                    dash_length=num2str(15*dimFlag);
+                    dash_format=" %"+dash_length+"s";
+                    for j=1:1
+                        fprintf(fid, char(dash_format), content{i,1});
+                    end
+                    fprintf(fid,'\r\n');
+                else %Printing numerical results in scientific notation
+                    for j=1:size(content,2)
+                        A_str = sprintf('% 10.6e',content{i,j});
+                        exp_portion=extractAfter(A_str,'e');
+                        num_portion=extractBefore(A_str,'e');
+                        if strlength(exp_portion)<4
+                            zeros_needed=4-strlength(exp_portion);
+                            zeros_add{1}=repmat('0',1,zeros_needed);
+                            exp_portion=[exp_portion(1),zeros_add{1},exp_portion(2:end)];
+                            A_str=[num_portion,'e',exp_portion];
+                        end
+                        fprintf(fid,' %s',A_str);
+                    end
+                    fprintf(fid,'\r\n');
+                end
+                
+            end
+            fclose(fid);
             %Write filename to command window
             fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
-        catch ME
+        catch
             fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
-            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
-                fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
-            end
-            fprintf('\n')
         end
+        
+%         precision='%.16f';
+%         description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
+%         %%% Balfit Stats and Matrix AJM 5_31_19
+%         try
+%             %Print Results
+%             writetable(cell2table(balfit_matrix),filename,'writevariablenames',0)
+%             %Write filename to command window
+%             fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+%         catch ME
+%             fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
+%             if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
+%                 fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
+%             end
+%             fprintf('\n')
+%         end
     end
     
     
     if FLAGS.excel == 1
         %Output calibration load approximation
         filename = 'CALIB_AOX_ALG_RESULT.csv';
-        input=aprxIN;
-        precision='%.16f';
+        approxinput=aprxIN;
         description='CALIBRATION ALGEBRAIC MODEL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
+    end
+    
+    if FLAGS.calib_model_save==1
+        %Output all calibration parameters
+        filename = ['APPROX_AOX_CALIBRATION_MODEL_',REPORT_NO,'.mat'];
+        fullpath=fullfile(output_location,filename);
+        description='CALIBRATION MODEL';
+        try
+            model=FLAGS.model;
+            save(fullpath,'coeff','ANOVA','loadlist','model');
+            fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+        catch ME
+            fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');
+            fprintf('\n')
+        end
     end
 end
 
@@ -504,45 +567,86 @@ if strcmp(section,{'Calibration GRBF'})==1
     if FLAGS.excel == 1
         %Output calibration load approximation
         filename = 'CALIB_AOX_GRBF_RESULT.csv';
-        input=aprxINminGZ2;
-        precision='%.16f';
+        approxinput=aprxINminGZ2;
         description='CALIBRATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
         
         %Output GRBF Widths
         filename = 'APPROX_AOX_GRBF_ws.csv';
         input=wHist;
         precision='%.16f';
         description='CALIBRATION GRBF WIDTHS';
-        print_dlmwrite(filename,input,precision,description);
+        print_dlmwrite(filename,input,precision,description,output_location);
         
         %Output GRBF coefficients
         filename = 'APPROX_AOX_GRBF_coeffs.csv';
         input=cHist;
         precision='%.16f';
         description='CALIBRATION GRBF COEFFICIENTS';
-        print_dlmwrite(filename,input,precision,description);
+        print_dlmwrite(filename,input,precision,description,output_location);
         
         %Output GRBF centers
         filename = 'APPROX_AOX_GRBF_Centers.csv';
         input=centerIndexHist;
         precision='%.16f';
         description='CALIBRATION GRBF CENTER INDICES';
-        print_dlmwrite(filename,input,precision,description);
+        print_dlmwrite(filename,input,precision,description,output_location);
+    end
+    
+    if FLAGS.calib_model_save==1
+        %Output all calibration parameters
+        filename = ['APPROX_AOX_CALIBRATION_MODEL_',REPORT_NO,'.mat'];
+        fullpath=fullfile(output_location,filename);
+        description='CALIBRATION MODEL';
+        try
+            model=FLAGS.model;
+            save(fullpath,'coeff','ANOVA','loadlist','model','cHist','wHist','center_daHist');
+            fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+        catch ME
+            fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');
+            fprintf('\n')
+        end
+    end
+    
+end
+
+%% Algebraic Validation Specific Outputs
+if strcmp(section,{'Validation Algebraic'})==1
+    if FLAGS.excel == 1
+        filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
+        approxinput=aprxINminGZvalid;
+        description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
+    end
+    
+    %OUTPUTING APPROXIMATION WITH PI
+    if FLAGS.approx_and_PI_print==1
+        filename = 'VALID_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
+        description='ALG VALID APPROX WITH PREDICTION INTERVALS';
+        approxinput=cellstr(string(aprxINminGZvalid)+' +/- '+string(loadPI_valid));
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
+    end
+    
+    %OUTPUTING PI VALUE
+    if FLAGS.PI_print==1
+        filename = 'VALID_ALG_PREDICTION_INTERVAL.csv';
+        description='VALIDATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
+        approxinput=loadPI_valid;
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
     end
 end
+
 %% GRBF Validation Specific Outputs
 if strcmp(section,{'Validation GRBF'})==1
     if FLAGS.excel == 1
         %Output validation load approximation
         filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
-        input=aprxINminGZ2valid;
-        precision='%.16f';
+        approxinput=aprxINminGZ2valid;
         description='VALIDATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
-        print_dlmwrite(filename,input,precision,description);
+        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
+
     end
 end
-
 end
 
 
@@ -577,7 +681,7 @@ block10=cell(dimFlag,1);
 for i=1:dimFlag
     block1(i)=leftlist(i);
     block2(i)=strcat('|',leftlist(i),'|');
-    block3(i)=strcat(leftlist(i),'^2');
+    block3(i)=strcat(leftlist(i),'*',leftlist(i));
     block4(i)=strcat(leftlist(i),'*|',leftlist(i),'|');
     
     for j=i+1:dimFlag
@@ -587,8 +691,8 @@ for i=1:dimFlag
         block8(count5)=strcat('|',leftlist(i),'|*',leftlist(j));
         count5=count5+1;
     end
-    block9(i)=strcat(leftlist(i),'^3');
-    block10(i)=strcat('|',leftlist(i),'^3|');
+    block9(i)=strcat(leftlist(i),'*',leftlist(i),'*',leftlist(i));
+    block10(i)=strcat('|',leftlist(i),'*',leftlist(i),'*',leftlist(i),'|');
 end
 
 %Select Terms based on model type selected
