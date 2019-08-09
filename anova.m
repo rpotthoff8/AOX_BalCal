@@ -25,7 +25,20 @@ end
 % b = (X' X)^-1 X y
 % NOTE: IF THIS METHOD THROWS UP WARNINGS ABOUT ILL-CONDITIONED, DO NOT
 % SUPPRESS THEM, IT IS IMPORTANT INFORMATION TO HAVE.
+lastwarn('');
 invXtX = inv(X'*X);
+[~,warnID]=lastwarn;
+if strcmp(warnID,'MATLAB:nearlySingularMatrix')==1
+    % The current data is extremely ill-conditioned, so warnings are semi-suppressed
+    % for now if the data is bad, since it can be very repetitive.
+    % This will be removed later, since those
+    % warnings can be useful.
+    warning('off','MATLAB:nearlySingularMatrix');
+    lastwarn('');
+    
+    fprintf('Matrix X''*X is nearly singlular: Using ''pinv'' instead.  Expect longer computation times. \n');
+    invXtX = pinv(X'*X);
+end
 beta = invXtX*X'*y;
 
 %% TEMPORARY
@@ -33,11 +46,11 @@ beta = invXtX*X'*y;
 % for now if the data is bad, since it can be very repetitive.
 % This will be removed later, since those
 % warnings can be useful.
-warnMsg = lastwarn;
-if ~isempty(warnMsg)
-    warning('off','MATLAB:nearlySingularMatrix');
-    lastwarn('');
-end
+% warnMsg = lastwarn;
+% if ~isempty(warnMsg)
+%     warning('off','MATLAB:nearlySingularMatrix');
+%     lastwarn('');
+% end
 %%
 
 %% Multicollinearity detection / VIF calcualtion

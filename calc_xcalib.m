@@ -32,7 +32,15 @@ for k = 1:dimFlag
 
     % SOLUTION
     if nseries==nseries0
-        xcalib_k = comIN_k\targetMatrix(:,k);
+        lastwarn('');
+        xcalib_k = comIN_k\targetMatrix(:,k); %CHANGED
+        [~,warnID]=lastwarn;
+        if strcmp(warnID,'MATLAB:rankDeficientMatrix')==1 || strcmp(warnID,'MATLAB:nearlySingularMatrix')==1
+            fprintf('Nearly Singular Result solving for coefficients using ''\\'': Using ''pinv'' instead.  Expect longer computation times. \n');
+            xcalib_k = pinv(comIN_k)*targetMatrix(:,k); %CHANGED
+%             xcalib_k_3=pinv(comIN_k,10^-1)*targetMatrix(:,k);
+%             xcalib_k_4=lsqminnorm(comIN_k,targetMatrix(:,k));
+        end
     else
         xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
     end
