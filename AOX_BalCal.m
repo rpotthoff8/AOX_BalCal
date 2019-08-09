@@ -172,7 +172,10 @@ end
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
+max_volts=max(abs(dainputs0));
+normalizer= balCal_algEqns(FLAGS.model,max_volts,1,0);
 comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0,1);
+comIN0(:,1:nterms)=comIN0(:,1:nterms)./normalizer;
 
 %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
 balfitdainputs0 = targetMatrix0;
