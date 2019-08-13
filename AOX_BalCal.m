@@ -209,7 +209,7 @@ if FLAGS.balOut == 1
     newStruct=struct('num_outliers',num_outliers,'prcnt_outliers',prcnt_outliers,'rowOut',rowOut,'colOut',colOut,'numSTD',numSTD);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     fprintf('Complete\n')
-        
+    
     % Use the reduced input and target files
     if FLAGS.zeroed == 1
         fprintf('\n Removing Outliers....')
@@ -224,7 +224,7 @@ if FLAGS.balOut == 1
         [~,s_1st0,~] = unique(series0);
         nseries0 = length(s_1st0);
         fprintf('Complete\n')
-
+        
         %Calculate xcalib (coefficients)
         [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
         
@@ -312,65 +312,147 @@ if FLAGS.balCal == 2
     aprxINminGZ2 = aprxINminGZ;
     dainputscalib = excessVec0-globalZeros;
     
-    %Initialize Variables
-    etaHist = cell(numBasis,1);
-    aprxINminGZ_Hist = cell(numBasis,1);
-    tareGRBFHist = cell(numBasis,1);
-    centerIndexLoop=zeros(1,dimFlag);
-    eta=zeros(length(excessVec0(:,1)),dimFlag);
-    w=zeros(1,dimFlag);
-    rbfINminGZ=zeros(length(excessVec0(:,1)),dimFlag);
-    coeffRBF=zeros(1,dimFlag);
-    rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
-    wHist=zeros(numBasis,dimFlag);
+    train_percent=0.7;
+    %OUTPUT OPTIONS
+    %     plot=0; %If plotter should be used within each RBF placer function: not recommended for repeat tests
+    
+    % Method Options
+    h=0.9;
+    opt_funct={"DQ_2D_vW_optLoop"};
+    self_terminate=0;
+    best_test=0;
+    drivers={'wahba5_2D_DQ_Driver'};
+    labels={"2D_DQ_variable W best test,terminate"};
+    
+    %END USER OPTIONS SECTION
+    options=struct('opt_funct',opt_funct,'self_terminate',self_terminate,'label',labels,'best_test',best_test,'h',h);
+    
+    data.x_full=dainputscalib;
+    trainI=AOX_LHS(ones(size(data.x_full,1)),data.x_full,train_percent); %LHS sample for training point indices: always includes edges
+    testI=setdiff(1:size(data.x_full,1),trainI)';
+    data.x=data.x_full(trainI,:);
+    data.x_test=data.x_full(testI,:);
+    
+    wHist=zeros(numBasis,dimFlag,dimFlag);
     cHist=zeros(numBasis,dimFlag);
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
-    resSquareHist=zeros(numBasis,dimFlag);
-    
-    for u=1:numBasis
-        for s=1:dimFlag
-            [~,centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
-            
-            for r=1:length(excessVec0(:,1))
-                eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
-            end
-            
-            %find widths 'w' by optimization routine
-            w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),0,1 );
-            
-            rbfINminGZ(:,s)=exp(eta(:,s)*log(abs(w(s))));
-            
-            coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
-            
-            rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
+    for i=1:dimFlag
+        f0_full=targetRes2(:,i);
+        data.f0=f0_full(trainI,1);
+        data.f0_test=f0_full(testI,1);
+        
+        if isfield(data,'x_test')
+            test_data=1 ;
+            [~, I_xOrder]=sortrows([data.x;data.x_test]); %Sort x in order, save indices of order
+        else
+            test_data=0;
         end
+        %variables determined from x data provided
+        Ndata = size(data.x,1);
+        xmin = min(data.x);
+        xmax = max(data.x);
         
-        %Store basis parameters in Hist variables
-        wHist(u,:) = w;
-        cHist(u,:) = coeffRBF;
-        centerIndexHist(u,:) = centerIndexLoop;
-        for s=1:dimFlag
-            center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.  Dim 1= RBF #, Dim 2= Channel for voltage, Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
-        end
-        etaHist{u} = eta;
+        [err_temp,xc_temp,w_temp,c_temp,err_hist_temp,~,data.DQcoeff] = wahba5_2D_DQ_Driver(numBasis,data,options); %Run method, Store error in temporary variable
         
-        %update the approximation
-        aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
-        aprxINminGZ_Hist{u} = aprxINminGZ2;
+        err{i}=err_temp;
+        xc{i}=xc_temp;
+        w{i}=w_temp;
+        c{i}=c_temp;
+        err_hist{i}=err_hist_temp;
         
-        % SOLVE FOR TARES BY TAKING THE MEAN
-        [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
-        taresGRBF = taresAllPointsGRBF(s_1st0,:);
-        taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
-        tareGRBFHist{u} = taresGRBF;
+        center_daHist(1:size(xc_temp,2),:,i)=xc_temp';
+        cHist(1:size(c_temp,1),i)=c_temp;
+        wHist(1:size(w_temp,2),:,i)=w_temp';
         
-        %Calculate and store residuals
-        targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
-        newRes2 = targetRes2'*targetRes2;
-        resSquare2 = diag(newRes2);
-        resSquareHist(u,:) = resSquare2;
     end
+    
+%     %Initialize Variables
+%     aprxINminGZ_Hist = cell(numBasis,1);
+%     tareHist = cell(numBasis,1);
+%     resSquareHist=zeros(numBasis,dimFlag);
+    
+    for i=1:dimFlag
+        phi = basisFunction(data.x_full,xc{i},w{i});
+        rbfc_INminGZ(:,i) = phi*c{i};
+    end
+    
+    %update the approximation
+    aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
+%     aprxINminGZ_Hist{u} = aprxINminGZ2;
+    
+    % SOLVE FOR TARES BY TAKING THE MEAN
+    [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
+    taresGRBF = taresAllPointsGRBF(s_1st0,:);
+    taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
+%     tareGRBFHist{u} = taresGRBF;
+    
+    %Calculate and store residuals
+    targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
+    newRes2 = targetRes2'*targetRes2;
+    resSquare2 = diag(newRes2);
+%     resSquareHist(u,:) = resSquare2;
+
+    
+    %     %Initialize Variables
+    %     etaHist = cell(numBasis,1);
+    %     aprxINminGZ_Hist = cell(numBasis,1);
+    %     tareGRBFHist = cell(numBasis,1);
+    %     centerIndexLoop=zeros(1,dimFlag);
+    %     eta=zeros(length(excessVec0(:,1)),dimFlag);
+    %     w=zeros(1,dimFlag);
+    %     rbfINminGZ=zeros(length(excessVec0(:,1)),dimFlag);
+    %     coeffRBF=zeros(1,dimFlag);
+    %     rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
+    %     wHist=zeros(numBasis,dimFlag);
+    %     cHist=zeros(numBasis,dimFlag);
+    %     centerIndexHist=zeros(numBasis,dimFlag);
+    %     center_daHist=zeros(numBasis,dimFlag,dimFlag);
+    %     resSquareHist=zeros(numBasis,dimFlag);
+    %
+    %     for u=1:numBasis
+    %         for s=1:dimFlag
+    %             [~,centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
+    %
+    %             for r=1:length(excessVec0(:,1))
+    %                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
+    %             end
+    %
+    %             %find widths 'w' by optimization routine
+    %             w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),0,1 );
+    %
+    %             rbfINminGZ(:,s)=exp(eta(:,s)*log(abs(w(s))));
+    %
+    %             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
+    %
+    %             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
+    %         end
+    %
+    %         %Store basis parameters in Hist variables
+    %         wHist(u,:) = w;
+    %         cHist(u,:) = coeffRBF;
+    %         centerIndexHist(u,:) = centerIndexLoop;
+    %         for s=1:dimFlag
+    %             center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.  Dim 1= RBF #, Dim 2= Channel for voltage, Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
+    %         end
+    %         etaHist{u} = eta;
+    %
+    %         %update the approximation
+    %         aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
+    %         aprxINminGZ_Hist{u} = aprxINminGZ2;
+    %
+    %         % SOLVE FOR TARES BY TAKING THE MEAN
+    %         [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
+    %         taresGRBF = taresAllPointsGRBF(s_1st0,:);
+    %         taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
+    %         tareGRBFHist{u} = taresGRBF;
+    %
+    %         %Calculate and store residuals
+    %         targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
+    %         newRes2 = targetRes2'*targetRes2;
+    %         resSquare2 = diag(newRes2);
+    %         resSquareHist(u,:) = resSquare2;
+    %     end
     
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
@@ -443,7 +525,7 @@ if FLAGS.balVal == 1
     if FLAGS.loadPI==1
         
         [loadPI_valid]=calc_alg_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
-       
+        
         newStruct=struct('loadPI_valid',loadPI_valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     end
@@ -524,7 +606,7 @@ if FLAGS.balApprox == 1
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
         GRBF.wHist=wHist;
         GRBF.cHist=cHist;
-        GRBF.center_daHist=center_daHist; 
+        GRBF.center_daHist=center_daHist;
     else
         GRBF='GRBFS NOT PLACED';
     end
@@ -541,5 +623,5 @@ fprintf('%s',strcat('Check '," ",output_location,' for output files.'))
 fprintf('\n');
 
 if isdeployed % Optional, use if you want the non-deployed version to exit immediately
-  input('Press enter to finish and close');
+    input('Press enter to finish and close');
 end
