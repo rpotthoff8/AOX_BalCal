@@ -4,6 +4,7 @@ n = size(xc,2);
 numdata = size(x,1);
 bee = zeros(n,1);
 stuffer = ones(numdata,1);
+phi=zeros(size(x,1),size(xc,2));
 
 for i = 1:n
     zee = exp(  (  (x-xc(:,i)').^2 )*w(:,i));
