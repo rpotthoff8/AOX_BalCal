@@ -30,14 +30,15 @@ n_sample = round(p*size(x_renorm,1));
 x_lhs = lhsdesign(n_sample,dim);
 
 D = pdist2(x_renorm,x_lhs);
-XI_sample = [];
+XI_sample = zeros(n_sample,1);
 for i = 1:n_sample
     [D_min1,DI] = min(D,[],2);
     [~,DI_2] = min(D_min1);
     DI_1 = DI(DI_2);
-    XI_sample = [XI_sample; XI_tmp(DI_2)];
+    XI_sample(i) =XI_tmp(DI_2);
     
-    D(DI_2,:) = []; D(:,DI_1) = [];
+    D(DI_2,:) = []; 
+    D(:,DI_1) = [];
     XI_tmp(DI_2) = [];
 end
 

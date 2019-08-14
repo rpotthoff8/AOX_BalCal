@@ -1,13 +1,32 @@
-function [xc, w, zstar] = DQ_2D_vW_optLoop(x,Res,DQcoeff,options)
+function [xc, w, zstar,data] = DQ_2D_vW_optLoop(data,Res,DQcoeff,options)
 method='wahba 5 Differential Quadrature, all derivative directions, different width, bounded search';
+x=data.x;
 
-dist=zeros(size(x,1),size(x,1),size(x,2));
-for i=1:size(x,2)
-    dist(:,:,i)=x(:,i)'-x(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
+if isfield(data,'dist')
+    dist=data.dist;
+else
+    dist=zeros(size(x,1),size(x,1),size(x,2));
+    for i=1:size(x,2)
+        dist(:,:,i)=x(:,i)'-x(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
+    end
+    data.dist=dist;
 end
-dist_square=dist.^2; %squared distance in each dimension;
-dist_square(dist_square==0)=NaN; %eliminate zero values (on diagonal)
-min_dist_square=min(dist_square,[],1);
+
+if isfield(data,'dist_square')
+    dist_square=data.dist_square;
+else
+    dist_square=dist.^2; %squared distance in each dimension;
+    dist_square(dist_square==0)=NaN; %eliminate zero values (on diagonal)
+    data.dist_square=dist_square;
+end
+
+if isfield(data,'min_dist_square')
+    min_dist_square=data.min_dist_square;
+else
+    min_dist_square=min(dist_square,[],1);
+    data.min_dist_square=min_dist_square;
+end
+
 % 
 % spacing=x(2:size(x,1),:)-x(1:size(x,1)-1,:);
 % spacing(spacing<=0)=NaN;

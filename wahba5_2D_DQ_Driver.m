@@ -1,6 +1,6 @@
 % Last Updated: 6/04/19
 
-function [err,xc,w,c,err_hist,add,DQcoeff]=wahba5_2D_DQ_Driver(numRBF,data,options)
+function [err,xc,w,c,err_hist,add,data]=wahba5_2D_DQ_Driver(numRBF,data,options)
 %
 %INPUT VARIABLES:
 %numRBF: number of RBFs to be used
@@ -65,7 +65,6 @@ converge_limit = 0.001;
 
 % END initialize section
 
-
 % Initial residual
 g0=mean(data.f0);
 add = g0; %add is constant that is added to phi (RBF approximation)
@@ -102,10 +101,11 @@ end
 if isfield(data,'DQcoeff')
     DQcoeff=data.DQcoeff;
 else
-    [DQcoeff]=DQcoeff_solver(data.x);
+    [DQcoeff,data]=DQcoeff_solver(data);
+    data.DQcoeff=DQcoeff;
 end
 
-[xc(:,1),w(:,1), kstar(1)] = DQ_2D_vW_optLoop(data.x,R.train,DQcoeff,options);
+[xc(:,1),w(:,1), kstar(1),data] = DQ_2D_vW_optLoop(data,R.train,DQcoeff,options);
 % eval(['[xc(:,1),w(:,1), kstar(1)] = ' char(options.opt_funct) '(data.x,R.train,DQcoeff,options);']) %Run optloop
 % [xc(:,1),w(:,1), kstar(1)] = optLoop(data.x,R.train,DQcoeff,options);
 
@@ -168,7 +168,7 @@ for i=2:numRBF %iterations
     % Optimization
     %     [xc(:,i),w(:,i), kstar(i)] = optLoop(data.x,R.train,DQcoeff,options);
     %     eval(['[xc(:,i),w(:,i), kstar(i)] = ' char(options.opt_funct) '(data.x,R.train,DQcoeff,options);']) %Run optloop
-    [xc(:,i),w(:,i), kstar(i)] = DQ_2D_vW_optLoop(data.x,R.train,DQcoeff,options);
+    [xc(:,i),w(:,i), kstar(i),data] = DQ_2D_vW_optLoop(data,R.train,DQcoeff,options);
     
     phi.train = basisFunction(data.x,xc,w);
     add=g0-mean(phi.train);

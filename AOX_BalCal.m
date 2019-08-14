@@ -312,12 +312,12 @@ if FLAGS.balCal == 2
     aprxINminGZ2 = aprxINminGZ;
     dainputscalib = excessVec0-globalZeros;
     
-    train_percent=0.7;
+    train_percent=1;
     %OUTPUT OPTIONS
     %     plot=0; %If plotter should be used within each RBF placer function: not recommended for repeat tests
     
     % Method Options
-    h=0.9;
+    h=0.99;
     opt_funct={"DQ_2D_vW_optLoop"};
     self_terminate=0;
     best_test=0;
@@ -337,6 +337,12 @@ if FLAGS.balCal == 2
     cHist=zeros(numBasis,dimFlag);
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
+    err=cell(1,dimFlag);
+    xc=cell(1,dimFlag);
+    w=cell(1,dimFlag);
+    c=cell(1,dimFlag);
+    err_hist=cell(1,dimFlag);
+
     for i=1:dimFlag
         f0_full=targetRes2(:,i);
         data.f0=f0_full(trainI,1);
@@ -353,7 +359,7 @@ if FLAGS.balCal == 2
         xmin = min(data.x);
         xmax = max(data.x);
         
-        [err_temp,xc_temp,w_temp,c_temp,err_hist_temp,~,data.DQcoeff] = wahba5_2D_DQ_Driver(numBasis,data,options); %Run method, Store error in temporary variable
+        [err_temp,xc_temp,w_temp,c_temp,err_hist_temp,~,data] = wahba5_2D_DQ_Driver(numBasis,data,options); %Run method, Store error in temporary variable
         
         err{i}=err_temp;
         xc{i}=xc_temp;
