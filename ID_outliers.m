@@ -3,40 +3,16 @@ function [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut]=ID_outliers(ta
 %outliers, and percent of datapoints that are outliers
 
 % Use the modeled input for the rest of the calculations
-for n = 1:dimFlag
-    normtargetRes(:,n) = targetRes(:,n)/loadCapacities(n);
-end
-out_meanValue = mean(normtargetRes);
+targetRes_mean = mean(targetRes);
 
 % Identify outliers. They are considered outliers if the residual
-% is more than 3 standard deviations as % of capacity from the mean.
-out_standardDev = std(normtargetRes);
-thresholdValue = numSTD * (out_standardDev) - out_meanValue;
+% is more than numSTD standard deviations from the mean.
+targetRes_std = std(targetRes);
 
-% for n = 1:dimFlag
-%     if thresholdValue(1,n) <= 0.0025
-%         thresholdValue(1,n) = 0.0025;
-%     end
-% end
+targetRes_norm = (targetRes-targetRes_mean)./targetRes_std;
 
-outlierIndices = abs(normtargetRes) > thresholdValue;
 
-[rowOut,colOut]=find(outlierIndices); %Find row and column indices of outliers
-%
-% % ID outlier rows :
-% zero_counter = 1;
-% for k1 = 1:numpts0
-%     for k4 = 1:dimFlag
-%         if outlierIndices(k1,k4) == 1
-%             outlier_values(zero_counter,1) = k1;
-%             zero_counter = zero_counter + 1;
-%         end
-%     end
-% end
-% if zero_counter==1
-%     outlier_values=[];
-% end
-% OUTLIER_ROWS = unique(outlier_values,'rows');
+[rowOut,colOut]=find(abs(targetRes_norm) > numSTD); %Find row and column indices of outliers
 
 OUTLIER_ROWS = unique(rowOut);
 
