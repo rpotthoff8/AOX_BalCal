@@ -105,7 +105,8 @@ else
     data.DQcoeff=DQcoeff;
 end
 
-[xc(:,1),w(:,1), kstar(1),data] = DQ_2D_vW_optLoop(data,R.train,DQcoeff,options);
+[xc(:,1),w(:,1), kstar(1),data,Iplace(1)] = DQ_2D_vW_maxR_optLoop(data,R.train,DQcoeff,options);
+options.Iplace=Iplace;
 % eval(['[xc(:,1),w(:,1), kstar(1)] = ' char(options.opt_funct) '(data.x,R.train,DQcoeff,options);']) %Run optloop
 % [xc(:,1),w(:,1), kstar(1)] = optLoop(data.x,R.train,DQcoeff,options);
 
@@ -168,8 +169,9 @@ for i=2:numRBF %iterations
     % Optimization
     %     [xc(:,i),w(:,i), kstar(i)] = optLoop(data.x,R.train,DQcoeff,options);
     %     eval(['[xc(:,i),w(:,i), kstar(i)] = ' char(options.opt_funct) '(data.x,R.train,DQcoeff,options);']) %Run optloop
-    [xc(:,i),w(:,i), kstar(i),data] = DQ_2D_vW_optLoop(data,R.train,DQcoeff,options);
-    
+    [xc(:,i),w(:,i), kstar(i),data,Iplace(i)] = DQ_2D_vW_maxR_optLoop(data,R.train,DQcoeff,options);
+    options.Iplace=Iplace;
+
     phi.train = basisFunction(data.x,xc,w);
     add=g0-mean(phi.train);
     

@@ -21,8 +21,8 @@ B=exp(-c*R_square'); %Eqn 10 from 'Development of RBF-DQ method... Y.L Wu
 DQcoeff=zeros(size(x,1),size(x,1),size(x,2));
 for i=1:size(x,2)
     phiR2D=exp(-c*R_square).*((-2*c*dist(:,:,i)).^2)-exp(-c*R_square).*2*c;
-    DQcoeff(:,:,i)=B\phiR2D;
-    % DQcoeff(:,:,i)=lsqminnorm(B,phiR2D);
+%     DQcoeff(:,:,i)=B\phiR2D;
+    DQcoeff(:,:,i)=lsqminnorm(B,phiR2D);
 end
 %End differential quadrature
 end
