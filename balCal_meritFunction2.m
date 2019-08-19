@@ -5,7 +5,7 @@ function y=balCal_meritFunction2(w,residvec,etak)
 
    y=dot(residvec,residvec);
 
-   u=exp(etak*log(abs(w)));
+   u=exp(etak*w);
    b=dot(u,residvec);
    z=dot(u,u);
    

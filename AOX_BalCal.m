@@ -339,7 +339,7 @@ if FLAGS.balCal == 2
             %find widths 'w' by optimization routine
             w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),0,1 );
             
-            rbfINminGZ(:,s)=exp(eta(:,s)*log(abs(w(s))));
+            rbfINminGZ(:,s)=exp(eta(:,s)*w(s));
             
             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
             
