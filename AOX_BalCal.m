@@ -209,7 +209,7 @@ if FLAGS.balOut == 1
     newStruct=struct('num_outliers',num_outliers,'prcnt_outliers',prcnt_outliers,'rowOut',rowOut,'colOut',colOut,'numSTD',numSTD);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     fprintf('Complete\n')
-        
+    
     % Use the reduced input and target files
     if FLAGS.zeroed == 1
         fprintf('\n Removing Outliers....')
@@ -224,7 +224,7 @@ if FLAGS.balOut == 1
         [~,s_1st0,~] = unique(series0);
         nseries0 = length(s_1st0);
         fprintf('Complete\n')
-
+        
         %Calculate xcalib (coefficients)
         [xcalib,ANOVA]=calc_xcalib(comIN0,targetMatrix0,series0,nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
         
@@ -328,16 +328,33 @@ if FLAGS.balCal == 2
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
     
+    dist=zeros(size(dainputscalib,1),size(dainputscalib,1),size(dainputscalib,2));
+    for i=1:size(dainputscalib,2)
+        dist(:,:,i)=dainputscalib(:,i)'-dainputscalib(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
+    end
+    R_square=sum(dist.^2,3); %Eqn 17 from Javier's notes: squared distance between each point
+    R_square(R_square==0)=NaN; %Eliminate zero values (on diagonal)
+    min_R_square=min(R_square); %Find distance to closest point
+    %Set limits on width (shape factor)
+    %     if isfield(options,'h')
+    %         h=options.h;
+    %     else
+    %         h = 0.25;
+    %     end
+    h=0.25;
+    
+    
     for u=1:numBasis
         for s=1:dimFlag
             [~,centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
+            wmin = max(log(h)./(min_R_square(centerIndexLoop(s))));
             
             for r=1:length(excessVec0(:,1))
                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
             end
             
             %find widths 'w' by optimization routine
-            w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),0,1 );
+            w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),wmin,0 );
             
             rbfINminGZ(:,s)=exp(eta(:,s)*w(s));
             
@@ -443,7 +460,7 @@ if FLAGS.balVal == 1
     if FLAGS.loadPI==1
         
         [loadPI_valid]=calc_alg_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
-       
+        
         newStruct=struct('loadPI_valid',loadPI_valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     end
@@ -524,7 +541,7 @@ if FLAGS.balApprox == 1
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
         GRBF.wHist=wHist;
         GRBF.cHist=cHist;
-        GRBF.center_daHist=center_daHist; 
+        GRBF.center_daHist=center_daHist;
     else
         GRBF='GRBFS NOT PLACED';
     end
@@ -541,5 +558,5 @@ fprintf('%s',strcat('Check '," ",output_location,' for output files.'))
 fprintf('\n');
 
 if isdeployed % Optional, use if you want the non-deployed version to exit immediately
-  input('Press enter to finish and close');
+    input('Press enter to finish and close');
 end
