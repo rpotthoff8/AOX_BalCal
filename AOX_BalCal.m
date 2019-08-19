@@ -317,7 +317,7 @@ if FLAGS.balCal == 2
     aprxINminGZ_Hist = cell(numBasis,1);
     tareGRBFHist = cell(numBasis,1);
     centerIndexLoop=zeros(1,dimFlag);
-    eta=zeros(length(excessVec0(:,1)),dimFlag);
+%     eta=zeros(length(excessVec0(:,1)),dimFlag);
     w=zeros(1,dimFlag);
     rbfINminGZ=zeros(length(excessVec0(:,1)),dimFlag);
     coeffRBF=zeros(1,dimFlag);
@@ -343,36 +343,55 @@ if FLAGS.balCal == 2
     %     end
     h=0.1;
     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
-    count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
+%     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
     
     
     for u=1:numBasis
         for s=1:dimFlag
-            targetRes2_find=targetRes2;
-            targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
-            [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
+%             targetRes2_find=targetRes2;
+%             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
+            [~,centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
             
             wmin = max(log(h)./(min_R_square(centerIndexLoop(s))));
-            count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
+%             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
             
-            for r=1:length(excessVec0(:,1))
-                eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
-            end
+%             for r=1:length(excessVec0(:,1))
+%                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
+%             end
             
-            %find widths 'w' by optimization routine
-            w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),wmin,0 );
+            LB_xc=min(dainputscalib);
+            UB_xc=max(dainputscalib);
+            LB_w=wmin;
+            UB_w=0;
+            LB=[LB_xc,LB_w];
+            UB=[UB_xc,UB_w];
             
-            rbfINminGZ(:,s)=exp(eta(:,s)*w(s));
+            x0_xc=dainputscalib(centerIndexLoop(s),:);
+            x0_w=LB_w/2;
+            x0=[x0_xc,x0_w];
+            
+            %find 'w' and 'xc' by optimization routine
+            xc_w_opt = fminsearchbnd(@(xc_w) balCal_meritFunction2(xc_w,targetRes2(:,s),dainputscalib),x0,LB,UB);
+            w(s)=xc_w_opt(numel(xc_w_opt));
+            xc=xc_w_opt(1:numel(xc_w_opt)-1);
+            center_daHist(u,:,s)=xc;
+            
+            adiffer=xc-dainputscalib;
+            %     adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputs;
+            eta = dot(adiffer,adiffer,2);
+            
+            rbfINminGZ(:,s)=exp(eta*w(s));
             
             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
             
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
+            
         end
         
         %Store basis parameters in Hist variables
         wHist(u,:) = w;
         cHist(u,:) = coeffRBF;
-        centerIndexHist(u,:) = centerIndexLoop;
+%         centerIndexHist(u,:) = centerIndexLoop;
         for s=1:dimFlag
             center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.  Dim 1= RBF #, Dim 2= Channel for voltage, Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
         end
