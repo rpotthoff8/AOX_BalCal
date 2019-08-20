@@ -373,7 +373,7 @@ if FLAGS.balCal == 2
             x0=[x0_xci,x0_w];
             
             %find 'w' and 'xc' by optimization routine
-            xc_w_opt = fminsearchbnd(@(xc_w) balCal_meritFunction2(xc_w,targetRes2(:,s),dainputscalib),x0,LB,UB);
+            xc_w_opt = fminsearchbnd(@(xc_w) balCal_meritFunction2(xc_w,targetRes2(:,s),dainputscalib,aprxINminGZ2(:,s),targetMatrix0(:,s),series0),x0,LB,UB);
             w(s)=xc_w_opt(numel(xc_w_opt));
             xci=round(xc_w_opt(1:numel(xc_w_opt)-1));
             center_daHist(u,:,s)=dainputscalib(xci,:);
