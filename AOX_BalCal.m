@@ -335,6 +335,8 @@ if FLAGS.balCal == 2
     R_square=sum(dist.^2,3); %Eqn 17 from Javier's notes: squared distance between each point
     R_square(R_square==0)=NaN; %Eliminate zero values (on diagonal)
     min_R_square=min(R_square); %Find distance to closest point
+    max_min_R_square=max(min_R_square); %Find the maximum distance between points and the next closest point
+    
     %Set limits on width (shape factor)
     %     if isfield(options,'h')
     %         h=options.h;
@@ -342,7 +344,7 @@ if FLAGS.balCal == 2
     %         h = 0.25;
     %     end
     h=0.1;
-    maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
+%     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
 %     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
     
     
@@ -352,7 +354,7 @@ if FLAGS.balCal == 2
 %             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
             [~,centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
             
-            wmin = max(log(h)./(min_R_square(centerIndexLoop(s))));
+            wmin = max(log(h)./(max_min_R_square));
 %             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
             
 %             for r=1:length(excessVec0(:,1))
@@ -380,8 +382,13 @@ if FLAGS.balCal == 2
             %     adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputs;
             eta = dot(adiffer,adiffer,2);
             
-            rbfINminGZ(:,s)=exp(eta*w(s));
+%             for r=1:length(excessVec0(:,1))
+%                 eta_old(r,s) = dot(dainputscalib(r,:)-xc,dainputscalib(r,:)-xc);
+%             end
             
+            
+            rbfINminGZ(:,s)=exp(eta*w(s));
+%             rbfINminGZ_old(:,s)=exp(eta_old(:,s)*w(s));
             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
             
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
