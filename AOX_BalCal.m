@@ -361,24 +361,24 @@ if FLAGS.balCal == 2
 %                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
 %             end
             
-            LB_xc=min(dainputscalib);
-            UB_xc=max(dainputscalib);
+            LB_xci=1;
+            UB_xci=size(dainputscalib,1);
             LB_w=wmin;
             UB_w=0;
-            LB=[LB_xc,LB_w];
-            UB=[UB_xc,UB_w];
+            LB=[LB_xci,LB_w];
+            UB=[UB_xci,UB_w];
             
-            x0_xc=dainputscalib(centerIndexLoop(s),:);
+            x0_xci=centerIndexLoop(s);
             x0_w=LB_w/2;
-            x0=[x0_xc,x0_w];
+            x0=[x0_xci,x0_w];
             
             %find 'w' and 'xc' by optimization routine
             xc_w_opt = fminsearchbnd(@(xc_w) balCal_meritFunction2(xc_w,targetRes2(:,s),dainputscalib),x0,LB,UB);
             w(s)=xc_w_opt(numel(xc_w_opt));
-            xc=xc_w_opt(1:numel(xc_w_opt)-1);
-            center_daHist(u,:,s)=xc;
+            xci=round(xc_w_opt(1:numel(xc_w_opt)-1));
+            center_daHist(u,:,s)=dainputscalib(xci,:);
             
-            adiffer=xc-dainputscalib;
+            adiffer=dainputscalib(xci,:)-dainputscalib;
             %     adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputs;
             eta = dot(adiffer,adiffer,2);
             
@@ -398,7 +398,7 @@ if FLAGS.balCal == 2
         %Store basis parameters in Hist variables
         wHist(u,:) = w;
         cHist(u,:) = coeffRBF;
-%         centerIndexHist(u,:) = centerIndexLoop;
+        centerIndexHist(u,:) = xci;
         for s=1:dimFlag
             center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.  Dim 1= RBF #, Dim 2= Channel for voltage, Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
         end
