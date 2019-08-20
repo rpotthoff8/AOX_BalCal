@@ -373,9 +373,10 @@ if FLAGS.balCal == 2
             x0=[x0_xc,x0_w];
             
             %find 'w' and 'xc' by optimization routine
-            xc_w_opt = fminsearchbnd(@(xc_w) balCal_meritFunction2(xc_w,targetRes2(:,s),dainputscalib),x0,LB,UB);
+            xc_w_opt = max_218(@(xc_w) -balCal_meritFunction2(xc_w,targetRes2(:,s),dainputscalib),[LB;UB]');
             w(s)=xc_w_opt(numel(xc_w_opt));
             xc=xc_w_opt(1:numel(xc_w_opt)-1);
+            xc=reshape(xc,[1,dimFlag]);
             center_daHist(u,:,s)=xc;
             
             adiffer=xc-dainputscalib;

@@ -4,6 +4,7 @@
 function y=balCal_meritFunction2(xc_w,residvec,dainputs)
     w=xc_w(numel(xc_w));
     xc=xc_w(1:numel(xc_w)-1);
+    xc=reshape(xc,[1,numel(xc)]);
     
     adiffer=xc-dainputs;
     %     adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputs;
