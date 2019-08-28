@@ -1,9 +1,13 @@
 function [X_cal] = AOX_LHS(series,excessVec,p)
 thr = 0.05;
 
+
 [n, dim] = size(excessVec);
 XI = [1:n]';
 
+if p>=1
+    X_cal=XI;
+else
 [srs, i_s1st, i_s] = unique(series);
 n_s = length(srs);
 
@@ -43,4 +47,5 @@ for i = 1:n_sample
 end
 
 X_cal = sort([LZ;BD;XI_sample]);
+end
 %X_val = sort([LZ;XI_tmp]);

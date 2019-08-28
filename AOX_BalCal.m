@@ -317,15 +317,13 @@ if FLAGS.balCal == 2
     %     plot=0; %If plotter should be used within each RBF placer function: not recommended for repeat tests
     
     % Method Options
-    h=0.99;
-    opt_funct={"DQ_2D_vW_optLoop"};
-    self_terminate=0;
-    best_test=0;
-    drivers={'wahba5_2D_DQ_Driver'};
-    labels={"2D_DQ_variable W best test,terminate"};
+    labels={"Iterated AMLS"};
+    opt_funct={"Null"};
+    self_terminate={0};
+    best_test={0};
     
     %END USER OPTIONS SECTION
-    options=struct('opt_funct',opt_funct,'self_terminate',self_terminate,'label',labels,'best_test',best_test,'h',h);
+    options=struct('opt_funct',opt_funct,'self_terminate',self_terminate,'label',labels,'best_test',best_test);
     
     data.x_full=dainputscalib;
     trainI=AOX_LHS(ones(size(data.x_full,1)),data.x_full,train_percent); %LHS sample for training point indices: always includes edges
@@ -333,16 +331,13 @@ if FLAGS.balCal == 2
     data.x=data.x_full(trainI,:);
     data.x_test=data.x_full(testI,:);
     
-    wHist=zeros(numBasis,dimFlag,dimFlag);
-    cHist=zeros(numBasis,dimFlag);
-    centerIndexHist=zeros(numBasis,dimFlag);
-    center_daHist=zeros(numBasis,dimFlag,dimFlag);
-    err=cell(1,dimFlag);
     xc=cell(1,dimFlag);
-    w=cell(1,dimFlag);
-    c=cell(1,dimFlag);
+    eps=cell(1,dimFlag);
+    mult=cell(1,dimFlag);
+    h=cell(1,dimFlag);
+    err=cell(1,dimFlag);
     err_hist=cell(1,dimFlag);
-
+    
     for i=1:dimFlag
         f0_full=targetRes2(:,i);
         data.f0=f0_full(trainI,1);
@@ -354,116 +349,39 @@ if FLAGS.balCal == 2
         else
             test_data=0;
         end
-        %variables determined from x data provided
-        Ndata = size(data.x,1);
-        xmin = min(data.x);
-        xmax = max(data.x);
         
-        [err_temp,xc_temp,w_temp,c_temp,err_hist_temp,~,data] = wahba5_2D_DQ_Driver(numBasis,data,options); %Run method, Store error in temporary variable
-        
-        err{i}=err_temp;
-        xc{i}=xc_temp;
-        w{i}=w_temp;
-        c{i}=c_temp;
-        err_hist{i}=err_hist_temp;
-        
-        center_daHist(1:size(xc_temp,2),:,i)=xc_temp';
-        cHist(1:size(c_temp,1),i)=c_temp;
-        wHist(1:size(w_temp,2),:,i)=w_temp';
+        [xc{i},eps{i},mult{i},h{i},err{i},err_hist{i}]=Iterated_AMLS(numBasis,data,options); %Run method
         
     end
     
-%     %Initialize Variables
-%     aprxINminGZ_Hist = cell(numBasis,1);
-%     tareHist = cell(numBasis,1);
-%     resSquareHist=zeros(numBasis,dimFlag);
     
     for i=1:dimFlag
-        phi = basisFunction(data.x_full,xc{i},w{i});
-        rbfc_INminGZ(:,i) = phi*c{i};
+        rbfc_INminGZ(:,i) = Iterated_AMLS_construct(data.x_full,xc{i},eps{i},h{i},mult{i});
     end
     
     %update the approximation
     aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
-%     aprxINminGZ_Hist{u} = aprxINminGZ2;
+    %     aprxINminGZ_Hist{u} = aprxINminGZ2;
     
     % SOLVE FOR TARES BY TAKING THE MEAN
     [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
     taresGRBF = taresAllPointsGRBF(s_1st0,:);
     taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
-%     tareGRBFHist{u} = taresGRBF;
+    %     tareGRBFHist{u} = taresGRBF;
     
     %Calculate and store residuals
     targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
     newRes2 = targetRes2'*targetRes2;
     resSquare2 = diag(newRes2);
-%     resSquareHist(u,:) = resSquare2;
-
+    %     resSquareHist(u,:) = resSquare2;
     
-    %     %Initialize Variables
-    %     etaHist = cell(numBasis,1);
-    %     aprxINminGZ_Hist = cell(numBasis,1);
-    %     tareGRBFHist = cell(numBasis,1);
-    %     centerIndexLoop=zeros(1,dimFlag);
-    %     eta=zeros(length(excessVec0(:,1)),dimFlag);
-    %     w=zeros(1,dimFlag);
-    %     rbfINminGZ=zeros(length(excessVec0(:,1)),dimFlag);
-    %     coeffRBF=zeros(1,dimFlag);
-    %     rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
-    %     wHist=zeros(numBasis,dimFlag);
-    %     cHist=zeros(numBasis,dimFlag);
-    %     centerIndexHist=zeros(numBasis,dimFlag);
-    %     center_daHist=zeros(numBasis,dimFlag,dimFlag);
-    %     resSquareHist=zeros(numBasis,dimFlag);
-    %
-    %     for u=1:numBasis
-    %         for s=1:dimFlag
-    %             [~,centerIndexLoop(s)] = max(abs(targetRes2(:,s)));
-    %
-    %             for r=1:length(excessVec0(:,1))
-    %                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
-    %             end
-    %
-    %             %find widths 'w' by optimization routine
-    %             w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),0,1 );
-    %
-    %             rbfINminGZ(:,s)=exp(eta(:,s)*log(abs(w(s))));
-    %
-    %             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
-    %
-    %             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
-    %         end
-    %
-    %         %Store basis parameters in Hist variables
-    %         wHist(u,:) = w;
-    %         cHist(u,:) = coeffRBF;
-    %         centerIndexHist(u,:) = centerIndexLoop;
-    %         for s=1:dimFlag
-    %             center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.  Dim 1= RBF #, Dim 2= Channel for voltage, Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
-    %         end
-    %         etaHist{u} = eta;
-    %
-    %         %update the approximation
-    %         aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
-    %         aprxINminGZ_Hist{u} = aprxINminGZ2;
-    %
-    %         % SOLVE FOR TARES BY TAKING THE MEAN
-    %         [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
-    %         taresGRBF = taresAllPointsGRBF(s_1st0,:);
-    %         taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
-    %         tareGRBFHist{u} = taresGRBF;
-    %
-    %         %Calculate and store residuals
-    %         targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
-    %         newRes2 = targetRes2'*targetRes2;
-    %         resSquare2 = diag(newRes2);
-    %         resSquareHist(u,:) = resSquare2;
-    %     end
     
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
-    newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist,'center_daHist',center_daHist,'ANOVA',ANOVA,'coeff',coeff);
+%     newStruct=struct('aprxINminGZ2',aprxINminGZ2,'wHist',wHist,'cHist',cHist,'centerIndexHist',centerIndexHist,'center_daHist',center_daHist,'ANOVA',ANOVA,'coeff',coeff);
+    newStruct=struct('aprxINminGZ2',aprxINminGZ2,'ANOVA',ANOVA,'coeff',coeff);
+
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],  [fieldnames(uniqueOut); fieldnames(newStruct)], 1);
     output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
     
