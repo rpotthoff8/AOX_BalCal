@@ -333,15 +333,20 @@ if FLAGS.balCal == 2
         dist(:,:,i)=dainputscalib(:,i)'-dainputscalib(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
     end
     R_square=sum(dist.^2,3); %Eqn 17 from Javier's notes: squared distance between each point
-    R_square(R_square==0)=NaN; %Eliminate zero values (on diagonal)
-    min_R_square=min(R_square); %Find distance to closest point
+    R_square_find=R_square;
+    R_square_find(R_square_find==0)=NaN; %Eliminate zero values (on diagonal)
+    min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
     %     if isfield(options,'h')
     %         h=options.h;
     %     else
     %         h = 0.25;
     %     end
-    h=0.1;
+    %     h=0.1;
+    s=100*0.0001;
+    %     s=100*0.01;
+    h=(0.9688)*(s + 0.0001507)/(s + 0.1322);
+    
     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
     
@@ -355,9 +360,10 @@ if FLAGS.balCal == 2
             wmin = max(log(h)./(min_R_square(centerIndexLoop(s))));
             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
             
-            for r=1:length(excessVec0(:,1))
-                eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
-            end
+            %             for r=1:length(excessVec0(:,1))
+            %                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
+            %             end
+            eta(:,s)=R_square(:,centerIndexLoop(s));
             
             %find widths 'w' by optimization routine
             w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),wmin,0 );
@@ -493,9 +499,6 @@ if FLAGS.balVal == 1
         
         targetRes2valid = targetResvalid;
         aprxINminGZ2valid = aprxINminGZvalid;
-        
-        % Subtract the Global Zeros from the Inputs
-        dainputsvalid = excessVecvalid-globalZerosvalid;
         
         %Initialize Variables
         aprxINminGZ_Histvalid = cell(numBasis,1);
