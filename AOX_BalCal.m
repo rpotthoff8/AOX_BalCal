@@ -322,7 +322,7 @@ if FLAGS.balCal == 2
     rbfINminGZ=zeros(length(excessVec0(:,1)),dimFlag);
     coeffRBF=zeros(1,dimFlag);
     rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
-    wHist=zeros(numBasis,dimFlag);
+    wHist=zeros(numBasis,dimFlag,dimFlag);
     cHist=zeros(numBasis,dimFlag);
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
@@ -332,6 +332,11 @@ if FLAGS.balCal == 2
     for i=1:size(dainputscalib,2)
         dist(:,:,i)=dainputscalib(:,i)'-dainputscalib(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
     end
+    dist_square=dist.^2;
+    dist_square_find=dist_square;
+    dist_square_find(dist_square_find==0)=NaN;
+    min_dist_square=min(dist_square_find);
+    
     R_square=sum(dist.^2,3); %Eqn 17 from Javier's notes: squared distance between each point
     R_square_find=R_square;
     R_square_find(R_square_find==0)=NaN; %Eliminate zero values (on diagonal)
@@ -349,34 +354,39 @@ if FLAGS.balCal == 2
     
     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
-    
-    
+   
+    wmin=zeros(dimFlag,1);
+    eta=zeros(size(dist_square,1),dimFlag);
     for u=1:numBasis
         for s=1:dimFlag
             targetRes2_find=targetRes2;
             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
             [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
             
-            wmin = max(log(h)./(min_R_square(centerIndexLoop(s))));
+            wmin(:,1) = log(h)./(min_dist_square(1,centerIndexLoop(s),:));
             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
             
             %             for r=1:length(excessVec0(:,1))
             %                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
             %             end
-            eta(:,s)=R_square(:,centerIndexLoop(s));
+            
+            eta2=dist_square(:,centerIndexLoop(s),:);
+            eta(:,:)=reshape(dist_square(:,centerIndexLoop(s),:),size(eta));
             
             %find widths 'w' by optimization routine
-            w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),wmin,0 );
+            w = fminsearchbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta),wmin,zeros(dimFlag,1));
             
-            rbfINminGZ(:,s)=exp(eta(:,s)*w(s));
+            rbfINminGZ(:,s)=exp(sum(eta.*w',2));
             
             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
             
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
+                   
+            wHist(u,:,s) = w;
         end
         
         %Store basis parameters in Hist variables
-        wHist(u,:) = w;
+
         cHist(u,:) = coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
         for s=1:dimFlag
