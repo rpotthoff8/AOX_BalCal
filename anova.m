@@ -47,6 +47,11 @@ end
 % calculations.
 
 VIF = vif(X);
+if any(VIF>=10)
+    warning('VIF calculation indicates strong multicollinearity. Analysis of Variance results cannot be trusted.')
+elseif any(VIF>=4)
+    warning('VIF calculation indicates some multicollinearity. Analysis of Variance results may be inaccurate.')
+end
 
 if test_FLAG == 1 && max(VIF) >= 4
     ANOVA.test = -1;
