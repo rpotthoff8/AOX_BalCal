@@ -153,7 +153,7 @@ if exist(fileName,'file')
         if default.custom
             modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
         end
-
+        
         set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
         %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
@@ -1319,7 +1319,7 @@ if get(hObject,'Value') == 1
     set(handles.zeroed_FLAGcheck,'Enable','on');
     set(handles.numSTD,'Enable','on');
     set(handles.std_text,'Enable','on');
-
+    
 else
     set(handles.zeroed_FLAGcheck,'Enable','off');
     set(handles.numSTD,'Enable','off');
@@ -1477,7 +1477,7 @@ switch cva.type
         
         loadCapacities =     csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),cal.Range{1});
         natzeros =           csvread(cal.Path,cal.CSV(2,1),cal.CSV(2,2),cal.Range{2});
-
+        
         %Read series labels using 'readtable': JRP 19 June 19
         A=extractAfter(cal.Range{3},'..');
         bottom=str2double(regexp(A,'\d*','Match'));
@@ -1487,7 +1487,7 @@ switch cva.type
         series2=table2array(series_bulk(:,cal.CSV(3,2)+2));
         pointID=table2array(series_bulk(:,cal.CSV(3,2)));
         clear A bottom opts series_bulk
-
+        
         %         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
         
         targetMatrix0 =      csvread(cal.Path,cal.CSV(4,1),cal.CSV(4,2),cal.Range{4});
@@ -1501,31 +1501,50 @@ switch cva.type
             
             %START: new approach, JRP 11 June 19
             file=fopen(cal.Path); %open file
-            label_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
-            splitlabelRow=cellstr(strsplit(string(label_text1{1}{cal.CSV(1,1)-3}),',','CollapseDelimiters',false)); %Extract row with labels
+            all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
+            splitlabelRow=cellstr(strsplit(string(all_text1{1}{cal.CSV(1,1)-3}),',','CollapseDelimiters',false)); %Extract row with labels
             fclose(file); %close file
             loadlabels=splitlabelRow(cal.CSV(1,2)+1:cal.loadend(2)+1); %extract load labels
             voltlabels=splitlabelRow(cal.CSV(2,2)+1:cal.voltend(2)+1); %extract voltage labels
             % read in load and voltage units, JRP 11 July 19
-            splitunitRow=cellstr(strsplit(string(label_text1{1}{cal.CSV(1,1)-1}),',','CollapseDelimiters',false)); %extract row with units
-            loadunits=splitunitRow(cal.CSV(1,2)+1:cal.loadend(2)+1); %extract load units 
+            splitunitRow=cellstr(strsplit(string(all_text1{1}{cal.CSV(1,1)-1}),',','CollapseDelimiters',false)); %extract row with units
+            loadunits=splitunitRow(cal.CSV(1,2)+1:cal.loadend(2)+1); %extract load units
             voltunits=splitunitRow(cal.CSV(2,2)+1:cal.voltend(2)+1); %extract voltage units
             
             try
+                %Eliminate rows with ";" in first column
+                lastrow=a12rc(extractAfter(cal.Range{3},".."));
+                all_text_points=all_text1{1}(cal.CSV(4,1)+1:lastrow(1)+1);
+                for i=1:size(all_text_points,1)
+                    all_text_points_split(i,:)=cellstr(strsplit(string(all_text_points(i)),',','CollapseDelimiters',false)); %Extract row with labels
+                end
+                first_col=all_text_points_split(:,1);
+                ignore_row=find(contains(first_col,';')); %Find rows with semicolons in the first column
+                
+                excessVec0(ignore_row,:)=[];
+                pointID(ignore_row,:)=[];
+                series(ignore_row,:)=[];
+                series2(ignore_row,:)=[];
+                targetMatrix0(ignore_row,:)=[];
+            catch
+                fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
+            end
+            
+            try
                 %START: find file description and balance name: JRP 25 July 19
-                description_i=find(contains(label_text1{1},'DESCRIPTION'));
+                description_i=find(contains(all_text1{1},'DESCRIPTION'));
                 assert(any(description_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
-                descriptionRow=cellstr(strsplit(string(label_text1{1}{description_i}),',','CollapseDelimiters',false)); %Extract row with data description
-                description=descriptionRow(find(contains(descriptionRow,'DESCRIPTION'))+1);          
+                descriptionRow=cellstr(strsplit(string(all_text1{1}{description_i}),',','CollapseDelimiters',false)); %Extract row with data description
+                description=descriptionRow(find(contains(descriptionRow,'DESCRIPTION'))+1);
             catch
                 description={'NO DESCRIPTION FOUND'};
             end
             clear description_i descriptionRow
             
             try
-                balance_i=find(contains(label_text1{1},'BALANCE_NAME'));
+                balance_i=find(contains(all_text1{1},'BALANCE_NAME'));
                 assert(any(balance_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
-                balanceRow=cellstr(strsplit(string(label_text1{1}{balance_i}),',','CollapseDelimiters',false)); %Extract row with balance name
+                balanceRow=cellstr(strsplit(string(all_text1{1}{balance_i}),',','CollapseDelimiters',false)); %Extract row with balance name
                 balance_type=balanceRow(find(contains(balanceRow,'BALANCE_NAME'))+1);
             catch
                 balance_type={'NO BALANCE NAME FOUND'};
@@ -1534,14 +1553,12 @@ switch cva.type
             %END:find file description and balance name: JRP 25 July 19
             clear file label_text1 splitlabelRow splitunitRow
             %END: new approach, JRP 11 June 19
-           
             
-            %             v_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(2,2)]);
-            %             v_label2         = rc2a1([cal.CSV(1,1)-4, cal.voltend(2)]);
-            % %            [~,voltlabels,~] = xlsread(cal.Path,[v_label1,':',v_label2]);  %AJM 4_20_19
-            %             [~,voltlabels,~] = csvread(cal.Path,[v_label1,':',v_label2]);
-            %
-            %             clear l_label1 l_label2 v_label1 v_label2
+            try
+                splitlabelRow=cellstr(strsplit(string(all_text1{1}{cal.CSV(1,1)-3}),',','CollapseDelimiters',false)); %Extract row with labels
+                
+            end
+            
         end
         
         [~,calName,~] = fileparts(cal.Path);
@@ -1566,10 +1583,32 @@ switch cva.type
         series2valid=table2array(series_bulk(:,val.CSV(3,2)+2));
         pointIDvalid=table2array(series_bulk(:,val.CSV(3,2)));
         clear A bottom opts series_bulk
-%         seriesvalid =            csvread(val.Path,val.CSV(3,1),val.CSV(3,2),val.Range{3});
-
+        %         seriesvalid =            csvread(val.Path,val.CSV(3,1),val.CSV(3,2),val.Range{3});
+        
         targetMatrixvalid =      csvread(val.Path,val.CSV(4,1),val.CSV(4,2),val.Range{4});
         excessVecvalid =         csvread(val.Path,val.CSV(5,1),val.CSV(5,2),val.Range{5});
+        
+        try
+            file=fopen(val.Path); %open file
+            all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
+            fclose(file); %close file
+            %Eliminate rows with ";" in first column
+            lastrow=a12rc(extractAfter(val.Range{3},".."));
+            all_text_points=all_text1{1}(val.CSV(4,1)+1:lastrow(1)+1);
+            for i=1:size(all_text_points,1)
+                all_text_points_split(i,:)=cellstr(strsplit(string(all_text_points(i)),',','CollapseDelimiters',false)); %Extract row with labels
+            end
+            first_col=all_text_points_split(:,1);
+            ignore_row=find(contains(first_col,';')); %Find rows with semicolons in the first column
+            
+            excessVecvalid(ignore_row,:)=[];
+            pointIDvalid(ignore_row,:)=[];
+            seriesvalid(ignore_row,:)=[];
+            series2valid(ignore_row,:)=[];
+            targetMatrixvalid(ignore_row,:)=[];
+        catch
+            fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
+        end
         
         [~,valName,~] = fileparts(val.Path);
         fileNamevalid = [valName,'.val'];
@@ -1585,7 +1624,7 @@ switch cva.type
         loadCapacitiesapprox =    csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
         natzerosapprox =          csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
         
-       %Read series labels using 'readtable': JRP 19 June 19
+        %Read series labels using 'readtable': JRP 19 June 19
         A=extractAfter(app.Range{3},'..');
         bottom=str2double(regexp(A,'\d*','Match'));
         opts=delimitedTextImportOptions('DataLines',[app.CSV(3,1)+1 bottom]);
@@ -1593,10 +1632,31 @@ switch cva.type
         seriesapprox=str2double(table2array(series_bulk(:,app.CSV(3,2)+1)));
         series2approx=table2array(series_bulk(:,app.CSV(3,2)+2));
         pointIDapprox=table2array(series_bulk(:,app.CSV(3,2)));
-        clear A bottom opts series_bulk 
-%         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
+        clear A bottom opts series_bulk
+        %         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
         
         excessVecapprox =         csvread(app.Path,app.CSV(4,1),app.CSV(4,2),app.Range{4});
+        
+        try
+            file=fopen(app.Path); %open file
+            all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
+            fclose(file); %close file
+            %Eliminate rows with ";" in first column
+            lastrow=a12rc(extractAfter(app.Range{3},".."));
+            all_text_points=all_text1{1}(app.CSV(4,1)+1:lastrow(1)+1);
+            for i=1:size(all_text_points,1)
+                all_text_points_split(i,:)=cellstr(strsplit(string(all_text_points(i)),',','CollapseDelimiters',false)); %Extract row with labels
+            end
+            first_col=all_text_points_split(:,1);
+            ignore_row=find(contains(first_col,';')); %Find rows with semicolons in the first column
+            
+            excessVecapprox(ignore_row,:)=[];
+            pointIDapprox(ignore_row,:)=[];
+            seriesapprox(ignore_row,:)=[];
+            series2approx(ignore_row,:)=[];
+        catch
+            fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
+        end
         
         [~,appName,~] = fileparts(app.Path);
         fileNameapprox = [appName,'.app'];
@@ -1933,7 +1993,7 @@ else
     set(handles.Rec_Model_FLAGcheck,'Enable','on');
     set(handles.anova_pct,'Enable','on');
     set(handles.anova_pct_text,'Enable','on');
-
+    
 end
 loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles);
 
@@ -1948,8 +2008,8 @@ if get(hObject,'Value') == 0
     set(handles.approx_and_PI_print,'Enable','off','Value',0);
     set(handles.PI_print,'Enable','off','Value',0);
 else
-     set(handles.approx_and_PI_print,'Enable','on');
-     set(handles.PI_print,'Enable','on');
+    set(handles.approx_and_PI_print,'Enable','on');
+    set(handles.PI_print,'Enable','on');
 end
 
 
@@ -2099,13 +2159,13 @@ function output_to_calib_FLAG_Callback(hObject, eventdata, handles)
 if get(hObject,'Value') == 0
     set(handles.output_location_button,'Enable','on');
     set(handles.output_location,'Enable','on');
-%     set(handles.output_location,'String',pwd);
+    %     set(handles.output_location,'String',pwd);
 else
     set(handles.output_location_button,'Enable','off');
     set(handles.output_location,'Enable','off');
     [calib_path,~,~]=fileparts(get(handles.calPath,'String'));
     if isempty(calib_path)==0
-%         [calib_path,~,~] = fileparts(calib_path);
+        %         [calib_path,~,~] = fileparts(calib_path);
     else
         calib_path=pwd;
     end
