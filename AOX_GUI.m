@@ -145,7 +145,6 @@ if exist(fileName,'file')
             case 'approximate', actionpanel_SelectionChangeFcn(handles.approximate, eventdata, handles)
         end
         
-        
         set(handles.full,'Value',default.full);
         set(handles.truncated,'Value',default.truncated);
         set(handles.linear,'Value',default.linear);
@@ -176,10 +175,11 @@ if exist(fileName,'file')
         set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
         set(handles.PI_print,'Value',default.PI_print);
         
-        set(handles.output_location,'String',default.output_location);
+        
         set(handles.output_to_calib_FLAG,'Value',default.output_to_calib_FLAG);
         set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
         output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
+        set(handles.output_location,'String',default.output_location);
         set(handles.calib_model_save_FLAG,'Value',default.calib_model_save_FLAG);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
@@ -2099,13 +2099,13 @@ function output_to_calib_FLAG_Callback(hObject, eventdata, handles)
 if get(hObject,'Value') == 0
     set(handles.output_location_button,'Enable','on');
     set(handles.output_location,'Enable','on');
-    set(handles.output_location,'String',pwd);
+%     set(handles.output_location,'String',pwd);
 else
     set(handles.output_location_button,'Enable','off');
     set(handles.output_location,'Enable','off');
-    calib_path=get(handles.calPath,'String');
+    [calib_path,~,~]=fileparts(get(handles.calPath,'String'));
     if isempty(calib_path)==0
-        [calib_path,~,~] = fileparts(calib_path);
+%         [calib_path,~,~] = fileparts(calib_path);
     else
         calib_path=pwd;
     end
