@@ -32,9 +32,11 @@ for k = 1:dimFlag
 
     % SOLUTION
     if nseries==nseries0
-        xcalib_k = comIN_k\targetMatrix(:,k);
+%        xcalib_k = comIN_k\targetMatrix(:,k);
+         xcalib_k = lsqminnorm(comIN_k, targetMatrix(:,k), 1e-8);
     else
-        xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
+%        xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
+        xcalib_k = lsqminnorm(comIN_k, targetMatrix(:,k), 1e-8);
     end
     if FLAGS.model == 4
         xcalib(customMatrix(:,k)==1,k) = xcalib_k;
