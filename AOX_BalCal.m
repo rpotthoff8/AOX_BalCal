@@ -58,7 +58,7 @@ FLAGS.res = out.res;
 FLAGS.hist = out.hist;
 %
 %TO SELECT Validation of the Model                          set FLAGS.balVal = 1;
-FLAGS.balVal = out.valid; 
+FLAGS.balVal = out.valid;
 %
 %TO SELECT Approximation from Cal Data                      set FLAGS.balApprox = 1;
 FLAGS.balApprox = out.approx;
@@ -82,6 +82,7 @@ FLAGS.Rec_Model=out.Rec_Model;
 anova_pct=out.anova_pct;
 FLAGS.approx_and_PI_print=out.approx_and_PI_print;
 FLAGS.PI_print=out.PI_print;
+FLAGS.custom_eqn_iter=out.stableRec_FLAGcheck;
 
 REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
 output_location=[out.output_location,filesep];
@@ -193,10 +194,10 @@ comIN = comIN0;
 
 %Calculate xcalib (coefficients)
 [xcalib, ANOVA] = calc_xcalib(comIN       ,targetMatrix       ,series,...
-                              nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
-                                      
+    nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
+
 [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,...
-                                          nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT');
+    nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT');
 
 % APPROXIMATION
 % define the approximation for inputs minus global zeros (includes
@@ -216,15 +217,15 @@ if FLAGS.balOut == 1
     [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut] = ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS);
     
     newStruct = struct('num_outliers',num_outliers,...
-                       'prcnt_outliers',prcnt_outliers,...
-                       'rowOut',rowOut,...
-                       'colOut',colOut,...
-                       'numSTD',numSTD);
+        'prcnt_outliers',prcnt_outliers,...
+        'rowOut',rowOut,...
+        'colOut',colOut,...
+        'numSTD',numSTD);
     uniqueOut = cell2struct([struct2cell(uniqueOut);struct2cell(newStruct)],...
-                            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     
     fprintf('Complete\n')
-        
+    
     % Use the reduced input and target files
     if FLAGS.zeroed == 1
         fprintf('\n Removing Outliers....')
@@ -239,15 +240,15 @@ if FLAGS.balOut == 1
         [~,s_1st0,~] = unique(series0);
         nseries0 = length(s_1st0);
         fprintf('Complete\n')
-
+        
         %Calculate xcalib (coefficients)
         [xcalib,ANOVA] = calc_xcalib(comIN0,targetMatrix0,series0,...
-                                     nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
+            nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
         
-        %%% Balfit Stats and Regression Coeff Matrix 
+        %%% Balfit Stats and Regression Coeff Matrix
         [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,...
-                                                  nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT');
-        %%% Balfit Stats and Matrix 
+            nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT');
+        %%% Balfit Stats and Matrix
         
         % APPROXIMATION
         % define the approximation for inputs minus global zeros (includes
@@ -258,6 +259,43 @@ if FLAGS.balOut == 1
         targetRes = targetMatrix0-aprxIN;
     end
 end
+
+%Iterate to find stable recommended equation
+if FLAGS.custom_eqn_iter==1
+    FLAGS_iter.anova=1;
+    FLAGS_iter.model=4;
+    FLAGS_iter.test_FLAG=1;
+    customMatrix_iter=[zeros(nterms,dimFlag);ones(nseries0,dimFlag)];
+    customMatrix_last=customMatrix_iter;
+    ANOVA_iter=ANOVA;
+    for i=1:dimFlag
+        customMatrix_iter(1:nterms,i)=ANOVA_iter(i).sig(1:nterms);
+    end
+    
+    samRec=0;
+    iter_count=0;
+    while samRec==0
+        iter_count=iter_count+1;
+        fprintf('\n Searching for stable recommended equation. Iteration '); fprintf(string(iter_count)); fprintf('\n');
+        customMatrix_last=customMatrix_iter;
+        
+        [~,ANOVA_iter] = calc_xcalib(comIN0,targetMatrix0,series0,...
+            nterms,nseries0,dimFlag,FLAGS_iter,customMatrix_iter,anova_pct,loadlist,'Direct');
+        for i=1:dimFlag
+            customMatrix_iter(1:nterms,i)=ANOVA_iter(i).sig(1:nterms);
+        end
+        
+        samRec=isequal(customMatrix_last,customMatrix_iter);
+        
+        
+    end
+    RECOMM_ALG_EQN_STABLE=customMatrix_iter(1:nterms,:);
+    newStruct = struct('RECOMM_ALG_EQN_STABLE',RECOMM_ALG_EQN_STABLE);
+    uniqueOut = cell2struct([struct2cell(uniqueOut);struct2cell(newStruct)],...
+        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+end
+
+
 
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
 coeff = xcalib(1:nterms,:);
@@ -272,9 +310,9 @@ tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 
 %%% Balfit Stats and Regression Coeff Matrix
 balfit_C1INV = xcalib((1:dimFlag), :);
-balfit_D1 = zeros(dimFlag,dimFlag); 
-balfit_INTERCEPT = globalZeros; 
-balfit_C1INVC2 = balfitxcalib((dimFlag+1:nterms), :)*balfit_C1INV; 
+balfit_D1 = zeros(dimFlag,dimFlag);
+balfit_INTERCEPT = globalZeros;
+balfit_C1INVC2 = balfitxcalib((dimFlag+1:nterms), :)*balfit_C1INV;
 balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_D1 ; balfit_C1INVC2 ];
 %%% Balfit Stats and Matrix
 
@@ -306,25 +344,25 @@ end
 section={'Calibration Algebraic'};
 
 newStruct=struct('aprxIN',aprxIN,...
-                 'coeff',coeff,...
-                 'nterms',nterms,...
-                 'ANOVA',ANOVA,...
-                 'balfitcomIN',balfitcomIN0,...
-                 'balfitxcalib',balfitxcalib,...
-                 'balfittargetMatrix',balfittargetMatrix0,...
-                 'balfitANOVA',balfitANOVA,...
-                 'balfit_regress_matrix',balfit_regress_matrix,...
-                 'targetMatrix0',targetMatrix0,...
-                 'loadunits',{loadunits(:)},...
-                 'voltunits',{voltunits(:)},...
-                 'balance_type',balance_type,...
-                 'description',description);
+    'coeff',coeff,...
+    'nterms',nterms,...
+    'ANOVA',ANOVA,...
+    'balfitcomIN',balfitcomIN0,...
+    'balfitxcalib',balfitxcalib,...
+    'balfittargetMatrix',balfittargetMatrix0,...
+    'balfitANOVA',balfitANOVA,...
+    'balfit_regress_matrix',balfit_regress_matrix,...
+    'targetMatrix0',targetMatrix0,...
+    'loadunits',{loadunits(:)},...
+    'voltunits',{voltunits(:)},...
+    'balance_type',balance_type,...
+    'description',description);
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-                        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+    [fieldnames(uniqueOut); fieldnames(newStruct)],1);
 
 output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,...
-       tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,...
-       reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
+    tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,...
+    reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
 
 %END CALIBRATION ALGEBRAIC SECTION
 %%
@@ -385,10 +423,10 @@ if FLAGS.balCal == 2
         cHist(u,:) = coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
         for s=1:dimFlag
-            center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.  
-                %Dim 1= RBF #
-                %Dim 2= Channel for voltage
-                %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
+            center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.
+            %Dim 1= RBF #
+            %Dim 2= Channel for voltage
+            %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
         end
         etaHist{u} = eta;
         
@@ -413,17 +451,17 @@ if FLAGS.balCal == 2
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
     newStruct=struct('aprxINminGZ2',aprxINminGZ2,...
-                     'wHist',wHist,...
-                     'cHist',cHist,...
-                     'centerIndexHist',centerIndexHist,...
-                     'center_daHist',center_daHist,...
-                     'ANOVA',ANOVA,...
-                     'coeff',coeff);
+        'wHist',wHist,...
+        'cHist',cHist,...
+        'centerIndexHist',centerIndexHist,...
+        'center_daHist',center_daHist,...
+        'ANOVA',ANOVA,...
+        'coeff',coeff);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-                            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,...
-           taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,...
-           reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
+        taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,...
+        reslist,numBasis,pointID0,series20,output_location,REPORT_NO,uniqueOut)
     
 end
 %END CALIBRATION GRBF SECTION
@@ -489,21 +527,21 @@ if FLAGS.balVal == 1
     if FLAGS.loadPI==1
         
         [loadPI_valid]=calc_alg_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
-       
+        
         newStruct=struct('loadPI_valid',loadPI_valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-                                [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     end
     
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section
     newStruct=struct('aprxINminGZvalid',aprxINminGZvalid);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-                            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     section={'Validation Algebraic'};
     output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
-           taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,dimFlag,voltagelist,...
-           reslist,numBasis,pointIDvalid,series2valid,output_location,REPORT_NO,uniqueOut)
+        taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,dimFlag,voltagelist,...
+        reslist,numBasis,pointIDvalid,series2valid,output_location,REPORT_NO,uniqueOut)
     
     %END VALIDATION ALGEBRAIC SECTION
     
@@ -556,10 +594,10 @@ if FLAGS.balVal == 1
         section={'Validation GRBF'};
         newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-                                [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
-               taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,...
-               reslist,numBasis,pointIDvalid,series2valid,output_location,REPORT_NO,uniqueOut)
+            taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,...
+            reslist,numBasis,pointIDvalid,series2valid,output_location,REPORT_NO,uniqueOut)
     end
     %END GRBF SECTION FOR VALIDATION
 end
@@ -577,14 +615,14 @@ if FLAGS.balApprox == 1
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
         GRBF.wHist=wHist;
         GRBF.cHist=cHist;
-        GRBF.center_daHist=center_daHist; 
+        GRBF.center_daHist=center_daHist;
     else
         GRBF='GRBFS NOT PLACED';
     end
     
     %Function that performs all ANOVA calculations and outputs
     [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,...
-                                                       series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA,anova_pct);
+        series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA,anova_pct);
     
 end
 %END APPROXIMATION SECTION
@@ -595,5 +633,5 @@ fprintf('%s',strcat('Check '," ",output_location,' for output files.'))
 fprintf('\n');
 
 if isdeployed % Optional, use if you want the non-deployed version to exit immediately
-  input('Press enter to finish and close');
+    input('Press enter to finish and close');
 end

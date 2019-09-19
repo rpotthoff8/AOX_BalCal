@@ -45,18 +45,23 @@ end
 % iterating through test terms in the model, we can eliminate collinear
 % data right away, before wasting computer time on unnecessary statistical
 % calculations.
-
-VIF = vif(X);
-if any(VIF>=10)
-    warning('VIF calculation indicates strong multicollinearity. Analysis of Variance results cannot be trusted.')
-elseif any(VIF>=4)
-    warning('VIF calculation indicates some multicollinearity. Analysis of Variance results may be inaccurate.')
+%VIF calculations performed if test_FLAG=0: Do not perform during iterated
+%recommended equation solving for time saving
+if test_FLAG==0
+    VIF = vif(X);
+    if any(VIF>=10)
+        warning('VIF calculation indicates strong multicollinearity. Analysis of Variance results cannot be trusted.')
+    elseif any(VIF>=4)
+        warning('VIF calculation indicates some multicollinearity. Analysis of Variance results may be inaccurate.')
+    end
+else
+%     VIF={'VIF NOT CALCULATED'};
+    VIF=-1;
 end
-
-if test_FLAG == 1 && max(VIF) >= 4
-    ANOVA.test = -1;
-    return
-end
+% if test_FLAG == 1 && max(VIF) >= 4
+%     ANOVA.test = -1;
+%     return
+% end
 
 % The approximation can then be made with
 % y_hat = X b = X (X' X)^-1 X' y = H y,
