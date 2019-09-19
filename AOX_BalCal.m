@@ -9,7 +9,7 @@ clc;
 clearvars;
 close all;
 % workspace;
-fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh,Javier Villarreal, and John Potthoff.  All Rights Reserved.\n')
+fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh, Javier Villarreal, and John Potthoff.  All Rights Reserved.\n')
 % Because of measurement noise in the voltage the APPROXIMATION tare is computed
 % by post-processing. The average and stddev is taken of all channels per section.
 % If the stddev is less than 0.25% of the capacity for any station the tare
