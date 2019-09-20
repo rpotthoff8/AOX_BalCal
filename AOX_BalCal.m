@@ -391,16 +391,16 @@ if FLAGS.balCal == 2
     centerIndexLoop=zeros(1,dimFlag);
     eta=zeros(length(excessVec0(:,1)),dimFlag);
     w=zeros(1,dimFlag);
-    rbfINminGZ=zeros(length(excessVec0(:,1)),dimFlag);
-    coeffRBF=zeros(1,dimFlag);
+    rbfINminGZ=zeros(length(excessVec0(:,1)),numBasis,dimFlag);
     rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
     wHist=zeros(numBasis,dimFlag,dimFlag);
     cHist=zeros(numBasis,dimFlag);
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
-
+    coeffRBF=zeros(numBasis,dimFlag);
     dist=zeros(size(dainputscalib,1),size(dainputscalib,1),size(dainputscalib,2));
+    
     for i=1:size(dainputscalib,2)
         dist(:,:,i)=dainputscalib(:,i)'-dainputscalib(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
     end
@@ -448,19 +448,20 @@ if FLAGS.balCal == 2
             %find widths 'w' by optimization routine
             w = fminsearchbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta),wmin,zeros(dimFlag,1));
 
-            rbfINminGZ(:,s)=exp(sum(eta.*w',2));
+            rbfINminGZ(:,u,s)=exp(sum(eta.*w',2));
 
-            coeffRBF(s)=lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
+            coeffRBF(:,s)=lsqminnorm(rbfINminGZ(:,:,s),targetRes(:,s));
 %             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
 
-            rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
+            rbfc_INminGZ(:,s) = rbfINminGZ(:,:,s)*coeffRBF(:,s);
 
             wHist(u,:,s) = w;
         end
 
         %Store basis parameters in Hist variables
 
-        cHist(u,:) = coeffRBF;
+        cHist_tot{u} = coeffRBF;
+        cHist(:,:)=coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
         for s=1:dimFlag
             center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.
@@ -471,7 +472,7 @@ if FLAGS.balCal == 2
         etaHist{u} = eta;
 
         %update the approximation
-        aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
+        aprxINminGZ2 = aprxINminGZ+rbfc_INminGZ;
         aprxINminGZ_Hist{u} = aprxINminGZ2;
 
         % SOLVE FOR TARES BY TAKING THE MEAN
