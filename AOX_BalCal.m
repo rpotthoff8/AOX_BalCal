@@ -380,7 +380,6 @@ if FLAGS.balCal == 2
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
 
-
     targetRes2=targetRes;
     aprxINminGZ2 = aprxINminGZ;
     dainputscalib = excessVec0-globalZeros;
@@ -443,7 +442,7 @@ if FLAGS.balCal == 2
             %                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
             %             end
 
-            eta2=dist_square(:,centerIndexLoop(s),:);
+%             eta2=dist_square(:,centerIndexLoop(s),:);
             eta(:,:)=reshape(dist_square(:,centerIndexLoop(s),:),size(eta));
 
             %find widths 'w' by optimization routine
@@ -451,7 +450,8 @@ if FLAGS.balCal == 2
 
             rbfINminGZ(:,s)=exp(sum(eta.*w',2));
 
-            coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
+            coeffRBF(s)=lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
+%             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
 
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
 
