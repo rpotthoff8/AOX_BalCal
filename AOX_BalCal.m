@@ -446,7 +446,7 @@ if FLAGS.balCal == 2
             eta(:,:)=reshape(dist_square(:,centerIndexLoop(s),:),size(eta));
 
             %find widths 'w' by optimization routine
-            w = fminsearchbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta),wmin,zeros(dimFlag,1));
+            w = fminsearchbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta),wmin./2,wmin,zeros(dimFlag,1));
 
             rbfINminGZ(:,s)=exp(sum(eta.*w',2));
 
