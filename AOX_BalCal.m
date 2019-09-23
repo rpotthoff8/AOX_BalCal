@@ -84,21 +84,13 @@ FLAGS.approx_and_PI_print=out.approx_and_PI_print;
 FLAGS.PI_print=out.PI_print;
 FLAGS.custom_eqn_iter=out.stableRec_FLAGcheck;
 
-REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
-output_location=[out.output_location,filesep];
-if out.subfolder_FLAG==1
-    try
-        new_subpath=fullfile(output_location,['AOX_BalCal_Results_',REPORT_NO]);
-        mkdir(char(new_subpath));
-        output_location=new_subpath;
-    catch
-        fprintf('Unable to create new subfolder. Saving results in: ');
-        fprintf('%s',output_location); fprintf('\n');
-    end
-end
+REPORT_NO=out.REPORT_NO;
+output_location=out.output_location;
 
 %TO SAVE .MAT FILE OF CALIBRATION MODEL
 FLAGS.calib_model_save=out.calib_model_save_FLAG;
+%TO SAVE INPUT .CAL, .VAL, .APP FILE IN OUTPUT LOCATION
+FLAGS.input_save=out.input_save_FLAG;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       INITIALIZATION SECTION
@@ -664,10 +656,31 @@ if FLAGS.balApprox == 1
 end
 %END APPROXIMATION SECTION
 
+%File Cleanup
+if FLAGS.input_save==0
+    if isfield(out,'cal_create')==1
+        try
+            delete(out.savePathcal);
+        end
+    end
+    if isfield(out,'val_create')==1
+        try
+            delete(out.savePathval);
+        end
+    end
+    if isfield(out,'app_create')==1
+        try
+            delete(out.savePathapp);
+        end
+    end
+end
+
+%
+
 fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
 fprintf('%s',strcat('Check '," ",output_location,' for output files.'))
-fprintf('\n');
+fprintf('\n \n');
 
 if isdeployed % Optional, use if you want the non-deployed version to exit immediately
     input('Press enter to finish and close');

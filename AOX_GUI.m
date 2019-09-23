@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 19-Sep-2019 11:23:51
+% Last Modified by GUIDE v2.5 23-Sep-2019 15:44:48
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -181,6 +181,7 @@ if exist(fileName,'file')
         output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
         set(handles.output_location,'String',default.output_location);
         set(handles.calib_model_save_FLAG,'Value',default.calib_model_save_FLAG);
+        set(handles.input_save_FLAG,'Value',default.input_save_FLAG);
         set(handles.stableRec_FLAGcheck,'Value',default.stableRec_FLAGcheck);
     catch
         disp('local default.ini may be outdated or incompatible with GUI.');
@@ -258,6 +259,7 @@ function runbutton_Callback(hObject, eventdata, handles)
 % hObject    handle to runbutton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+set(hObject,'Enable','off','String','...')
 uiresume(handles.figure1);
 %outStruct.tares = get(handles.tares_FLAGcheck,'Value');
 outStruct.disp = get(handles.disp_FLAGcheck,'Value');
@@ -301,6 +303,27 @@ outStruct.stableRec_FLAGcheck=get(handles.stableRec_FLAGcheck,'Value');
 outStruct.output_location=get(handles.output_location,'String');
 outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 outStruct.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
+outStruct.input_save_FLAG=get(handles.input_save_FLAG,'Value');
+
+%Make new subfolder if selected as option
+%Default output location to current directory if empty
+if isempty(outStruct.output_location)==1
+    outStruct.output_location=cd;
+end
+
+outStruct.REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
+outStruct.output_location=[outStruct.output_location,filesep];
+if outStruct.subfolder_FLAG==1
+    try
+        new_subpath=fullfile(outStruct.output_location,['AOX_BalCal_Results_',outStruct.REPORT_NO]);
+        mkdir(char(new_subpath));
+        outStruct.output_location=[new_subpath,filesep];
+    catch
+        fprintf('Unable to create new subfolder. Saving results in: ');
+        fprintf('%s',outStruct.output_location); fprintf('\n');
+    end
+end
+
 
 cal.type = 'calibrate';
 cal.Path = get(handles.calPath,'String');
@@ -321,9 +344,26 @@ switch calext
         cal.loadend          = a12rc(get(handles.c12,'String'));
         cal.voltend          = a12rc(get(handles.c22,'String'));
         
-        outStruct.savePathcal = loadCSV(cal);
+        outStruct.savePathcal = loadCSV(cal,outStruct.output_location);
+        outStruct.cal_create=1; %track if .cal file was created
     case '.cal'
         outStruct.savePathcal = cal.Path;
+
+        if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
+            [newLocation,~,~]=fileparts(outStruct.output_location); %new output location
+            try
+                [cal_path,cal_filename,ext]=fileparts(outStruct.savePathcal); %extract file information
+                if isempty(cal_path)==1 %if .cal file is in current directory
+                    cal_path=fileparts(mfilename('fullpath'));
+                end
+                if strcmp(cal_path,newLocation)==0 %if .cal file is not already in output location
+                    new_path=fullfile(newLocation,[cal_filename,ext]);
+                    copyfile(outStruct.savePathcal,new_path);
+                end
+            catch
+                fprintf('\n UNABLE TO SAVE .cal FILE IN OUTPUT LOCATION. \n');
+            end
+        end
 end
 
 outStruct.valid = get(handles.validate,'Value');
@@ -343,9 +383,26 @@ if outStruct.valid == 1
             val.CSV(4,:) = a12rc(get(handles.v41,'String'));
             val.Range{5} = [get(handles.v51,'String'),'..',get(handles.v52,'String')];
             val.CSV(5,:) = a12rc(get(handles.v51,'String'));
-            outStruct.savePathval = loadCSV(val);
+            outStruct.savePathval = loadCSV(val,outStruct.output_location);
+            outStruct.val_create=1; %track if .val file was created
+
         case '.val'
             outStruct.savePathval = val.Path;
+            
+            if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
+                try
+                    [val_path,val_filename,ext]=fileparts(outStruct.savePathval); %extract file information
+                    if isempty(val_path)==1 %if .val file is in current directory
+                        val_path=fileparts(mfilename('fullpath'));
+                    end
+                    if strcmp(val_path,newLocation)==0 %if .val file is not already in output location
+                        new_path=fullfile(newLocation,[val_filename,ext]);
+                        copyfile(outStruct.savePathval,new_path);
+                    end
+                catch
+                    fprintf('\n UNABLE TO SAVE .val FILE IN OUTPUT LOCATION. \n');
+                end
+            end
     end
 end
 
@@ -364,9 +421,25 @@ if outStruct.approx == 1
             app.CSV(3,:) = a12rc(get(handles.a31,'String'));
             app.Range{4} = [get(handles.a41,'String'),'..',get(handles.a42,'String')];
             app.CSV(4,:) = a12rc(get(handles.a41,'String'));
-            outStruct.savePathapp = loadCSV(app);
+            outStruct.savePathapp = loadCSV(app,outStruct.output_location);
+            outStruct.app_create=1; %track if .app file was created
         case '.app'
             outStruct.savePathapp = app.Path;
+
+            if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
+                try
+                    [app_path,app_filename,ext]=fileparts(outStruct.savePathapp); %extract file information
+                    if isempty(app_path)==1 %if .app file is in current directory
+                        app_path=fileparts(mfilename('fullpath'));
+                    end
+                    if strcmp(app_path,newLocation)==0 %if .app file is not already in output location
+                        new_path=fullfile(newLocation,[app_filename,ext]);
+                        copyfile(outStruct.savePathapp,new_path);
+                    end
+                catch
+                    fprintf('\n UNABLE TO SAVE .app FILE IN OUTPUT LOCATION. \n');
+                end
+            end
     end
 end
 
@@ -1267,6 +1340,7 @@ default.output_location=get(handles.output_location,'String');
 default.output_to_calib_FLAG=get(handles.output_to_calib_FLAG,'Value');
 default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 default.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
+default.input_save_FLAG=get(handles.input_save_FLAG,'Value');
 
 default.stableRec_FLAGcheck=get(handles.stableRec_FLAGcheck,'Value');
 
@@ -1470,7 +1544,7 @@ function calSave_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-function savePath = loadCSV(cva)
+function savePath = loadCSV(cva,output_location)
 % This function pre-loads the csv's and saves the data as .mat for quicker
 % reading.
 % Input: type - String that changes depending on whether loading
@@ -1567,8 +1641,7 @@ switch cva.type
         
         [~,calName,~] = fileparts(cal.Path);
         fileName = [calName,'.cal'];
-        [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
-        savePath = [CurrentPath,filesep,fileName];
+        savePath=fullfile(output_location,fileName);
         
         clear cva calName CurrentPath
         save(savePath);
@@ -1616,9 +1689,8 @@ switch cva.type
         
         [~,valName,~] = fileparts(val.Path);
         fileNamevalid = [valName,'.val'];
-        [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
-        savePathvalid = [CurrentPath,filesep,fileNamevalid];
-        
+        savePathvalid=fullfile(output_location,fileNamevalid);
+
         clear cva valName CurrentPath
         save(savePathvalid);
         savePath = savePathvalid;
@@ -1664,9 +1736,8 @@ switch cva.type
         
         [~,appName,~] = fileparts(app.Path);
         fileNameapprox = [appName,'.app'];
-        [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
-        savePathapprox = [CurrentPath,filesep,fileNameapprox];
-        
+        savePathapprox=fullfile(output_location,fileNameapprox);
+
         clear cva appName CurrentPath
         save(savePathapprox);
         savePath = savePathapprox;
@@ -2203,3 +2274,12 @@ function stableRec_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of stableRec_FLAGcheck
+
+
+% --- Executes on button press in input_save_FLAG.
+function input_save_FLAG_Callback(hObject, eventdata, handles)
+% hObject    handle to input_save_FLAG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of input_save_FLAG
