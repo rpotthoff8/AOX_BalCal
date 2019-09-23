@@ -57,7 +57,7 @@ end
 %OUTPUTING APPROXIMATION WITH PI
 if FLAGS.approx_and_PI_print==1
     approxinput=cellstr(string(aprxINminGZapprox.ALG)+' +/- '+string(loadPI_approx.ALG));
-    filename = 'APPROX_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
+    filename = 'GLOBAL_ALG_APPROX_w_PI.csv';
     description='ALG APPROXIMATION LOAD APPROX WITH PREDICTION INTERVALS';
     print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
 end

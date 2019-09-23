@@ -6,6 +6,10 @@ function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,di
 comIN=comIN(sortI,:);
 targetMatrix=targetMatrix(sortI,:);
 
+%Normalize data
+scale = max(abs(comIN));
+comIN = comIN./scale;
+
 % Characterizes the series in the subsamples
 [~,s_1st,~] = unique(series);
 nseries = length(s_1st);
@@ -25,32 +29,32 @@ xcalib = zeros(nterms+nseries0,dimFlag);
 % different depending on the channel.
 for k = 1:dimFlag
     comIN_k = comIN;
-
+    
     if FLAGS.model == 4
         comIN_k(:,customMatrix(:,k)==0) = [];
     end
-
+    
     % SOLUTION
-    if nseries==nseries0
-%        xcalib_k = comIN_k\targetMatrix(:,k);
-         xcalib_k = lsqminnorm(comIN_k, targetMatrix(:,k), 1e-8);
-    else
-%        xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
-        xcalib_k = lsqminnorm(comIN_k, targetMatrix(:,k), 1e-8);
-    end
+    xcalib_k = lsqminnorm(comIN_k, targetMatrix(:,k), 1e-8);
     if FLAGS.model == 4
         xcalib(customMatrix(:,k)==1,k) = xcalib_k;
     else
         xcalib(:,k) = xcalib_k;
     end
-
+    
     %Call Anova
     if FLAGS.anova==1
+        %test_FLAG used to 'turn off' VIF when iterating to recommended
+        %equation for time saving
+        if isfield(FLAGS,'test_FLAG')==0
+            FLAGS.test_FLAG=0;
+        end
+        
         fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
-        ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,0,anova_pct);
-        fprintf('Complete')
+        ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
+        fprintf('Complete\n')
     end
-
+    
 end
 fprintf('\n')
 
@@ -71,9 +75,9 @@ else
             ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);
             ANOVA_exp(j).PI.invXtX(customMatrix((1:nterms),j)==1,customMatrix((1:nterms),j)==1)=ANOVA(j).PI.invXtX;
         end
-   
+        
         ANOVA=ANOVA_exp;
     end
-
+    
 end
 end
