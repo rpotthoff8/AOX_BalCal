@@ -21,12 +21,10 @@ rbfc_INminGZ=zeros(size(dainputs));
 for s=1:size(dainputs,2) % loops through the components
     
     adiffervalid=center_daHist(u,:,s)-dainputs;
-    dist_square=adiffervalid.^2;
-    
 %     adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputs;
-%     etavalid(:,s) = dot(adiffervalid,adiffervalid,2);
+    etavalid(:,s) = dot(adiffervalid,adiffervalid,2);
     
-    rbfINminGZvalid(:,s)=exp(sum(dist_square.*wHist(u,:,s),2));
+    rbfINminGZvalid(:,s)=exp(etavalid(:,s)*wHist(u,s));
     
     rbfc_INminGZ(:,s) = cHist(u,s)*rbfINminGZvalid(:,s);
 end
