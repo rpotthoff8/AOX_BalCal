@@ -86,7 +86,7 @@ if FLAGS.balCal == 2
     for u=1:numBasis
         
         %Call function to place single GRBF
-        [rbfc_INminGZapprox]=place_GRBF(u,dainputsapprox,GRBF.wHist,GRBF.cHist,GRBF.center_daHist);
+        [rbfc_INminGZapprox]=place_GRBF(u,dainputsapprox,GRBF.wHist,GRBF.cHist,GRBF.center_daHist,GRBF.h);
         
         %update the approximation
         aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;

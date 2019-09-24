@@ -382,11 +382,11 @@ if FLAGS.balCal == 2
     tareGRBFHist = cell(numBasis,1);
     centerIndexLoop=zeros(1,dimFlag);
     eta=zeros(length(excessVec0(:,1)),dimFlag);
-    w=zeros(1,dimFlag);
+    eps=zeros(1,dimFlag);
     rbfINminGZ=zeros(length(excessVec0(:,1)),dimFlag);
     coeffRBF=zeros(1,dimFlag);
     rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
-    wHist=zeros(numBasis,dimFlag);
+    epsHist=zeros(numBasis,dimFlag);
     cHist=zeros(numBasis,dimFlag);
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
@@ -401,19 +401,12 @@ if FLAGS.balCal == 2
     R_square_find(R_square_find==0)=NaN; %Eliminate zero values (on diagonal)
     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
-    %     if isfield(options,'h')
-    %         h=options.h;
-    %     else
-    %         h = 0.25;
-    %     end
-    %     h=0.1;
-    s=100*0.0001;
-    %     s=100*0.01;
-    h=(0.9688)*(s + 0.0001507)/(s + 0.1322);
-
+    h=sqrt(max(min(R_square_find)));
+    eps_min=0.1; %Fasshauer pg 234
+    eps_max=1.2;
+    
     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
-
 
     for u=1:numBasis
         for s=1:dimFlag
@@ -421,7 +414,6 @@ if FLAGS.balCal == 2
             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
             [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
 
-            wmin = max(log(h)./(min_R_square(centerIndexLoop(s))));
             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
 
             %             for r=1:length(excessVec0(:,1))
@@ -430,17 +422,17 @@ if FLAGS.balCal == 2
             eta(:,s)=R_square(:,centerIndexLoop(s));
 
             %find widths 'w' by optimization routine
-            w(s) = fminbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta(:,s)),wmin,0 );
+            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h,dimFlag),eps_min,eps_max );
 
-            rbfINminGZ(:,s)=exp(eta(:,s)*w(s));
+            rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)'))/h^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 
-            coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
+            coeffRBF(s) = lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
 
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
         end
 
         %Store basis parameters in Hist variables
-        wHist(u,:) = w;
+        epsHist(u,:) = eps;
         cHist(u,:) = coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
         for s=1:dimFlag
@@ -472,7 +464,7 @@ if FLAGS.balCal == 2
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
     newStruct=struct('aprxINminGZ2',aprxINminGZ2,...
-        'wHist',wHist,...
+        'wHist',epsHist,...
         'cHist',cHist,...
         'centerIndexHist',centerIndexHist,...
         'center_daHist',center_daHist,...
@@ -587,7 +579,7 @@ if FLAGS.balVal == 1
 
         for u=1:numBasis
             %Call function to place single GRBF
-            [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,wHist,cHist,center_daHist);
+            [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,epsHist,cHist,center_daHist,h);
 
             %update the approximation
             aprxINminGZ2valid = aprxINminGZ2valid+rbfc_INminGZvalid;
@@ -631,9 +623,10 @@ if FLAGS.balApprox == 1
     load(out.savePathapp,'-mat');
 
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
-        GRBF.wHist=wHist;
+        GRBF.wHist=epsHist;
         GRBF.cHist=cHist;
         GRBF.center_daHist=center_daHist;
+        GRBF.h=h;
     else
         GRBF='GRBFS NOT PLACED';
     end

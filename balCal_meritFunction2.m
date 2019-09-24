@@ -1,19 +1,20 @@
 %
 % Copyright ©2016 Ali Arya Mokhtarzadeh.  All Rights Reserved.
 %
-function y=balCal_meritFunction2(w,residvec,etak)
-
+function y=balCal_meritFunction2(eps,residvec,R_square,h,dimFlag)
+s=dimFlag;
 %    y=dot(residvec,residvec);
 
-   u=exp(etak*w);
-   b=dot(u,residvec);
-   z=dot(u,u);
-   
-   p = residvec - (b/z)*u;
+phi=((eps^s)/(sqrt(pi^s)))*exp(-((eps^2)*(R_square))/h^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 
-   y = dot(p,p);
-   
-end   
+b=dot(phi,residvec);
+z=dot(phi,phi);
+
+p = residvec - (b/z)*phi;
+
+y = dot(p,p);
+
+end
 
 %
 % Copyright ©2016 Ali Arya Mokhtarzadeh.  All Rights Reserved.
