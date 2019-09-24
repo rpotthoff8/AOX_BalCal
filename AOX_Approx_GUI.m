@@ -414,7 +414,28 @@ switch cva.type
 %         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
   
         excessVecapprox =         csvread(app.Path,app.CSV(4,1),app.CSV(4,2),app.Range{4});
-         
+        
+        try
+            file=fopen(app.Path); %open file
+            all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
+            fclose(file); %close file
+            %Eliminate rows with ";" in first column
+            lastrow=a12rc(extractAfter(app.Range{3},".."));
+            all_text_points=all_text1{1}(app.CSV(4,1)+1:lastrow(1)+1);
+            for i=1:size(all_text_points,1)
+                all_text_points_split(i,:)=cellstr(strsplit(string(all_text_points(i)),',','CollapseDelimiters',false)); %Extract row with labels
+            end
+            first_col=all_text_points_split(:,1);
+            ignore_row=find(contains(first_col,';')); %Find rows with semicolons in the first column
+            
+            excessVecapprox(ignore_row,:)=[];
+            pointIDapprox(ignore_row,:)=[];
+            seriesapprox(ignore_row,:)=[];
+            series2approx(ignore_row,:)=[];
+        catch
+            fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
+        end
+        
         [~,appName,~] = fileparts(app.Path);
         fileNameapprox = [appName,'.app'];
         [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
