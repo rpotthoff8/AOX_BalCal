@@ -202,6 +202,7 @@ switch appext
         
         if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
             try
+                [newLocation,~,~]=fileparts(outStruct.output_location); %new output location
                 [app_path,app_filename,ext]=fileparts(outStruct.savePathapp); %extract file information
                 if isempty(app_path)==1 %if .app file is in current directory
                     app_path=fileparts(mfilename('fullpath'));

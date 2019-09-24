@@ -391,6 +391,7 @@ if outStruct.valid == 1
             
             if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
                 try
+                    [newLocation,~,~]=fileparts(outStruct.output_location); %new output location
                     [val_path,val_filename,ext]=fileparts(outStruct.savePathval); %extract file information
                     if isempty(val_path)==1 %if .val file is in current directory
                         val_path=fileparts(mfilename('fullpath'));
@@ -428,6 +429,7 @@ if outStruct.approx == 1
 
             if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
                 try
+                    [newLocation,~,~]=fileparts(outStruct.output_location); %new output location
                     [app_path,app_filename,ext]=fileparts(outStruct.savePathapp); %extract file information
                     if isempty(app_path)==1 %if .app file is in current directory
                         app_path=fileparts(mfilename('fullpath'));
