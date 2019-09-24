@@ -6,10 +6,6 @@ function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,di
 comIN=comIN(sortI,:);
 targetMatrix=targetMatrix(sortI,:);
 
-%Normalize data
-scale = max(abs(comIN));
-comIN = comIN./scale;
-
 % Characterizes the series in the subsamples
 [~,s_1st,~] = unique(series);
 nseries = length(s_1st);
@@ -35,7 +31,8 @@ for k = 1:dimFlag
     end
     
     % SOLUTION
-    xcalib_k = lsqminnorm(comIN_k, targetMatrix(:,k), 1e-8);
+    xcalib_k = comIN_k\targetMatrix(:,k);
+    
     if FLAGS.model == 4
         xcalib(customMatrix(:,k)==1,k) = xcalib_k;
     else
