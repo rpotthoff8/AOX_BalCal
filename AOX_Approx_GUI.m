@@ -169,6 +169,24 @@ outStruct.PI_print = get(handles.PI_print,'Value');
 outStruct.output_location=get(handles.output_location,'String');
 outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 
+%Make new subfolder if selected as option
+%Default output location to current directory if empty
+if isempty(outStruct.output_location)==1
+    outStruct.output_location=cd;
+end
+
+outStruct.REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
+outStruct.output_location=[outStruct.output_location,filesep];
+if outStruct.subfolder_FLAG==1
+    try
+        new_subpath=fullfile(outStruct.output_location,['AOX_BalCal_Results_',outStruct.REPORT_NO]);
+        mkdir(char(new_subpath));
+        outStruct.output_location=[new_subpath,filesep];
+    catch
+        fprintf('Unable to create new subfolder. Saving results in: ');
+        fprintf('%s',outStruct.output_location); fprintf('\n');
+    end
+end
 
 outStruct.cancel = 0;
 

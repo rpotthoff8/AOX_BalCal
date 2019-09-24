@@ -47,9 +47,9 @@ if FLAGS.excel ==1 || FLAGS.approx_and_PI_print==1 || FLAGS.PI_print==1
 else
     FLAGS.save_files=0;
 end
+REPORT_NO=out.REPORT_NO;
+output_location=out.output_location;
 
-REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
-output_location=[out.output_location,filesep];
 if out.subfolder_FLAG==1 && FLAGS.save_files==1
     try
         new_subpath=fullfile(output_location,['AOX_Approx_Results_',REPORT_NO]);
