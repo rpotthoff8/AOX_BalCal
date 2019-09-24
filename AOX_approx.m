@@ -38,28 +38,12 @@ FLAGS.excel = out.excel;    %TO SAVE DATA TO CSV: set FLAGS.excel = 1;
 FLAGS.approx_and_PI_print=out.approx_and_PI_print;
 FLAGS.PI_print=out.PI_print;
 FLAGS.model=model;
+FLAGS.input_save=out.input_save_FLAG;
+FLAGS.save_files=out.save_files;
 
 PI_pct=out.PI_percent_confidence;
-
-%FOLLOWING NEEDS CHANGED/MOVED TO GUI.M
-%Set Save Location for Files
-if FLAGS.excel ==1 || FLAGS.approx_and_PI_print==1 || FLAGS.PI_print==1
-    FLAGS.save_files=1;
-else
-    FLAGS.save_files=0;
-end
 REPORT_NO=out.REPORT_NO;
 output_location=out.output_location;
-
-if out.subfolder_FLAG==1 && FLAGS.save_files==1
-    try
-        new_subpath=fullfile(output_location,['AOX_Approx_Results_',REPORT_NO]);
-        mkdir(char(new_subpath));
-        output_location=new_subpath;
-    catch
-        fprintf('Unable to create new subfolder. Saving results in: '); fprintf('%s',output_location); fprintf('\n');
-    end
-end
 
 if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
     GRBF.wHist=wHist;
@@ -73,6 +57,14 @@ end
 %Function that performs all ANOVA calculations and outputs
 [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA,PI_pct);
 
+%File Cleanup
+if FLAGS.input_save==0
+    if isfield(out,'app_create')==1
+        try
+            delete(out.savePathapp);
+        end
+    end
+end
 
 fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
