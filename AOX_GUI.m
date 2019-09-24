@@ -173,8 +173,6 @@ if exist(fileName,'file')
         set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
         set(handles.anova_pct,'String',default.anova_pct);
         set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
-        set(handles.PI_print,'Value',default.PI_print);
-        
         
         set(handles.output_to_calib_FLAG,'Value',default.output_to_calib_FLAG);
         set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
@@ -297,7 +295,6 @@ outStruct.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 outStruct.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 outStruct.anova_pct= str2num(get(handles.anova_pct,'String'));
 outStruct.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
-outStruct.PI_print = get(handles.PI_print,'Value');
 
 outStruct.stableRec_FLAGcheck=get(handles.stableRec_FLAGcheck,'Value');
 outStruct.output_location=get(handles.output_location,'String');
@@ -391,6 +388,7 @@ if outStruct.valid == 1
             
             if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
                 try
+                    [newLocation,~,~]=fileparts(outStruct.output_location); %new output location
                     [val_path,val_filename,ext]=fileparts(outStruct.savePathval); %extract file information
                     if isempty(val_path)==1 %if .val file is in current directory
                         val_path=fileparts(mfilename('fullpath'));
@@ -428,6 +426,7 @@ if outStruct.approx == 1
 
             if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
                 try
+                    [newLocation,~,~]=fileparts(outStruct.output_location); %new output location
                     [app_path,app_filename,ext]=fileparts(outStruct.savePathapp); %extract file information
                     if isempty(app_path)==1 %if .app file is in current directory
                         app_path=fileparts(mfilename('fullpath'));
@@ -1334,7 +1333,6 @@ default.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 default.anova_pct = get(handles.anova_pct,'String');
 default.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
-default.PI_print = get(handles.PI_print,'Value');
 
 default.output_location=get(handles.output_location,'String');
 default.output_to_calib_FLAG=get(handles.output_to_calib_FLAG,'Value');
@@ -2082,10 +2080,8 @@ function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of loadPI_FLAGcheck
 if get(hObject,'Value') == 0
     set(handles.approx_and_PI_print,'Enable','off','Value',0);
-    set(handles.PI_print,'Enable','off','Value',0);
 else
     set(handles.approx_and_PI_print,'Enable','on');
-    set(handles.PI_print,'Enable','on');
 end
 
 
@@ -2180,16 +2176,6 @@ function approx_and_PI_print_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of approx_and_PI_print
-
-
-% --- Executes on button press in PI_print.
-function PI_print_Callback(hObject, eventdata, handles)
-% hObject    handle to PI_print (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of PI_print
-
 
 
 function output_location_Callback(hObject, eventdata, handles)

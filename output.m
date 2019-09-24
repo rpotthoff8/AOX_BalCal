@@ -637,26 +637,16 @@ end
 
 %% Algebraic Validation Specific Outputs
 if strcmp(section,{'Validation Algebraic'})==1
-    if FLAGS.excel == 1
-        filename = 'VALID_AOX_GLOBAL_ALG_RESULT.csv';
+    %OUTPUTING APPROXIMATION WITH PI FILE
+    if FLAGS.approx_and_PI_print==1
+        section='VALID';
+        load_and_PI_file_output(aprxINminGZvalid,loadPI_valid,pointID,series,series2,loadlist,output_location,section)
+        
+        %OUTPUTING APPROXIMATION FILE
+    elseif FLAGS.excel == 1
+        filename = 'VALID_GLOBAL_ALG_APPROX.csv';
         approxinput=aprxINminGZvalid;
         description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
-        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
-    end
-    
-    %OUTPUTING APPROXIMATION WITH PI
-    if FLAGS.approx_and_PI_print==1
-        filename = 'VALID_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
-        description='ALG VALID APPROX WITH PREDICTION INTERVALS';
-        approxinput=cellstr(string(aprxINminGZvalid)+' +/- '+string(loadPI_valid));
-        print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
-    end
-    
-    %OUTPUTING PI VALUE
-    if FLAGS.PI_print==1
-        filename = 'VALID_ALG_PREDICTION_INTERVAL.csv';
-        description='VALIDATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
-        approxinput=loadPI_valid;
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
     end
 end
@@ -665,7 +655,7 @@ end
 if strcmp(section,{'Validation GRBF'})==1
     if FLAGS.excel == 1
         %Output validation load approximation
-        filename = 'VALID_AOX_GLOBAL_GRBF_RESULT.csv';
+        filename = 'VALID_GLOBAL_GRBF_APPROX.csv';
         approxinput=aprxINminGZ2valid;
         description='VALIDATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
