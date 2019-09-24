@@ -25,7 +25,7 @@ for s=1:size(dainputs,2) % loops through the components
 %     adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputs;
     etavalid(:,s) = dot(adiffervalid,adiffervalid,2);
     
-    rbfINminGZvalid(:,s)=((wHist(u,s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((wHist(u,s)^2)*(etavalid(:,s)'))/h^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
+    rbfINminGZvalid(:,s)=((wHist(u,s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((wHist(u,s)^2)*(etavalid(:,s)))/h^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
     rbfc_INminGZ(:,s) = cHist(u,s)*rbfINminGZvalid(:,s);
 end
 

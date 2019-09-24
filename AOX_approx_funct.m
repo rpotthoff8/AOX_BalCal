@@ -78,7 +78,7 @@ end
 
 if FLAGS.balCal == 2
     
-    numBasis=size(GRBF.wHist,1);
+    numBasis=size(GRBF.epsHist,1);
     
     aprxINminGZ2approx = aprxINminGZapprox.ALG;
     aprxINminGZ_Histapprox = cell(numBasis,1);
@@ -86,7 +86,7 @@ if FLAGS.balCal == 2
     for u=1:numBasis
         
         %Call function to place single GRBF
-        [rbfc_INminGZapprox]=place_GRBF(u,dainputsapprox,GRBF.wHist,GRBF.cHist,GRBF.center_daHist,GRBF.h);
+        [rbfc_INminGZapprox]=place_GRBF(u,dainputsapprox,GRBF.epsHist,GRBF.cHist,GRBF.center_daHist,GRBF.h_GRBF);
         
         %update the approximation
         aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;

@@ -401,7 +401,7 @@ if FLAGS.balCal == 2
     R_square_find(R_square_find==0)=NaN; %Eliminate zero values (on diagonal)
     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
-    h=sqrt(max(min(R_square_find)));
+    h_GRBF=sqrt(max(min(R_square_find)));
     eps_min=0.1; %Fasshauer pg 234
     eps_max=1.2;
     
@@ -422,9 +422,9 @@ if FLAGS.balCal == 2
             eta(:,s)=R_square(:,centerIndexLoop(s));
 
             %find widths 'w' by optimization routine
-            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h,dimFlag),eps_min,eps_max );
+            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
 
-            rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)'))/h^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
+            rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 
             coeffRBF(s) = lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
 
@@ -464,12 +464,12 @@ if FLAGS.balCal == 2
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
     newStruct=struct('aprxINminGZ2',aprxINminGZ2,...
-        'wHist',epsHist,...
+        'epsHist',epsHist,...
         'cHist',cHist,...
         'centerIndexHist',centerIndexHist,...
         'center_daHist',center_daHist,...
         'ANOVA',ANOVA,...
-        'coeff',coeff);
+        'coeff',coeff, 'h_GRBF',h_GRBF);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,...
@@ -579,7 +579,7 @@ if FLAGS.balVal == 1
 
         for u=1:numBasis
             %Call function to place single GRBF
-            [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,epsHist,cHist,center_daHist,h);
+            [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,epsHist,cHist,center_daHist,h_GRBF);
 
             %update the approximation
             aprxINminGZ2valid = aprxINminGZ2valid+rbfc_INminGZvalid;
@@ -623,10 +623,10 @@ if FLAGS.balApprox == 1
     load(out.savePathapp,'-mat');
 
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
-        GRBF.wHist=epsHist;
+        GRBF.epsHist=epsHist;
         GRBF.cHist=cHist;
         GRBF.center_daHist=center_daHist;
-        GRBF.h=h;
+        GRBF.h_GRBF=h_GRBF;
     else
         GRBF='GRBFS NOT PLACED';
     end

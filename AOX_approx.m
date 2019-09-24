@@ -64,6 +64,7 @@ if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
     GRBF.wHist=wHist;
     GRBF.cHist=cHist;
     GRBF.center_daHist=center_daHist;
+    GRBF.h=h_GRBF;
 else
     GRBF='GRBFS NOT PLACED';
 end

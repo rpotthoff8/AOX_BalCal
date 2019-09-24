@@ -590,10 +590,10 @@ if strcmp(section,{'Calibration GRBF'})==1
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
         
         %Output GRBF Widths
-        filename = 'APPROX_AOX_GRBF_ws.csv';
-        input=wHist;
+        filename = 'APPROX_AOX_GRBF_eps.csv';
+        input=epsHist;
         precision='%.16f';
-        description='CALIBRATION GRBF WIDTHS';
+        description='CALIBRATION GRBF EPSILON';
         print_dlmwrite(filename,input,precision,description,output_location);
         
         %Output GRBF coefficients
@@ -609,6 +609,13 @@ if strcmp(section,{'Calibration GRBF'})==1
         precision='%.16f';
         description='CALIBRATION GRBF CENTER INDICES';
         print_dlmwrite(filename,input,precision,description,output_location);
+        
+        %Output GRBF h value
+        filename = 'APPROX_AOX_GRBF_h.csv';
+        input=h_GRBF;
+        precision='%.16f';
+        description='CALIBRATION GRBF "h"  VALUE';
+        print_dlmwrite(filename,input,precision,description,output_location);
     end
     
     if FLAGS.calib_model_save==1
@@ -618,7 +625,7 @@ if strcmp(section,{'Calibration GRBF'})==1
         description='CALIBRATION MODEL';
         try
             model=FLAGS.model;
-            save(fullpath,'coeff','ANOVA','loadlist','model','cHist','wHist','center_daHist');
+            save(fullpath,'coeff','ANOVA','loadlist','model','cHist','epsHist','center_daHist','h_GRBF');
             fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
         catch ME
             fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');
