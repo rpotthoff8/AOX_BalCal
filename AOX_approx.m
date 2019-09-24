@@ -36,7 +36,6 @@ FLAGS.balCal = out.grbf; %TO SELECT Algebraic Model: set FLAGS.balCal = 1;  %TO 
 FLAGS.loadPI = out.loadPI;
 FLAGS.excel = out.excel;    %TO SAVE DATA TO CSV: set FLAGS.excel = 1;
 FLAGS.approx_and_PI_print=out.approx_and_PI_print;
-FLAGS.PI_print=out.PI_print;
 FLAGS.model=model;
 FLAGS.input_save=out.input_save_FLAG;
 FLAGS.save_files=out.save_files;

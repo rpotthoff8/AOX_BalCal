@@ -103,7 +103,6 @@ if exist(fileName,'file')
         set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
         set(handles.excel_FLAGcheck,'Value',default.excel);
         set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
-        set(handles.PI_print,'Value',default.PI_print);
         set(handles.input_save_FLAG,'Value',default.input_save_FLAG);
         
         %Callbacks
@@ -150,7 +149,6 @@ outStruct.PI_percent_confidence=str2num(get(handles.PI_percent_confidence,'Strin
 %Outputs Group
 outStruct.excel = get(handles.excel_FLAGcheck,'Value');
 outStruct.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
-outStruct.PI_print = get(handles.PI_print,'Value');
 outStruct.output_location=get(handles.output_location,'String');
 outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 outStruct.input_save_FLAG=get(handles.input_save_FLAG,'Value');
@@ -163,7 +161,7 @@ end
 outStruct.REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
 outStruct.output_location=[outStruct.output_location,filesep];
 
-if outStruct.excel ==1 || outStruct.approx_and_PI_print==1 || outStruct.PI_print==1 || outStruct.input_save_FLAG==1
+if outStruct.excel ==1 || outStruct.approx_and_PI_print==1 || outStruct.input_save_FLAG==1
     outStruct.save_files=1;
 else
     outStruct.save_files=0;
@@ -282,7 +280,6 @@ default.version = VERSION;
         default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
         default.excel=get(handles.excel_FLAGcheck,'Value');
         default.approx_and_PI_print=get(handles.approx_and_PI_print,'Value');
-        default.PI_print=get(handles.PI_print,'Value');
         default.input_save_FLAG=get(handles.input_save_FLAG,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
@@ -657,12 +654,10 @@ function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of loadPI_FLAGcheck
 if get(hObject,'Value') == 0
     set(handles.approx_and_PI_print,'Enable','off','Value',0);
-    set(handles.PI_print,'Enable','off','Value',0);
     set(handles.percent_confidence_text,'Enable','off');
     set(handles.PI_percent_confidence,'Enable','off');
 else
      set(handles.approx_and_PI_print,'Enable','on');
-     set(handles.PI_print,'Enable','on');
      set(handles.percent_confidence_text,'Enable','on');
      set(handles.PI_percent_confidence,'Enable','on');
 end
@@ -675,15 +670,6 @@ function approx_and_PI_print_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of approx_and_PI_print
-
-
-% --- Executes on button press in PI_print.
-function PI_print_Callback(hObject, eventdata, handles)
-% hObject    handle to PI_print (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of PI_print
 
 
 function output_location_Callback(hObject, eventdata, handles)

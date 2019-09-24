@@ -81,7 +81,6 @@ FLAGS.BALFIT_ANOVA=out.BALFIT_ANOVA;
 FLAGS.Rec_Model=out.Rec_Model;
 anova_pct=out.anova_pct;
 FLAGS.approx_and_PI_print=out.approx_and_PI_print;
-FLAGS.PI_print=out.PI_print;
 FLAGS.custom_eqn_iter=out.stableRec_FLAGcheck;
 
 REPORT_NO=out.REPORT_NO;
