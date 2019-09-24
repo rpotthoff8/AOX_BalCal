@@ -41,6 +41,7 @@ FLAGS.model=model;
 
 PI_pct=out.PI_percent_confidence;
 
+%FOLLOWING NEEDS CHANGED/MOVED TO GUI.M
 %Set Save Location for Files
 if FLAGS.excel ==1 || FLAGS.approx_and_PI_print==1 || FLAGS.PI_print==1
     FLAGS.save_files=1;
