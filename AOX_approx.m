@@ -61,10 +61,10 @@ if out.subfolder_FLAG==1 && FLAGS.save_files==1
 end
 
 if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
-    GRBF.wHist=wHist;
+    GRBF.epsHist=epsHist;
     GRBF.cHist=cHist;
     GRBF.center_daHist=center_daHist;
-    GRBF.h=h_GRBF;
+    GRBF.h_GRBF=h_GRBF;
 else
     GRBF='GRBFS NOT PLACED';
 end
