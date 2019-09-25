@@ -44,30 +44,20 @@ end
 
 %OUTPUT
 fprintf('\n ********************************************************************* \n');
-if FLAGS.excel == 1
+
+%OUTPUTING APPROXIMATION WITH PI FILE
+if FLAGS.approx_and_PI_print==1
+    section='APPROX';
+    load_and_PI_file_output(aprxINminGZapprox.ALG,loadPI_approx.ALG,pointIDapprox,seriesapprox,series2approx,loadlist,output_location,section)
+
+elseif FLAGS.excel == 1
     %Output approximation load approximation
-    filename = 'GLOBAL_ALG_APPROX.csv';
+    filename = 'APPROX_GLOBAL_ALG_APPROX.csv';
     approxinput=aprxINminGZapprox.ALG;
     description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
     print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
 else
     fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
-end
-
-%OUTPUTING APPROXIMATION WITH PI
-if FLAGS.approx_and_PI_print==1
-    approxinput=cellstr(string(aprxINminGZapprox.ALG)+' +/- '+string(loadPI_approx.ALG));
-    filename = 'GLOBAL_ALG_APPROX_w_PI.csv';
-    description='ALG APPROXIMATION LOAD APPROX WITH PREDICTION INTERVALS';
-    print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
-end
-
-%OUTPUTING PI VALUE
-if FLAGS.PI_print==1
-    filename = 'APPROX_ALG_PREDICTION_INTERVAL.csv';
-    approxinput=loadPI_approx.ALG;
-    description='APPROXIMATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
-    print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
