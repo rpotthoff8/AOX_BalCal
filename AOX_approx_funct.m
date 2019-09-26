@@ -52,7 +52,7 @@ if FLAGS.approx_and_PI_print==1
 
 elseif FLAGS.excel == 1
     %Output approximation load approximation
-    filename = 'APPROX_GLOBAL_ALG_APPROX.csv';
+    filename = 'APPROX ALG Global Load Approximation.csv';
     approxinput=aprxINminGZapprox.ALG;
     description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
     print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
@@ -91,7 +91,7 @@ if FLAGS.balCal == 2
     fprintf('\n ********************************************************************* \n');
     if FLAGS.excel == 1
         %Output approximation load approximation
-        filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
+        filename = 'APPROX GRBF Global Load Approximation.csv';
         approxinput=aprxINminGZ2approx;
         description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);

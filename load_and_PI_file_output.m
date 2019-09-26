@@ -1,7 +1,11 @@
 function []=load_and_PI_file_output(aprxINminGZ,loadPI,pointID,series1,series2,loadlist,output_location,section)
 description=[upper(section), ' APPROXIMATION WITH PREDICTION INTERVAL'];
 try
-    filename=[upper(section),'_GLOBAL_ALG_APPROX_w_PI.xlsx'];
+    if strcmpi(section,'VALID')==1
+        filename='VALID ALG Tare Corrected Load Approximation w PI.xlsx';
+    elseif strcmpi(section,'APPROX')==1
+        filename='APPROX ALG Global Load Approximation w PI.xlsx';
+    end
     fullpath=fullfile(output_location,filename);
     
     top_row=[{'Point ID','Series1','Series2'},loadlist]; %Top label row
@@ -50,9 +54,9 @@ if xlsx==1
             end
         end
         
-        ewb.Worksheets.Item(1).Name = 'GLOBAL_ALG_APPROX'; %rename 1st sheet
-        ewb.Worksheets.Item(2).Name = 'GLOBAL_ALG_APPROX_w_PI'; %rename 2nd sheet
-        ewb.Worksheets.Item(3).Name = 'ALG_PREDICTION_INTERVAL'; %rename 3rd sheet
+        ewb.Worksheets.Item(1).Name = 'Load Approximation'; %rename 1st sheet
+        ewb.Worksheets.Item(2).Name = 'Load Approximation w_PI'; %rename 2nd sheet
+        ewb.Worksheets.Item(3).Name = 'Prediction Interval'; %rename 3rd sheet
         
         ewb.Save % # save to the same file
         ewb.Close
