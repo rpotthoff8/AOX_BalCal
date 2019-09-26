@@ -403,7 +403,7 @@ if FLAGS.balCal == 2
     h_GRBF=sqrt(max(min(R_square_find)));
     eps_min=0.1; %Fasshauer pg 234
     eps_max=1.2;
-    
+
     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
 
@@ -452,8 +452,11 @@ if FLAGS.balCal == 2
         taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
         tareGRBFHist{u} = taresGRBF;
 
+        %Calculate tare corrected load approximation
+        aprxINminLZ2=aprxINminGZ2-taresAllPointsGRBF;
+
         %Calculate and store residuals
-        targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
+        targetRes2 = targetMatrix0-aprxINminLZ2;      %0=b-Ax
         newRes2 = targetRes2'*targetRes2;
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
@@ -462,7 +465,7 @@ if FLAGS.balCal == 2
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
-    newStruct=struct('aprxINminGZ2',aprxINminGZ2,...
+    newStruct=struct('aprxINminLZ2',aprxINminGZ2,...
         'epsHist',epsHist,...
         'cHist',cHist,...
         'centerIndexHist',centerIndexHist,...
@@ -532,8 +535,11 @@ if FLAGS.balVal == 1
     taresvalid     = taresAllPointsvalid(s_1stV,:);
     tares_STDEV_valid = taretalstdvalid(s_1stV,:);
 
+    %Tare corrected approximation
+    aprxINminLZvalid=aprxINminGZvalid-taresAllPointsvalid;
+
     %RESIDUAL
-    targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
+    targetResvalid = targetMatrixvalid-aprxINminLZvalid;
 
     %CALCULATE PREDICTION INTERVAL FOR POINTS
     if FLAGS.loadPI==1
@@ -547,7 +553,7 @@ if FLAGS.balVal == 1
 
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section
-    newStruct=struct('aprxINminGZvalid',aprxINminGZvalid);
+    newStruct=struct('aprxINminLZvalid',aprxINminLZvalid);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     section={'Validation Algebraic'};
@@ -591,8 +597,11 @@ if FLAGS.balVal == 1
             taresGRBFSTDEVvalid = taretalstdvalid2(s_1st,:);
             tareHistvalid{u} = taresGRBFvalid;
 
+            %Calculate tare corrected load approximation
+            aprxINminLZ2valid=aprxINminGZ2valid-taresAllPointsvalid2;
+
             %Residuals
-            targetRes2valid = targetMatrixvalid+taresAllPointsvalid2-aprxINminGZ2valid;      %0=b-Ax
+            targetRes2valid = targetMatrixvalid-aprxINminLZ2valid;      %0=b-Ax
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
             resSquareHistvalid(u,:) = resSquare2valid;
@@ -601,7 +610,7 @@ if FLAGS.balVal == 1
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         section={'Validation GRBF'};
-        newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid);
+        newStruct=struct('aprxINminLZ2valid',aprxINminLZ2valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
