@@ -585,7 +585,7 @@ if strcmp(section,{'Calibration GRBF'})==1
     if FLAGS.excel == 1
         %Output calibration load approximation
         filename = 'CALIB_AOX_GRBF_RESULT.csv';
-        approxinput=aprxINminGZ2;
+        approxinput=aprxINminLZ2;
         description='CALIBRATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
         
@@ -633,12 +633,12 @@ if strcmp(section,{'Validation Algebraic'})==1
     %OUTPUTING APPROXIMATION WITH PI FILE
     if FLAGS.approx_and_PI_print==1
         section='VALID';
-        load_and_PI_file_output(aprxINminGZvalid,loadPI_valid,pointID,series,series2,loadlist,output_location,section)
+        load_and_PI_file_output(aprxINminLZvalid,loadPI_valid,pointID,series,series2,loadlist,output_location,section)
         
         %OUTPUTING APPROXIMATION FILE
     elseif FLAGS.excel == 1
         filename = 'VALID_GLOBAL_ALG_APPROX.csv';
-        approxinput=aprxINminGZvalid;
+        approxinput=aprxINminLZvalid;
         description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
     end
@@ -649,7 +649,7 @@ if strcmp(section,{'Validation GRBF'})==1
     if FLAGS.excel == 1
         %Output validation load approximation
         filename = 'VALID_GLOBAL_GRBF_APPROX.csv';
-        approxinput=aprxINminGZ2valid;
+        approxinput=aprxINminLZ2valid;
         description='VALIDATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
 
