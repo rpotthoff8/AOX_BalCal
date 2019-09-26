@@ -176,7 +176,7 @@ balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
 balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,1);
 %%% Balfit Stats and Regression Coeff Matrix
 
-fprintf('\nStarting Calculations\n')
+fprintf('\nStarting Calibration Calculations\n')
 
 %Creates vectors that will not have outliers removed for balfit
 series = series0;
@@ -402,9 +402,11 @@ if FLAGS.balCal == 2
     %Set limits on width (shape factor)
     h_GRBF=sqrt(max(min(R_square_find)));
     eps_min=0.1; %Fasshauer pg 234
-    eps_max=1.2;
-
-    maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
+    eps_max=1.0;
+    
+    max_mult=25;
+    maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
+%     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
 
     for u=1:numBasis
