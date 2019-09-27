@@ -390,7 +390,9 @@ if FLAGS.balCal == 2
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
-
+    rbfc_INminGZ_hist=zeros(length(excessVec0(:,1)),numBasis,dimFlag);
+    
+    
     dist=zeros(size(dainputscalib,1),size(dainputscalib,1),size(dainputscalib,2));
     for i=1:size(dainputscalib,2)
         dist(:,:,i)=dainputscalib(:,i)'-dainputscalib(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
@@ -404,7 +406,7 @@ if FLAGS.balCal == 2
     eps_min=0.1; %Fasshauer pg 234
     eps_max=1.0;
     
-    max_mult=25;
+    max_mult=5;
     maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
 %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
@@ -430,6 +432,7 @@ if FLAGS.balCal == 2
             coeffRBF(s) = lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
 
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
+            rbfINminGZ_hist(:,u,s)=rbfINminGZ(:,s);
         end
 
         %Store basis parameters in Hist variables
@@ -464,6 +467,20 @@ if FLAGS.balCal == 2
         resSquareHist(u,:) = resSquare2;
     end
 
+    coeffRBF_resolve=zeros(numBasis,dimFlag);
+    rbfc_INminGZ_resolve=zeros(size(targetRes2,1),dimFlag);
+    for i=1:dimFlag
+        coeffRBF_resolve(:,i)=lsqminnorm(rbfINminGZ_hist(:,:,i),targetRes(:,i));
+        rbfc_INminGZ_resolve(:,i)=rbfINminGZ_hist(:,:,i)*coeffRBF_resolve(:,i);
+    end
+    aprxINminGZ2_resolve=aprxINminGZ+rbfc_INminGZ_resolve;
+     [taresAllPointsGRBF_resolve,~] = meantare(series0,aprxINminGZ2_resolve-targetMatrix0);
+     aprxINminTARE2_resolve=aprxINminGZ2_resolve-taresAllPointsGRBF_resolve;
+     targetRes2_resolve = targetMatrix0-aprxINminTARE2_resolve;
+     
+     cHist=coeffRBF_resolve;
+     
+     
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};

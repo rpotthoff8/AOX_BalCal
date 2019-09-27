@@ -8,4 +8,4 @@ elseif FLAGS.model==3
 else
     set={'Custom'};
 end
-max_per_out=[set,numBasis,eps_min,eps_max,max_mult,num2cell(std(targetRes2)),num2cell(std(targetRes2valid))]
+max_per_out=[set,numBasis,eps_min,eps_max,max_mult,num2cell(std(targetRes2_resolve)),num2cell(std(targetRes2valid))]
