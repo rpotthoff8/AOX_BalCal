@@ -376,7 +376,6 @@ if FLAGS.balCal == 2
     dainputscalib = excessVec0-globalZeros;
 
     %Initialize Variables
-    etaHist = cell(numBasis,1);
     aprxINminGZ_Hist = cell(numBasis,1);
     tareGRBFHist = cell(numBasis,1);
     centerIndexLoop=zeros(1,dimFlag);
@@ -390,6 +389,7 @@ if FLAGS.balCal == 2
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
+    resStdHist=zeros(numBasis,dimFlag);
 
     dist=zeros(size(dainputscalib,1),size(dainputscalib,1),size(dainputscalib,2));
     for i=1:size(dainputscalib,2)
@@ -411,24 +411,26 @@ if FLAGS.balCal == 2
 
     for u=1:numBasis
         for s=1:dimFlag
-            targetRes2_find=targetRes2;
-            targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
-            [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
+%             targetRes2_find=targetRes2;
+%             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
+%             [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
+% 
+%             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
+% 
+%             eta(:,s)=R_square(:,centerIndexLoop(s));
 
-            count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
-
-            %             for r=1:length(excessVec0(:,1))
-            %                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
-            %             end
+            %find epsilon and center index via ga
+            ga_options=optimoptions('ga','Display','off');
+            ga_merit=@(x) balCal_meritFunction2(x(1),x(2),R_square,h_GRBF,dimFlag,targetRes2(:,s));
+            ga_out=ga(ga_merit,2,[],[],[],[],[eps_min; 1],[eps_max;size(targetRes2,1)],[],2,ga_options);
+            
+            eps(s)=ga_out(1);
+            centerIndexLoop(s)=ga_out(2);
+            
             eta(:,s)=R_square(:,centerIndexLoop(s));
-
-            %find widths 'w' by optimization routine
-            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
-
             rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-
             coeffRBF(s) = lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
-
+            
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
         end
 
@@ -442,7 +444,6 @@ if FLAGS.balCal == 2
             %Dim 2= Channel for voltage
             %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
         end
-        etaHist{u} = eta;
 
         %update the approximation
         aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ;
@@ -462,13 +463,14 @@ if FLAGS.balCal == 2
         newRes2 = targetRes2'*targetRes2;
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
+        resStdHist(u,:)=std(targetRes2);
     end
 
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
     newStruct=struct('aprxINminTARE2',aprxINminTARE2,...
-        'wHist',wHist,...
+        'epsHist',epsHist,...
         'cHist',cHist,...
         'centerIndexHist',centerIndexHist,...
         'center_daHist',center_daHist,...
@@ -583,7 +585,7 @@ if FLAGS.balVal == 1
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
         resSquareHistvalid=zeros(numBasis,dimFlagvalid);
-
+        resStdHistvalid=zeros(numBasis,dimFlagvalid);
         for u=1:numBasis
             %Call function to place single GRBF
             [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,epsHist,cHist,center_daHist,h_GRBF);
@@ -607,6 +609,7 @@ if FLAGS.balVal == 1
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
             resSquareHistvalid(u,:) = resSquare2valid;
+            resStdHistvalid(u,:)=std(targetRes2valid);
         end
 
         %OUTPUT FUNCTION
