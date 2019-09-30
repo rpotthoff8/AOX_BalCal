@@ -218,7 +218,11 @@ if FLAGS.print == 1 || FLAGS.disp==1
     %Write Statistics to xlsx file
     if FLAGS.print==1
         warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
-        filename=char(strcat(strtok(section),{' '},'Report.xlsx'));
+        if contains(section,'Calibration')
+            filename='CALIB Report.xlsx';
+        elseif contains(section,'Validation')
+            filename='VALID Report.xlsx';
+        end
         fullpath=fullfile(output_location,filename);
         try
             if contains(section,'Algebraic')==1
@@ -304,7 +308,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
     
     %Prints coefficients to csv file
     if FLAGS.excel == 1
-        filename = 'APPROX_AOX_COEFF_MATRIX.csv';
+        filename = 'AOX_ALGEBRAIC_COEFFICIENT_MATRIX.csv';
         input=[coeff;zeros(1,dimFlag)];
         precision='%.16f';
         description='CALIBRATION ALGEBRAIC MODEL COEFFICIENT MATRIX';
@@ -558,7 +562,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
     
     if FLAGS.excel == 1
         %Output calibration load approximation
-        filename = 'CALIB_AOX_ALG_RESULT.csv';
+        filename = 'CALIB ALG Tare Corrected Load Approximation.csv';
         approxinput=aprxIN;
         description='CALIBRATION ALGEBRAIC MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
@@ -566,7 +570,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
     
     if FLAGS.calib_model_save==1
         %Output all calibration parameters
-        filename = ['APPROX_AOX_CALIBRATION_MODEL_',REPORT_NO,'.mat'];
+        filename = ['AOX_CALIBRATION_MODEL_',REPORT_NO,'.mat'];
         fullpath=fullfile(output_location,filename);
         description='CALIBRATION MODEL';
         try
@@ -584,27 +588,27 @@ end
 if strcmp(section,{'Calibration GRBF'})==1
     if FLAGS.excel == 1
         %Output calibration load approximation
-        filename = 'CALIB_AOX_GRBF_RESULT.csv';
-        approxinput=aprxINminGZ2;
+        filename = 'CALIB GRBF Tare Corrected Load Approximation.csv';
+        approxinput=aprxINminTARE2;
         description='CALIBRATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
         
         %Output GRBF Widths
-        filename = 'APPROX_AOX_GRBF_ws.csv';
+        filename = 'AOX_GRBF_Widths.csv';
         input=wHist;
         precision='%.16f';
         description='CALIBRATION GRBF WIDTHS';
         print_dlmwrite(filename,input,precision,description,output_location);
         
         %Output GRBF coefficients
-        filename = 'APPROX_AOX_GRBF_coeffs.csv';
+        filename = 'AOX_GRBF_Coefficients.csv';
         input=cHist;
         precision='%.16f';
         description='CALIBRATION GRBF COEFFICIENTS';
         print_dlmwrite(filename,input,precision,description,output_location);
         
         %Output GRBF centers
-        filename = 'APPROX_AOX_GRBF_Centers.csv';
+        filename = 'AOX_GRBF_Centers.csv';
         input=centerIndexHist;
         precision='%.16f';
         description='CALIBRATION GRBF CENTER INDICES';
@@ -613,7 +617,7 @@ if strcmp(section,{'Calibration GRBF'})==1
     
     if FLAGS.calib_model_save==1
         %Output all calibration parameters
-        filename = ['APPROX_AOX_CALIBRATION_MODEL_',REPORT_NO,'.mat'];
+        filename = ['AOX_CALIBRATION_MODEL_',REPORT_NO,'.mat'];
         fullpath=fullfile(output_location,filename);
         description='CALIBRATION MODEL';
         try
@@ -633,12 +637,12 @@ if strcmp(section,{'Validation Algebraic'})==1
     %OUTPUTING APPROXIMATION WITH PI FILE
     if FLAGS.approx_and_PI_print==1
         section='VALID';
-        load_and_PI_file_output(aprxINminGZvalid,loadPI_valid,pointID,series,series2,loadlist,output_location,section)
+        load_and_PI_file_output(aprxINminTAREvalid,loadPI_valid,pointID,series,series2,loadlist,output_location,section)
         
         %OUTPUTING APPROXIMATION FILE
     elseif FLAGS.excel == 1
-        filename = 'VALID_GLOBAL_ALG_APPROX.csv';
-        approxinput=aprxINminGZvalid;
+        filename = 'VALID ALG Tare Corrected Load Approximation.csv';
+        approxinput=aprxINminTAREvalid;
         description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
     end
@@ -648,8 +652,8 @@ end
 if strcmp(section,{'Validation GRBF'})==1
     if FLAGS.excel == 1
         %Output validation load approximation
-        filename = 'VALID_GLOBAL_GRBF_APPROX.csv';
-        approxinput=aprxINminGZ2valid;
+        filename = 'VALID GRBF Tare Corrected Load Approximation.csv';
+        approxinput=aprxINminTARE2valid;
         description='VALIDATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
 
