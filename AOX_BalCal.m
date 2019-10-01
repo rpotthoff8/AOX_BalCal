@@ -404,7 +404,7 @@ if FLAGS.balCal == 2
     eps_min=0.1; %Fasshauer pg 234
     eps_max=1.0;
 
-    max_mult=25;
+    max_mult=5;
     maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
 %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
