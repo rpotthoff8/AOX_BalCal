@@ -408,7 +408,7 @@ if FLAGS.balCal == 2
     
     max_mult=5;
     maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
-%     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
+%     maxPer=1; %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
 
     for u=1:numBasis
@@ -423,13 +423,25 @@ if FLAGS.balCal == 2
             %                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
             %             end
             eta(:,s)=R_square(:,centerIndexLoop(s));
-
-            %find widths 'w' by optimization routine
+            
+%             targetRes2_wSolve=targetRes2(:,s);
+%             eta_wSolve=eta(:,s);
+%             targetRes2_wSolve(centerIndexLoop(s),:)=[];
+%             eta_wSolve(centerIndexLoop(s),:)=[];
+% 
+%             %find widths 'w' by optimization routine
+%             eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2_wSolve,eta_wSolve,h_GRBF,dimFlag),eps_min,eps_max );
             eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
-
+            
             rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 
-            coeffRBF(s) = lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
+            rbfINminGZ_cSolve=rbfINminGZ(:,s);
+            targetRes2_cSolve=targetRes2(:,s);
+            rbfINminGZ_cSolve(centerIndexLoop(s),:)=[];
+            targetRes2_cSolve(centerIndexLoop(s),:)=[];
+            
+            coeffRBF(s) = lsqminnorm(rbfINminGZ_cSolve,targetRes2_cSolve);
+%             coeffRBF(s) = lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
 
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
             rbfINminGZ_hist(:,u,s)=rbfINminGZ(:,s);
@@ -467,18 +479,18 @@ if FLAGS.balCal == 2
         resSquareHist(u,:) = resSquare2;
     end
 
-    coeffRBF_resolve=zeros(numBasis,dimFlag);
-    rbfc_INminGZ_resolve=zeros(size(targetRes2,1),dimFlag);
-    for i=1:dimFlag
-        coeffRBF_resolve(:,i)=lsqminnorm(rbfINminGZ_hist(:,:,i),targetRes(:,i));
-        rbfc_INminGZ_resolve(:,i)=rbfINminGZ_hist(:,:,i)*coeffRBF_resolve(:,i);
-    end
-    aprxINminGZ2_resolve=aprxINminGZ+rbfc_INminGZ_resolve;
-     [taresAllPointsGRBF_resolve,~] = meantare(series0,aprxINminGZ2_resolve-targetMatrix0);
-     aprxINminTARE2_resolve=aprxINminGZ2_resolve-taresAllPointsGRBF_resolve;
-     targetRes2_resolve = targetMatrix0-aprxINminTARE2_resolve;
+%     coeffRBF_resolve=zeros(numBasis,dimFlag);
+%     rbfc_INminGZ_resolve=zeros(size(targetRes2,1),dimFlag);
+%     for i=1:dimFlag
+%         coeffRBF_resolve(:,i)=lsqminnorm(rbfINminGZ_hist(:,:,i),targetRes(:,i));
+%         rbfc_INminGZ_resolve(:,i)=rbfINminGZ_hist(:,:,i)*coeffRBF_resolve(:,i);
+%     end
+%     aprxINminGZ2_resolve=aprxINminGZ+rbfc_INminGZ_resolve;
+%      [taresAllPointsGRBF_resolve,~] = meantare(series0,aprxINminGZ2_resolve-targetMatrix0);
+%      aprxINminTARE2_resolve=aprxINminGZ2_resolve-taresAllPointsGRBF_resolve;
+%      targetRes2_resolve = targetMatrix0-aprxINminTARE2_resolve;
      
-     cHist=coeffRBF_resolve;
+%       cHist=coeffRBF_resolve;
      
      
     %OUTPUT FUNCTION
