@@ -116,13 +116,13 @@ else
 end
 
 % Load data labels if present, otherwise use default values.
-if exist('loadlabels','var')
-    loadlist = loadlabels;
-    voltagelist = voltlabels;
-    reslist = strcat('res',loadlist);
-else
+if exist('loadlabels','var')==0 || isempty(loadlabels)==1
     loadlist = {'NF','BM','S1','S2','RM','AF','PLM', 'PCM', 'MLM', 'MCM'};
     voltagelist = {'rNF','rBM','rS1','rS2','rRM','rAF','rPLM','rPCM','rMLM','rMCM'};
+    reslist = strcat('res',loadlist);
+else
+    loadlist = loadlabels;
+    voltagelist = voltlabels;
     reslist = strcat('res',loadlist);
 end
 
