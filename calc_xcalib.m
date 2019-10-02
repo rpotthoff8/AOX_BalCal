@@ -4,6 +4,11 @@ function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,di
 %Orders data by series (needed for bootstrap)
 [series,sortI]=sort(series);
 comIN=comIN(sortI,:);
+
+% Normalize the data for a better conditioned matrix
+scale = max(abs(comIN));
+comIN = comIN./scale;
+
 targetMatrix=targetMatrix(sortI,:);
 
 % Characterizes the series in the subsamples
@@ -33,6 +38,9 @@ for k = 1:dimFlag
     % SOLUTION
     xcalib_k = comIN_k\targetMatrix(:,k);
     
+    % De-normalize the coefficients to be used with raw data
+    xcalib_k = xcalib_k./scale';
+    
     if FLAGS.model == 4
         xcalib(customMatrix(:,k)==1,k) = xcalib_k;
     else
@@ -49,6 +57,16 @@ for k = 1:dimFlag
         
         fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
         ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
+        
+        % There are several ANOVA metrics that also must be denormalized
+        ANOVA(k).beta    = ANOVA(k).beta./scale';
+        ANOVA(k).beta_CI = ANOVA(k).beta_CI./scale';
+        
+        % Prediction interval calculation does not include tares, so scale
+        % vector has to be truncated
+        scale_PI = scale(1:end-nseries);
+        ANOVA(k).PI.invXtX = ANOVA(k).PI.invXtX./(scale_PI'*scale_PI);
+        
         fprintf('Complete\n')
     end
     
