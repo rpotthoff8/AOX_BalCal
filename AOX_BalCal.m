@@ -168,7 +168,7 @@ end
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
-comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0,1);
+[comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,1,voltagelist);
 
 %%% Balfit Stats and Regression Coeff Matrix
 balfitdainputs0 = targetMatrix0;
