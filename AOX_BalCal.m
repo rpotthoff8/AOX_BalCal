@@ -390,7 +390,8 @@ if FLAGS.balCal == 2
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
-
+    resStdHist=zeros(numBasis,dimFlag);
+    
     dist=zeros(size(dainputscalib,1),size(dainputscalib,1),size(dainputscalib,2));
     for i=1:size(dainputscalib,2)
         dist(:,:,i)=dainputscalib(:,i)'-dainputscalib(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
@@ -462,6 +463,7 @@ if FLAGS.balCal == 2
         newRes2 = targetRes2'*targetRes2;
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
+        resStdHist(u,:)=std(targetRes2);
     end
 
     %OUTPUT FUNCTION
@@ -583,7 +585,7 @@ if FLAGS.balVal == 1
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
         resSquareHistvalid=zeros(numBasis,dimFlagvalid);
-
+        resStdHistvalid=zeros(numBasis,dimFlag);
         for u=1:numBasis
             %Call function to place single GRBF
             [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,epsHist,cHist,center_daHist,h_GRBF);
@@ -607,6 +609,7 @@ if FLAGS.balVal == 1
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
             resSquareHistvalid(u,:) = resSquare2valid;
+            resStdHistvalid(u,:)=std(targetRes2valid);
         end
 
         %OUTPUT FUNCTION
