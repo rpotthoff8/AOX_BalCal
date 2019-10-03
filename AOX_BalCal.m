@@ -390,6 +390,7 @@ if FLAGS.balCal == 2
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
+    resStdHist=zeros(numBasis,dimFlag);
     rbfc_INminGZ_hist=zeros(length(excessVec0(:,1)),numBasis,dimFlag);
 
 
@@ -424,14 +425,14 @@ if FLAGS.balCal == 2
             %             end
             eta(:,s)=R_square(:,centerIndexLoop(s));
 
-%             targetRes2_wSolve=targetRes2(:,s);
-%             eta_wSolve=eta(:,s);
-%             targetRes2_wSolve(centerIndexLoop(s),:)=[];
-%             eta_wSolve(centerIndexLoop(s),:)=[];
-%
-%             %find widths 'w' by optimization routine
-%             eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2_wSolve,eta_wSolve,h_GRBF,dimFlag),eps_min,eps_max );
-            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
+            targetRes2_wSolve=targetRes2(:,s);
+            eta_wSolve=eta(:,s);
+            targetRes2_wSolve(centerIndexLoop(s),:)=[];
+            eta_wSolve(centerIndexLoop(s),:)=[];
+
+            %find widths 'w' by optimization routine
+            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2_wSolve,eta_wSolve,h_GRBF,dimFlag),eps_min,eps_max );
+%             eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
 
             rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 
@@ -477,6 +478,7 @@ if FLAGS.balCal == 2
         newRes2 = targetRes2'*targetRes2;
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
+        resStdHist(u,:)=std(targetRes2);
     end
 
 %     coeffRBF_resolve=zeros(numBasis,dimFlag);
@@ -612,6 +614,7 @@ if FLAGS.balVal == 1
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
         resSquareHistvalid=zeros(numBasis,dimFlagvalid);
+        resStdHistvalid=zeros(numBasis,dimFlagvalid);
 
         for u=1:numBasis
             %Call function to place single GRBF
@@ -636,6 +639,7 @@ if FLAGS.balVal == 1
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
             resSquareHistvalid(u,:) = resSquare2valid;
+            resStdHistvalid(u,:)=std(targetRes2valid);
         end
 
         %OUTPUT FUNCTION
