@@ -30,16 +30,18 @@ xcalib = zeros(nterms+nseries0,dimFlag);
 % different depending on the channel.
 for k = 1:dimFlag
     comIN_k = comIN;
+    scale_k = scale;
     
     if FLAGS.model == 4
         comIN_k(:,customMatrix(:,k)==0) = [];
+        scale_k(customMatrix(:,k)==0) = [];
     end
     
     % SOLUTION
     xcalib_k = comIN_k\targetMatrix(:,k);
     
     % De-normalize the coefficients to be used with raw data
-    xcalib_k = xcalib_k./scale';
+    xcalib_k = xcalib_k./scale_k';
     
     if FLAGS.model == 4
         xcalib(customMatrix(:,k)==1,k) = xcalib_k;
@@ -59,12 +61,12 @@ for k = 1:dimFlag
         ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
         
         % There are several ANOVA metrics that also must be denormalized
-        ANOVA(k).beta    = ANOVA(k).beta./scale';
-        ANOVA(k).beta_CI = ANOVA(k).beta_CI./scale';
+        ANOVA(k).beta    = ANOVA(k).beta./scale_k';
+        ANOVA(k).beta_CI = ANOVA(k).beta_CI./scale_k';
         
         % Prediction interval calculation does not include tares, so scale
         % vector has to be truncated
-        scale_PI = scale(1:end-nseries);
+        scale_PI = scale_k(1:end-nseries);
         ANOVA(k).PI.invXtX = ANOVA(k).PI.invXtX./(scale_PI'*scale_PI);
         
         fprintf('Complete\n')
