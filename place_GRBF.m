@@ -14,12 +14,12 @@ function [rbfc_INminGZ]=place_GRBF(u,dainputs,wHist,cHist,center_daHist,h)
 %  rbfc_INminGZvalid  =  GRBF contribution for load approximation (aprxINminGZ2 = aprxINminGZ2+rbfc_INminGZ)
 
 %Initialize variables
-etavalid=zeros(size(dainputs));
-rbfINminGZvalid=zeros(size(dainputs));
-rbfc_INminGZ=zeros(size(dainputs));
+etavalid=zeros(size(dainputs,1),size(center_daHist,3));
 dimFlag=size(center_daHist,2);
+rbfINminGZvalid=zeros(size(dainputs,1),size(center_daHist,3));
+rbfc_INminGZ=zeros(size(dainputs,1),size(center_daHist,3));
 
-for s=1:size(dainputs,2) % loops through the components
+for s=1:size(center_daHist,3) % loops through the components
     
     adiffervalid=center_daHist(u,:,s)-dainputs;
 %     adiffervalid = dainputscalib(centerIndexHist(u,s),:)-dainputs;

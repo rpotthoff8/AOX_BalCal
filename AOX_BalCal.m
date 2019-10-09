@@ -374,6 +374,7 @@ if FLAGS.balCal == 2
     targetRes2=targetRes;
     aprxINminGZ2 = aprxINminGZ;
     dainputscalib = excessVec0-globalZeros;
+    dainputscalib=[dainputscalib,abs(dainputscalib)];
 
     %Initialize Variables
     etaHist = cell(numBasis,1);
@@ -388,7 +389,7 @@ if FLAGS.balCal == 2
     epsHist=zeros(numBasis,dimFlag);
     cHist=zeros(numBasis,dimFlag);
     centerIndexHist=zeros(numBasis,dimFlag);
-    center_daHist=zeros(numBasis,dimFlag,dimFlag);
+    center_daHist=zeros(numBasis,2*dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
     resStdHist=zeros(numBasis,dimFlag);
     
@@ -408,7 +409,7 @@ if FLAGS.balCal == 2
     max_mult=5;
     maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
 %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
-    count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
+    count=zeros(size(targetRes2)); %Initialize matrix to count how many RBFs have been placed at each location
 
     for u=1:numBasis
         for s=1:dimFlag
@@ -424,9 +425,9 @@ if FLAGS.balCal == 2
             eta(:,s)=R_square(:,centerIndexLoop(s));
 
             %find widths 'w' by optimization routine
-            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
+            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,2*dimFlag),eps_min,eps_max );
 
-            rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
+            rbfINminGZ(:,s)=((eps(s)^(2*dimFlag))/(sqrt(pi^(2*dimFlag))))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 
             coeffRBF(s) = lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
 
@@ -578,6 +579,7 @@ if FLAGS.balVal == 1
         %Initialize structure for unique outputs for section
         uniqueOut=struct();
 
+        dainputsvalid=[dainputsvalid,abs(dainputsvalid)];
         targetRes2valid = targetResvalid;
         aprxINminGZ2valid = aprxINminGZvalid;
 
