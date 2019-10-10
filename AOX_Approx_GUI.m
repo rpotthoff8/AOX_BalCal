@@ -782,9 +782,9 @@ if exist('coeff','var') == 1 && exist('ANOVA','var')==1 && exist('loadlist','var
     end
     loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
     
-    if exist('cHist','var')==1 && exist('center_daHist','var')==1 && exist('wHist','var')==1
+    if exist('cHist','var')==1 && exist('center_daHist','var')==1 && exist('epsHist','var')==1 && exist('h_GRBF','var')==1
         set(handles.grbf,'Enable','on');
-        grbf_message=strcat(num2str(size(wHist,1)), ' GRBFs per channel');
+        grbf_message=strcat(num2str(size(epsHist,1)), ' GRBFs per channel');
         set(handles.GRBF_text,'String',grbf_message, 'ForegroundColor','blue');
     else
         set(handles.grbf,'Enable','off','Value',0);
