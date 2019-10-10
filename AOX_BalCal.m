@@ -378,7 +378,7 @@ if FLAGS.balCal == 2
     %Initialize Variables
     aprxINminGZ_Hist = cell(numBasis,1);
     tareGRBFHist = cell(numBasis,1);
-    centerIndexLoop=zeros(dimFlag,dimFlag);
+    centerLoop=zeros(dimFlag,dimFlag);
     centerIndexLoop_sub=zeros(dimFlag,dimFlag);    
     eta=zeros(length(excessVec0(:,1)),dimFlag);
     eps=zeros(1,dimFlag);
@@ -404,20 +404,22 @@ if FLAGS.balCal == 2
     h_GRBF=sqrt(max(min(R_square_find)));
     eps_min=0.1; %Fasshauer pg 234
     eps_max=1.0;
-
+    center_min=min(dainputscalib);
+    center_max=max(dainputscalib);
+    
+    
     for u=1:numBasis
         for s=1:dimFlag
 
             %find epsilon and center index via ga
             ga_options=optimoptions('ga','Display','off');
             ga_merit=@(x) balCal_meritFunction2(x(1),x(2:dimFlag+1),dainputscalib,h_GRBF,dimFlag,targetRes2(:,s));
-            ga_out=ga(ga_merit,1+dimFlag,[],[],[],[],[eps_min; ones(dimFlag,1)],[eps_max;repmat(size(targetRes2,1),dimFlag,1)],[],2:dimFlag+1,ga_options);
+            ga_out=ga(ga_merit,1+dimFlag,[],[],[],[],[eps_min; center_min'],[eps_max;center_max'],[],2,ga_options);
             
             eps(s)=ga_out(1);
-            centerIndexLoop(:,s)=ga_out(2:dimFlag+1);
-            centerIndexLoop_sub(:,s)=sub2ind(size(dainputscalib),centerIndexLoop(:,s),[1:dimFlag]');
+            centerLoop(:,s)=ga_out(2:dimFlag+1);
             
-            dist=dainputscalib(centerIndexLoop_sub(:,s))'-dainputscalib;
+            dist=centerLoop(:,s)'-dainputscalib;
             R_square=sum(dist.^2,2); %Eqn 17 from Javier's notes: squared distance between each point
             
             rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(R_square))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
@@ -430,8 +432,8 @@ if FLAGS.balCal == 2
         epsHist(u,:) = eps;
         cHist(u,:) = coeffRBF;
         for s=1:dimFlag
-            centerIndexHist(u,:,s) = centerIndexLoop(:,s);
-            center_daHist(u,:,s)=dainputscalib(centerIndexLoop_sub(:,s)); %Variable stores the voltages of the RBF centers.
+            centerIndexHist(u,:,s) = centerLoop(:,s);
+            center_daHist(u,:,s)=centerLoop(:,s); %Variable stores the voltages of the RBF centers.
             %Dim 1= RBF #
             %Dim 2= Channel for voltage
             %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
