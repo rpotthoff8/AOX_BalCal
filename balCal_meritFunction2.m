@@ -4,7 +4,7 @@
 function y=balCal_meritFunction2(eps,centerLoc,dainputscalib,h,dimFlag,residvec)
 s=dimFlag;
 
-dist=centerLoc-dainputscalib;
+dist=centerLoc'-dainputscalib;
 R_square=sum(dist.^2,2); %Eqn 17 from Javier's notes: squared distance between each point
     
 %    y=dot(residvec,residvec);
