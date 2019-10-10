@@ -81,24 +81,15 @@ FLAGS.BALFIT_ANOVA=out.BALFIT_ANOVA;
 FLAGS.Rec_Model=out.Rec_Model;
 anova_pct=out.anova_pct;
 FLAGS.approx_and_PI_print=out.approx_and_PI_print;
-FLAGS.PI_print=out.PI_print;
 FLAGS.custom_eqn_iter=out.stableRec_FLAGcheck;
 
-REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
-output_location=[out.output_location,filesep];
-if out.subfolder_FLAG==1
-    try
-        new_subpath=fullfile(output_location,['AOX_BalCal_Results_',REPORT_NO]);
-        mkdir(char(new_subpath));
-        output_location=new_subpath;
-    catch
-        fprintf('Unable to create new subfolder. Saving results in: ');
-        fprintf('%s',output_location); fprintf('\n');
-    end
-end
+REPORT_NO=out.REPORT_NO;
+output_location=out.output_location;
 
 %TO SAVE .MAT FILE OF CALIBRATION MODEL
 FLAGS.calib_model_save=out.calib_model_save_FLAG;
+%TO SAVE INPUT .CAL, .VAL, .APP FILE IN OUTPUT LOCATION
+FLAGS.input_save=out.input_save_FLAG;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       INITIALIZATION SECTION
@@ -125,13 +116,13 @@ else
 end
 
 % Load data labels if present, otherwise use default values.
-if exist('loadlabels','var')
-    loadlist = loadlabels;
-    voltagelist = voltlabels;
-    reslist = strcat('res',loadlist);
-else
+if exist('loadlabels','var')==0 || isempty(loadlabels)==1
     loadlist = {'NF','BM','S1','S2','RM','AF','PLM', 'PCM', 'MLM', 'MCM'};
     voltagelist = {'rNF','rBM','rS1','rS2','rRM','rAF','rPLM','rPCM','rMLM','rMCM'};
+    reslist = strcat('res',loadlist);
+else
+    loadlist = loadlabels;
+    voltagelist = voltlabels;
     reslist = strcat('res',loadlist);
 end
 
@@ -177,7 +168,7 @@ end
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
-comIN0 = balCal_algEqns(FLAGS.model,dainputs0,series0,1);
+[comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,1,voltagelist);
 
 %%% Balfit Stats and Regression Coeff Matrix
 balfitdainputs0 = targetMatrix0;
@@ -185,7 +176,7 @@ balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
 balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,1);
 %%% Balfit Stats and Regression Coeff Matrix
 
-fprintf('\nStarting Calculations\n')
+fprintf('\nStarting Calibration Calculations\n')
 
 %Creates vectors that will not have outliers removed for balfit
 series = series0;
@@ -390,76 +381,60 @@ if FLAGS.balCal == 2
     tareGRBFHist = cell(numBasis,1);
     centerIndexLoop=zeros(1,dimFlag);
     eta=zeros(length(excessVec0(:,1)),dimFlag);
-    w=zeros(1,dimFlag);
+    eps=zeros(1,dimFlag);
     rbfINminGZ=zeros(length(excessVec0(:,1)),numBasis,dimFlag);
     rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
-    wHist=zeros(numBasis,dimFlag,dimFlag);
+    epsHist=zeros(numBasis,dimFlag);
     cHist=zeros(numBasis,dimFlag);
     centerIndexHist=zeros(numBasis,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
+    resStdHist=zeros(numBasis,dimFlag);
     coeffRBF=zeros(numBasis,dimFlag);
     dist=zeros(size(dainputscalib,1),size(dainputscalib,1),size(dainputscalib,2));
-    
+
     for i=1:size(dainputscalib,2)
         dist(:,:,i)=dainputscalib(:,i)'-dainputscalib(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
     end
-    dist_square=dist.^2;
-    dist_square_find=dist_square;
-    dist_square_find(dist_square_find==0)=NaN;
-    min_dist_square=min(dist_square_find);
-
     R_square=sum(dist.^2,3); %Eqn 17 from Javier's notes: squared distance between each point
     R_square_find=R_square;
     R_square_find(R_square_find==0)=NaN; %Eliminate zero values (on diagonal)
     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
-    %     if isfield(options,'h')
-    %         h=options.h;
-    %     else
-    %         h = 0.25;
-    %     end
-    %     h=0.1;
-    s=100*0.0001;
-    %     s=100*0.01;
-    h=(0.9688)*(s + 0.0001507)/(s + 0.1322);
+    h_GRBF=sqrt(max(min(R_square_find)));
+    eps_min=0.1; %Fasshauer pg 234
+    eps_max=1.0;
 
-    maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
+    max_mult=5;
+    maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
+%     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
 
-    wmin=zeros(dimFlag,1);
-    eta=zeros(size(dist_square,1),dimFlag);
     for u=1:numBasis
         for s=1:dimFlag
             targetRes2_find=targetRes2;
             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
             [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
 
-            wmin(:,1) = log(h)./(min_dist_square(1,centerIndexLoop(s),:));
             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
 
             %             for r=1:length(excessVec0(:,1))
             %                 eta(r,s) = dot(dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:),dainputscalib(r,:)-dainputscalib(centerIndexLoop(s),:));
             %             end
-
-%             eta2=dist_square(:,centerIndexLoop(s),:);
-            eta(:,:)=reshape(dist_square(:,centerIndexLoop(s),:),size(eta));
+            eta(:,s)=R_square(:,centerIndexLoop(s));
 
             %find widths 'w' by optimization routine
-            w = fminsearchbnd(@(w) balCal_meritFunction2(w,targetRes2(:,s),eta),wmin./2,wmin,zeros(dimFlag,1));
+            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
 
-            rbfINminGZ(:,u,s)=exp(sum(eta.*w',2));
+            rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 
             coeffRBF(:,s)=lsqminnorm(rbfINminGZ(:,:,s),targetRes(:,s));
-%             coeffRBF(s) = dot(rbfINminGZ(:,s),targetRes2(:,s)) / dot(rbfINminGZ(:,s),rbfINminGZ(:,s));
 
             rbfc_INminGZ(:,s) = rbfINminGZ(:,:,s)*coeffRBF(:,s);
-
-            wHist(u,:,s) = w;
         end
 
         %Store basis parameters in Hist variables
-
+        epsHist(u,:) = eps;
         cHist_tot{u} = coeffRBF;
         cHist(:,:)=coeffRBF;
         centerIndexHist(u,:) = centerIndexLoop;
@@ -481,23 +456,27 @@ if FLAGS.balCal == 2
         taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
         tareGRBFHist{u} = taresGRBF;
 
+        %Calculate tare corrected load approximation
+        aprxINminTARE2=aprxINminGZ2-taresAllPointsGRBF;
+
         %Calculate and store residuals
-        targetRes2 = targetMatrix0-aprxINminGZ2+taresAllPointsGRBF;      %0=b-Ax
+        targetRes2 = targetMatrix0-aprxINminTARE2;      %0=b-Ax
         newRes2 = targetRes2'*targetRes2;
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
+        resStdHist(u,:)=std(targetRes2);
     end
 
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
-    newStruct=struct('aprxINminGZ2',aprxINminGZ2,...
-        'wHist',wHist,...
+    newStruct=struct('aprxINminTARE2',aprxINminTARE2,...
+        'epsHist',epsHist,...
         'cHist',cHist,...
         'centerIndexHist',centerIndexHist,...
         'center_daHist',center_daHist,...
         'ANOVA',ANOVA,...
-        'coeff',coeff);
+        'coeff',coeff, 'h_GRBF',h_GRBF);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,...
@@ -561,8 +540,11 @@ if FLAGS.balVal == 1
     taresvalid     = taresAllPointsvalid(s_1stV,:);
     tares_STDEV_valid = taretalstdvalid(s_1stV,:);
 
+    %Tare corrected approximation
+    aprxINminTAREvalid=aprxINminGZvalid-taresAllPointsvalid;
+
     %RESIDUAL
-    targetResvalid = targetMatrixvalid-aprxINminGZvalid+taresAllPointsvalid;
+    targetResvalid = targetMatrixvalid-aprxINminTAREvalid;
 
     %CALCULATE PREDICTION INTERVAL FOR POINTS
     if FLAGS.loadPI==1
@@ -576,7 +558,7 @@ if FLAGS.balVal == 1
 
     %OUTPUT FUNCTION
     %Function creates all outputs for validation, algebraic section
-    newStruct=struct('aprxINminGZvalid',aprxINminGZvalid);
+    newStruct=struct('aprxINminTAREvalid',aprxINminTAREvalid);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     section={'Validation Algebraic'};
@@ -604,10 +586,10 @@ if FLAGS.balVal == 1
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
         resSquareHistvalid=zeros(numBasis,dimFlagvalid);
-
+        resStdHistvalid=zeros(numBasis,dimFlag);
         for u=1:numBasis
             %Call function to place single GRBF
-            [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,wHist,cHist,center_daHist);
+            [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,epsHist,cHist,center_daHist,h_GRBF);
 
             %update the approximation
             aprxINminGZ2valid = aprxINminGZ2valid+rbfc_INminGZvalid;
@@ -620,17 +602,21 @@ if FLAGS.balVal == 1
             taresGRBFSTDEVvalid = taretalstdvalid2(s_1st,:);
             tareHistvalid{u} = taresGRBFvalid;
 
+            %Calculate tare corrected load approximation
+            aprxINminTARE2valid=aprxINminGZ2valid-taresAllPointsvalid2;
+
             %Residuals
-            targetRes2valid = targetMatrixvalid+taresAllPointsvalid2-aprxINminGZ2valid;      %0=b-Ax
+            targetRes2valid = targetMatrixvalid-aprxINminTARE2valid;      %0=b-Ax
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
             resSquareHistvalid(u,:) = resSquare2valid;
+            resStdHistvalid(u,:)=std(targetRes2valid);
         end
 
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         section={'Validation GRBF'};
-        newStruct=struct('aprxINminGZ2valid',aprxINminGZ2valid);
+        newStruct=struct('aprxINminTARE2valid',aprxINminTARE2valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
@@ -651,9 +637,10 @@ if FLAGS.balApprox == 1
     load(out.savePathapp,'-mat');
 
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
-        GRBF.wHist=wHist;
+        GRBF.epsHist=epsHist;
         GRBF.cHist=cHist;
         GRBF.center_daHist=center_daHist;
+        GRBF.h_GRBF=h_GRBF;
     else
         GRBF='GRBFS NOT PLACED';
     end
@@ -665,10 +652,31 @@ if FLAGS.balApprox == 1
 end
 %END APPROXIMATION SECTION
 
+%File Cleanup
+if FLAGS.input_save==0
+    if isfield(out,'cal_create')==1
+        try
+            delete(out.savePathcal);
+        end
+    end
+    if isfield(out,'val_create')==1
+        try
+            delete(out.savePathval);
+        end
+    end
+    if isfield(out,'app_create')==1
+        try
+            delete(out.savePathapp);
+        end
+    end
+end
+
+%
+
 fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
 fprintf('%s',strcat('Check '," ",output_location,' for output files.'))
-fprintf('\n');
+fprintf('\n \n');
 
 if isdeployed % Optional, use if you want the non-deployed version to exit immediately
     input('Press enter to finish and close');

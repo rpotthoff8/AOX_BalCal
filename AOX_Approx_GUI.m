@@ -23,7 +23,7 @@ function varargout = AOX_Approx_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_Approx_GUI
 
-% Last Modified by GUIDE v2.5 01-Aug-2019 15:53:32
+% Last Modified by GUIDE v2.5 24-Sep-2019 13:25:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -103,7 +103,8 @@ if exist(fileName,'file')
         set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
         set(handles.excel_FLAGcheck,'Value',default.excel);
         set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
-        set(handles.PI_print,'Value',default.PI_print);
+        set(handles.input_save_FLAG,'Value',default.input_save_FLAG);
+        
         %Callbacks
         calib_model_path_Callback(handles.calib_model_path, eventdata, handles)
         appPath_Callback(handles.appPath, eventdata, handles)
@@ -144,6 +145,40 @@ outStruct.grbf = 1 + get(handles.grbf,'Value');
 %Uncertainty Group
 outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 outStruct.PI_percent_confidence=str2num(get(handles.PI_percent_confidence,'String'));
+
+%Outputs Group
+outStruct.excel = get(handles.excel_FLAGcheck,'Value');
+outStruct.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
+outStruct.output_location=get(handles.output_location,'String');
+outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
+outStruct.input_save_FLAG=get(handles.input_save_FLAG,'Value');
+
+%Make new subfolder if selected as option
+%Default output location to current directory if empty
+if isempty(outStruct.output_location)==1
+    outStruct.output_location=cd;
+end
+outStruct.REPORT_NO=datestr(now,'yyyy-mmdd-HHMMSS');
+outStruct.output_location=[outStruct.output_location,filesep];
+
+if outStruct.excel ==1 || outStruct.approx_and_PI_print==1 || outStruct.input_save_FLAG==1
+    outStruct.save_files=1;
+else
+    outStruct.save_files=0;
+end
+
+if outStruct.subfolder_FLAG==1 && outStruct.save_files==1 %Make new subfolder
+    try
+        new_subpath=fullfile(outStruct.output_location,['AOX_Approx_Results_',outStruct.REPORT_NO]);
+        mkdir(char(new_subpath));
+        outStruct.output_location=[new_subpath,filesep];
+    catch
+        fprintf('Unable to create new subfolder. Saving results in: ');
+        fprintf('%s',outStruct.output_location); fprintf('\n');
+    end
+end
+
+
 %Approximation Group
 app.type = 'approximate';
 app.Path = get(handles.appPath,'String');
@@ -158,16 +193,27 @@ switch appext
         app.CSV(3,:) = a12rc(get(handles.a31,'String'));
         app.Range{4} = [get(handles.a41,'String'),'..',get(handles.a42,'String')];
         app.CSV(4,:) = a12rc(get(handles.a41,'String'));
-        outStruct.savePathapp = loadCSV(app);
+        outStruct.savePathapp = loadCSV(app,outStruct.output_location);
+        outStruct.app_create=1; %track if .app file was created
     case '.app'
         outStruct.savePathapp = app.Path;
+        
+        if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
+            try
+                [newLocation,~,~]=fileparts(outStruct.output_location); %new output location
+                [app_path,app_filename,ext]=fileparts(outStruct.savePathapp); %extract file information
+                if isempty(app_path)==1 %if .app file is in current directory
+                    app_path=fileparts(mfilename('fullpath'));
+                end
+                if strcmp(app_path,newLocation)==0 %if .app file is not already in output location
+                    new_path=fullfile(newLocation,[app_filename,ext]);
+                    copyfile(outStruct.savePathapp,new_path);
+                end
+            catch
+                fprintf('\n UNABLE TO SAVE .app FILE IN OUTPUT LOCATION. \n');
+            end
+        end
 end
-%Outputs Group
-outStruct.excel = get(handles.excel_FLAGcheck,'Value');
-outStruct.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
-outStruct.PI_print = get(handles.PI_print,'Value');
-outStruct.output_location=get(handles.output_location,'String');
-outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 
 
 outStruct.cancel = 0;
@@ -234,8 +280,7 @@ default.version = VERSION;
         default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
         default.excel=get(handles.excel_FLAGcheck,'Value');
         default.approx_and_PI_print=get(handles.approx_and_PI_print,'Value');
-        default.PI_print=get(handles.PI_print,'Value');
-
+        default.input_save_FLAG=get(handles.input_save_FLAG,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default_approx.ini'];
@@ -390,7 +435,7 @@ function appSave_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-function savePath = loadCSV(cva)
+function savePath = loadCSV(cva,output_location)
 % This function pre-loads the csv's and saves the data as .mat for quicker
 % reading.
 % Input: type - String that changes depending on whether loading
@@ -414,11 +459,31 @@ switch cva.type
 %         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
   
         excessVecapprox =         csvread(app.Path,app.CSV(4,1),app.CSV(4,2),app.Range{4});
-         
+        
+        try
+            file=fopen(app.Path); %open file
+            all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
+            fclose(file); %close file
+            %Eliminate rows with ";" in first column
+            lastrow=a12rc(extractAfter(app.Range{3},".."));
+            all_text_points=all_text1{1}(app.CSV(4,1)+1:lastrow(1)+1);
+            for i=1:size(all_text_points,1)
+                all_text_points_split(i,:)=cellstr(strsplit(string(all_text_points(i)),',','CollapseDelimiters',false)); %Extract row with labels
+            end
+            first_col=all_text_points_split(:,1);
+            ignore_row=find(contains(first_col,';')); %Find rows with semicolons in the first column
+            
+            excessVecapprox(ignore_row,:)=[];
+            pointIDapprox(ignore_row,:)=[];
+            seriesapprox(ignore_row,:)=[];
+            series2approx(ignore_row,:)=[];
+        catch
+            fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
+        end
+        
         [~,appName,~] = fileparts(app.Path);
         fileNameapprox = [appName,'.app'];
-        [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
-        savePathapprox = [CurrentPath,filesep,fileNameapprox];
+        savePathapprox=fullfile(output_location,fileNameapprox);
         
         clear cva appName CurrentPath
         save(savePathapprox);
@@ -589,12 +654,10 @@ function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of loadPI_FLAGcheck
 if get(hObject,'Value') == 0
     set(handles.approx_and_PI_print,'Enable','off','Value',0);
-    set(handles.PI_print,'Enable','off','Value',0);
     set(handles.percent_confidence_text,'Enable','off');
     set(handles.PI_percent_confidence,'Enable','off');
 else
      set(handles.approx_and_PI_print,'Enable','on');
-     set(handles.PI_print,'Enable','on');
      set(handles.percent_confidence_text,'Enable','on');
      set(handles.PI_percent_confidence,'Enable','on');
 end
@@ -607,15 +670,6 @@ function approx_and_PI_print_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of approx_and_PI_print
-
-
-% --- Executes on button press in PI_print.
-function PI_print_Callback(hObject, eventdata, handles)
-% hObject    handle to PI_print (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of PI_print
 
 
 function output_location_Callback(hObject, eventdata, handles)
@@ -728,9 +782,9 @@ if exist('coeff','var') == 1 && exist('ANOVA','var')==1 && exist('loadlist','var
     end
     loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
     
-    if exist('cHist','var')==1 && exist('center_daHist','var')==1 && exist('wHist','var')==1
+    if exist('cHist','var')==1 && exist('center_daHist','var')==1 && exist('epsHist','var')==1 && exist('h_GRBF','var')==1
         set(handles.grbf,'Enable','on');
-        grbf_message=strcat(num2str(size(wHist,1)), ' GRBFs per channel');
+        grbf_message=strcat(num2str(size(epsHist,1)), ' GRBFs per channel');
         set(handles.GRBF_text,'String',grbf_message, 'ForegroundColor','blue');
     else
         set(handles.grbf,'Enable','off','Value',0);
@@ -789,3 +843,12 @@ function grbf_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of grbf
+
+
+% --- Executes on button press in input_save_FLAG.
+function input_save_FLAG_Callback(hObject, eventdata, handles)
+% hObject    handle to input_save_FLAG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of input_save_FLAG

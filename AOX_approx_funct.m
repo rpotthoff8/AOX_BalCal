@@ -44,30 +44,20 @@ end
 
 %OUTPUT
 fprintf('\n ********************************************************************* \n');
-if FLAGS.excel == 1
+
+%OUTPUTING APPROXIMATION WITH PI FILE
+if FLAGS.approx_and_PI_print==1
+    section='APPROX';
+    load_and_PI_file_output(aprxINminGZapprox.ALG,loadPI_approx.ALG,pointIDapprox,seriesapprox,series2approx,loadlist,output_location,section)
+
+elseif FLAGS.excel == 1
     %Output approximation load approximation
-    filename = 'GLOBAL_ALG_APPROX.csv';
+    filename = 'APPROX ALG Global Load Approximation.csv';
     approxinput=aprxINminGZapprox.ALG;
     description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
     print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
 else
     fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
-end
-
-%OUTPUTING APPROXIMATION WITH PI
-if FLAGS.approx_and_PI_print==1
-    approxinput=cellstr(string(aprxINminGZapprox.ALG)+' +/- '+string(loadPI_approx.ALG));
-    filename = 'APPROX_AOX_GLOBAL_ALG_RESULT_w_PI.csv';
-    description='ALG APPROXIMATION LOAD APPROX WITH PREDICTION INTERVALS';
-    print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
-end
-
-%OUTPUTING PI VALUE
-if FLAGS.PI_print==1
-    filename = 'APPROX_ALG_PREDICTION_INTERVAL.csv';
-    approxinput=loadPI_approx.ALG;
-    description='APPROXIMATION ALGEBRAIC MODEL APPROXIMATION PREDICTION INTERVAL';
-    print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,7 +68,7 @@ end
 
 if FLAGS.balCal == 2
     
-    numBasis=size(GRBF.wHist,1);
+    numBasis=size(GRBF.epsHist,1);
     
     aprxINminGZ2approx = aprxINminGZapprox.ALG;
     aprxINminGZ_Histapprox = cell(numBasis,1);
@@ -86,7 +76,7 @@ if FLAGS.balCal == 2
     for u=1:numBasis
         
         %Call function to place single GRBF
-        [rbfc_INminGZapprox]=place_GRBF(u,dainputsapprox,GRBF.wHist,GRBF.cHist,GRBF.center_daHist);
+        [rbfc_INminGZapprox]=place_GRBF(u,dainputsapprox,GRBF.epsHist,GRBF.cHist,GRBF.center_daHist,GRBF.h_GRBF);
         
         %update the approximation
         aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
@@ -101,7 +91,7 @@ if FLAGS.balCal == 2
     fprintf('\n ********************************************************************* \n');
     if FLAGS.excel == 1
         %Output approximation load approximation
-        filename = 'GLOBAL_ALG+GRBF_APPROX.csv';
+        filename = 'APPROX GRBF Global Load Approximation.csv';
         approxinput=aprxINminGZ2approx;
         description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);

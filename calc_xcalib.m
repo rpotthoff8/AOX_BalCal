@@ -4,6 +4,11 @@ function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,di
 %Orders data by series (needed for bootstrap)
 [series,sortI]=sort(series);
 comIN=comIN(sortI,:);
+
+% Normalize the data for a better conditioned matrix
+scale = max(abs(comIN));
+comIN = comIN./scale;
+
 targetMatrix=targetMatrix(sortI,:);
 
 % Characterizes the series in the subsamples
@@ -25,25 +30,23 @@ xcalib = zeros(nterms+nseries0,dimFlag);
 % different depending on the channel.
 for k = 1:dimFlag
     comIN_k = comIN;
-
+    
     if FLAGS.model == 4
         comIN_k(:,customMatrix(:,k)==0) = [];
     end
-
+    
     % SOLUTION
-    if nseries==nseries0
-%        xcalib_k = comIN_k\targetMatrix(:,k);
-         xcalib_k = lsqminnorm(comIN_k, targetMatrix(:,k), 1e-8);
-    else
-%        xcalib_k = pinv(comIN_k)*targetMatrix(:,k);
-        xcalib_k = lsqminnorm(comIN_k, targetMatrix(:,k), 1e-8);
-    end
+    xcalib_k = comIN_k\targetMatrix(:,k);
+    
+    % De-normalize the coefficients to be used with raw data
+    xcalib_k = xcalib_k./scale';
+    
     if FLAGS.model == 4
         xcalib(customMatrix(:,k)==1,k) = xcalib_k;
     else
         xcalib(:,k) = xcalib_k;
     end
-
+    
     %Call Anova
     if FLAGS.anova==1
         %test_FLAG used to 'turn off' VIF when iterating to recommended
@@ -54,9 +57,19 @@ for k = 1:dimFlag
         
         fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
         ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
-        fprintf('Complete')
+        
+        % There are several ANOVA metrics that also must be denormalized
+        ANOVA(k).beta    = ANOVA(k).beta./scale';
+        ANOVA(k).beta_CI = ANOVA(k).beta_CI./scale';
+        
+        % Prediction interval calculation does not include tares, so scale
+        % vector has to be truncated
+        scale_PI = scale(1:end-nseries);
+        ANOVA(k).PI.invXtX = ANOVA(k).PI.invXtX./(scale_PI'*scale_PI);
+        
+        fprintf('Complete\n')
     end
-
+    
 end
 fprintf('\n')
 
@@ -77,9 +90,9 @@ else
             ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);
             ANOVA_exp(j).PI.invXtX(customMatrix((1:nterms),j)==1,customMatrix((1:nterms),j)==1)=ANOVA(j).PI.invXtX;
         end
-   
+        
         ANOVA=ANOVA_exp;
     end
-
+    
 end
 end
