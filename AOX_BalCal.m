@@ -378,7 +378,8 @@ if FLAGS.balCal == 2
     %Initialize Variables
     aprxINminGZ_Hist = cell(numBasis,1);
     tareGRBFHist = cell(numBasis,1);
-    centerIndexLoop=zeros(1,dimFlag);
+    centerIndexLoop=zeros(dimFlag,dimFlag);
+    centerIndexLoop_sub=zeros(dimFlag,dimFlag);    
     eta=zeros(length(excessVec0(:,1)),dimFlag);
     eps=zeros(1,dimFlag);
     rbfINminGZ=zeros(length(excessVec0(:,1)),dimFlag);
@@ -386,7 +387,7 @@ if FLAGS.balCal == 2
     rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
     epsHist=zeros(numBasis,dimFlag);
     cHist=zeros(numBasis,dimFlag);
-    centerIndexHist=zeros(numBasis,dimFlag);
+    centerIndexHist=zeros(numBasis,dimFlag,dimFlag);
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
     resStdHist=zeros(numBasis,dimFlag);
@@ -404,31 +405,22 @@ if FLAGS.balCal == 2
     eps_min=0.1; %Fasshauer pg 234
     eps_max=1.0;
 
-    max_mult=25;
-    maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
-%     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
-    count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
-
     for u=1:numBasis
         for s=1:dimFlag
-%             targetRes2_find=targetRes2;
-%             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
-%             [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
-% 
-%             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
-% 
-%             eta(:,s)=R_square(:,centerIndexLoop(s));
 
             %find epsilon and center index via ga
             ga_options=optimoptions('ga','Display','off');
-            ga_merit=@(x) balCal_meritFunction2(x(1),x(2),R_square,h_GRBF,dimFlag,targetRes2(:,s));
-            ga_out=ga(ga_merit,2,[],[],[],[],[eps_min; 1],[eps_max;size(targetRes2,1)],[],2,ga_options);
+            ga_merit=@(x) balCal_meritFunction2(x(1),x(2:dimFlag+1),dainputscalib,h_GRBF,dimFlag,targetRes2(:,s));
+            ga_out=ga(ga_merit,1+dimFlag,[],[],[],[],[eps_min; ones(dimFlag,1)],[eps_max;repmat(size(targetRes2,1),dimFlag,1)],[],2:dimFlag+1,ga_options);
             
             eps(s)=ga_out(1);
-            centerIndexLoop(s)=ga_out(2);
+            centerIndexLoop(:,s)=ga_out(2:dimFlag+1);
+            centerIndexLoop_sub(:,s)=sub2ind(size(dainputscalib),centerIndexLoop(:,s),[1:dimFlag]');
             
-            eta(:,s)=R_square(:,centerIndexLoop(s));
-            rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
+            dist=dainputscalib(centerIndexLoop_sub(:,s))'-dainputscalib;
+            R_square=sum(dist.^2,2); %Eqn 17 from Javier's notes: squared distance between each point
+            
+            rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(R_square))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
             coeffRBF(s) = lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
             
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
@@ -437,9 +429,9 @@ if FLAGS.balCal == 2
         %Store basis parameters in Hist variables
         epsHist(u,:) = eps;
         cHist(u,:) = coeffRBF;
-        centerIndexHist(u,:) = centerIndexLoop;
         for s=1:dimFlag
-            center_daHist(u,:,s)=dainputscalib(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.
+            centerIndexHist(u,:,s) = centerIndexLoop(:,s);
+            center_daHist(u,:,s)=dainputscalib(centerIndexLoop_sub(:,s)); %Variable stores the voltages of the RBF centers.
             %Dim 1= RBF #
             %Dim 2= Channel for voltage
             %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
