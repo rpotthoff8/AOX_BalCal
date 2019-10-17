@@ -39,7 +39,7 @@ if model_FLAG == 3
     in_comb = in_n;%                                                        3
     
     %Assemble hierarchy matrix
-    high=eye(size(in_comb,2));
+    high=zeros(size(in_comb,2));
     high_CELL=[[{" "};term_labels],[term_labels';num2cell(high)]];
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     in_comb = interceptTerms(in_comb,series,intercept_FLAG);
@@ -68,7 +68,7 @@ if model_FLAG == 2
         ini_inj];
     
     %Assemble hierarchy matrix
-    high=eye(size(in_comb,2));
+    high=zeros(size(in_comb,2));
     high(d+1:2*d,1:d)=in_sq_high;
     high(2*d+1:2*d+((d^2-d)/2),1:d)=ini_inj_high;
     high_CELL=[[{" "};term_labels],[term_labels';num2cell(high)]];
@@ -125,7 +125,7 @@ in_comb = [in_n,        ...                                                 1
     abs_incu];
 
 %Assemble hierarchy matrix
-high=eye(size(in_comb,2));
+high=zeros(size(in_comb,2));
 high(2*d+1:3*d,1:d)=in_sq_high;
 high(3*d+1:4*d,1:2*d)=in_absin_high;
 high(4*d+1:4*d+((d^2-d)/2),1:d)=ini_inj_high;
