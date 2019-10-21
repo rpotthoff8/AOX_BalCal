@@ -383,6 +383,7 @@ if FLAGS.balCal == 2
     eta=zeros(length(excessVec0(:,1)),dimFlag);
     eps=zeros(1,dimFlag);
     rbfINminGZ=zeros(length(excessVec0(:,1)),numBasis,dimFlag);
+    rbfINminGZ_cSolve=zeros(size(rbfINminGZ));
     rbfc_INminGZ=zeros(length(excessVec0(:,1)),dimFlag);
     epsHist=zeros(numBasis,dimFlag);
     cHist=zeros(numBasis,dimFlag);
@@ -427,8 +428,9 @@ if FLAGS.balCal == 2
             eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
 
             rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-
-            coeffRBF(1:u,s)=lsqminnorm(rbfINminGZ(:,1:u,s),targetRes(:,s));
+            rbfINminGZ_cSolve(:,u,s)=rbfINminGZ(:,u,s);
+            rbfINminGZ_cSolve(centerIndexLoop(s),u,s)=0; %Set datapoint location to zero for coefficient solving
+            coeffRBF(1:u,s)=lsqminnorm(rbfINminGZ_cSolve(:,1:u,s),targetRes(:,s));
 
             rbfc_INminGZ(:,s) = rbfINminGZ(:,1:u,s)*coeffRBF(1:u,s);
         end
