@@ -391,8 +391,13 @@ if FLAGS.balCal == 2
     resSquareHist=zeros(numBasis,dimFlag);
     resStdHist=zeros(numBasis,dimFlag);
     coeffRBF=zeros(numBasis,dimFlag);
+    
+    %Use LHS to find points to be used for center placement (70%) and
+    %width/coefficient optimization
+    center_pointsI = AOX_LHS(series0,dainputscalib,0.7);
+    wc_pointsI=setdiff(1:size(dainputscalib,1),center_pointsI)';
+       
     dist=zeros(size(dainputscalib,1),size(dainputscalib,1),size(dainputscalib,2));
-
     for i=1:size(dainputscalib,2)
         dist(:,:,i)=dainputscalib(:,i)'-dainputscalib(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
     end
@@ -406,7 +411,7 @@ if FLAGS.balCal == 2
     eps_max=1.0;
 
     max_mult=5;
-    maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
+    maxPer=ceil(max_mult*numBasis/size(center_pointsI,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
 %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
 
@@ -414,6 +419,7 @@ if FLAGS.balCal == 2
         for s=1:dimFlag
             targetRes2_find=targetRes2;
             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
+            targetRes2_find(wc_pointsI,:)=0; %Zero out residuals for points used only for width and coefficients
             [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
 
             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
@@ -424,7 +430,7 @@ if FLAGS.balCal == 2
             eta(:,s)=R_square(:,centerIndexLoop(s));
 
             %find widths 'w' by optimization routine
-            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
+            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(wc_pointsI,s),eta(wc_pointsI,s),h_GRBF,dimFlag),eps_min,eps_max );
 
             rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 
