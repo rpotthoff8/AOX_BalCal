@@ -414,7 +414,7 @@ if FLAGS.balCal == 2
             
             %find epsilon and center index via ga
             fmin_options=optimset('Display','off');
-            ga_options=optimoptions('ga','Display','off');
+%             ga_options=optimoptions('ga','Display','off');
             ga_merit=@(x) balCal_meritFunction2(x(1),x(2:dimFlag+1),dainputscalib,h_GRBF,dimFlag,targetRes2(:,s));
 %             ga_out=ga(ga_merit,1+dimFlag,[],[],[],[],[eps_min; center_min'],[eps_max;center_max'],[],2,ga_options);
             ga_out=fminsearchbnd(ga_merit,[0.5;dainputscalib(maxI,:)'],[eps_min; center_min'],[eps_max;center_max'],fmin_options);
