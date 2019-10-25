@@ -406,18 +406,21 @@ if FLAGS.balCal == 2
     eps_max=1.0;
     center_min=min(dainputscalib);
     center_max=max(dainputscalib);
-    
+    v_range=center_max-center_min; %Range of input voltage.
+    v_neighborhood=0.1*v_range; %seach for center location +/- max residual voltage
     
     for u=1:numBasis
         for s=1:dimFlag
             [~,maxI]=max(targetRes2(:,s));
+            
+            
             
             %find epsilon and center index via ga
             fmin_options=optimset('Display','off');
 %             ga_options=optimoptions('ga','Display','off');
             ga_merit=@(x) balCal_meritFunction2(x(1),x(2:dimFlag+1),dainputscalib,h_GRBF,dimFlag,targetRes2(:,s));
 %             ga_out=ga(ga_merit,1+dimFlag,[],[],[],[],[eps_min; center_min'],[eps_max;center_max'],[],2,ga_options);
-            ga_out=fminsearchbnd(ga_merit,[0.5;dainputscalib(maxI,:)'],[eps_min; center_min'],[eps_max;center_max'],fmin_options);
+            ga_out=fminsearchbnd(ga_merit,[0.5;dainputscalib(maxI,:)'],[eps_min; (dainputscalib(maxI,:)-v_neighborhood)'],[eps_max;(dainputscalib(maxI,:)+v_neighborhood)'],fmin_options);
             eps(s)=ga_out(1);
             centerLoop(:,s)=ga_out(2:dimFlag+1);
             
