@@ -409,18 +409,27 @@ if FLAGS.balCal == 2
     v_range=center_max-center_min; %Range of input voltage.
     v_neighborhood=0.1*v_range; %seach for center location +/- max residual voltage
     
+    max_mult=5;
+    maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
+    %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
+    count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
     for u=1:numBasis
         for s=1:dimFlag
-            [~,maxI]=max(targetRes2(:,s));
+            targetRes2_find=targetRes2;
+            targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
+            %             [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
+            %
             
-            
+            [~,maxI]=max(abs(targetRes2_find(:,s)));
+            count(maxI,s)=count(maxI,s)+1;
             
             %find epsilon and center index via ga
             fmin_options=optimset('Display','off');
-%             ga_options=optimoptions('ga','Display','off');
+            %             ga_options=optimoptions('ga','Display','off');
             ga_merit=@(x) balCal_meritFunction2(x(1),x(2:dimFlag+1),dainputscalib,h_GRBF,dimFlag,targetRes2(:,s));
-%             ga_out=ga(ga_merit,1+dimFlag,[],[],[],[],[eps_min; center_min'],[eps_max;center_max'],[],2,ga_options);
+            %             ga_out=ga(ga_merit,1+dimFlag,[],[],[],[],[eps_min; center_min'],[eps_max;center_max'],[],2,ga_options);
             ga_out=fminsearchbnd(ga_merit,[0.5;dainputscalib(maxI,:)'],[eps_min; (dainputscalib(maxI,:)-v_neighborhood)'],[eps_max;(dainputscalib(maxI,:)+v_neighborhood)'],fmin_options);
+
             eps(s)=ga_out(1);
             centerLoop(:,s)=ga_out(2:dimFlag+1);
             
