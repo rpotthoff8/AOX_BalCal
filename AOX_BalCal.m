@@ -377,7 +377,7 @@ if FLAGS.balCal == 2
 
     %Initialize Variables
     etaHist = cell(numBasis,1);
-    aprxINminGZ_Hist = cell(numBasis,1);
+    aprxIN2_Hist = cell(numBasis,1);
     tareGRBFHist = cell(numBasis,1);
     centerIndexLoop=zeros(1,dimFlag);
     eta=zeros(length(excessVec0(:,1)),dimFlag);
@@ -428,11 +428,38 @@ if FLAGS.balCal == 2
 
             rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 
-            coeffRBF(1:u,s)=lsqminnorm(rbfINminGZ(:,1:u,s),targetRes(:,s));
-
-            rbfc_INminGZ(:,s) = rbfINminGZ(:,1:u,s)*coeffRBF(1:u,s);
         end
+        
 
+        %Make custom Matrix to solve for only RBF coefficinets in correct
+        %channel
+        if FLAGS.model==4
+            customMatrix_RBF=[customMatrix;repmat(eye(dimFlag,dimFlag),u,1)];
+        else
+            customMatrix_RBF=[ones(size(comIN0,2),dimFlag);repmat(eye(dimFlag,dimFlag),u,1)];
+        end
+        
+        %Add RBFs to comIN0 variable to solve with alg coefficients
+        comIN0_RBF=[comIN0,zeros(size(comIN0,1),u*dimFlag)];
+        for i=1:u
+            comIN0_RBF(:,size(comIN0,2)+1+dimFlag*(i-1):size(comIN0,2)+dimFlag*(i))=rbfINminGZ(:,i,:);
+        end
+        
+        %New flag structure for calc_xcalib
+        FLAGS_RBF.model=4;
+        FLAGS_RBF.anova=0;
+        nterms_RBF=nterms+u*dimFlag; %New number of terms to solve for
+        
+        xcalib_RBF = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
+            nterms_RBF,nseries0,dimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF');
+        
+        %Extract RBF coefficients
+        coeff_alg_RBF=xcalib_RBF(1:nterms,:); %new algebraic coefficients
+        coeff_RBF_all=xcalib_RBF(size(xcalib,1)+1:end,:); %new RBF coefficients
+        for i=1:u
+            coeffRBF(i,:)=diag(coeff_RBF_all(1+dimFlag*(i-1):dimFlag*i,:));
+        end 
+        
         %Store basis parameters in Hist variables
         epsHist(u,:) = eps;
         cHist_tot{u} = coeffRBF;
@@ -447,20 +474,26 @@ if FLAGS.balCal == 2
         etaHist{u} = eta;
 
         %update the approximation
-        aprxINminGZ2 = aprxINminGZ+rbfc_INminGZ;
-        aprxINminGZ_Hist{u} = aprxINminGZ2;
+        aprxIN2=comIN0_RBF*xcalib_RBF;
+        aprxIN2_Hist{u} = aprxIN2;
 
-        % SOLVE FOR TARES BY TAKING THE MEAN
-        [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
-        taresGRBF = taresAllPointsGRBF(s_1st0,:);
-        taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
+        taresGRBF = -xcalib_RBF(nterms+1:nterms+nseries0,:);
+        taretalRBF=taresGRBF(series0,:);
+        aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
         tareGRBFHist{u} = taresGRBF;
+        taresGRBFSTDEV=0; %CHANGE LATER
+        
+%         % SOLVE FOR TARES BY TAKING THE MEAN
+%         [taresAllPointsGRBF,taretalGRBFSTDDEV] = meantare(series0,aprxINminGZ2-targetMatrix0);
+%         taresGRBF = taresAllPointsGRBF(s_1st0,:);
+%         taresGRBFSTDEV = taretalGRBFSTDDEV(s_1st0,:);
+%         tareGRBFHist{u} = taresGRBF;
 
         %Calculate tare corrected load approximation
-        aprxINminTARE2=aprxINminGZ2-taresAllPointsGRBF;
+        aprxINminTARE2=aprxINminGZ2-taretalRBF;
 
         %Calculate and store residuals
-        targetRes2 = targetMatrix0-aprxINminTARE2;      %0=b-Ax
+        targetRes2 = targetMatrix0-aprxIN2;
         newRes2 = targetRes2'*targetRes2;
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
@@ -579,9 +612,19 @@ if FLAGS.balVal == 1
         %Initialize structure for unique outputs for section
         uniqueOut=struct();
 
-        targetRes2valid = targetResvalid;
-        aprxINminGZ2valid = aprxINminGZvalid;
-
+        aprxINminGZ2valid = comINvalid*coeff_alg_RBF;        %to find approximation with RBF alg Coefficients
+        
+%         checkit2valid = aprxINminGZ2valid-targetMatrixvalid;
+%         
+%         % SOLVE FOR TARES BY TAKING THE MEAN
+%         taresAllPoints2valid = meantare(seriesvalid,checkit2valid);
+%         
+%         %Tare corrected approximation
+%         aprxINminTARE2valid=aprxINminGZ2valid-taresAllPoints2valid;
+%         
+%         %RESIDUAL
+%         targetRes2valid = targetMatrixvalid-aprxINminTARE2valid;
+        
         %Initialize Variables
         aprxINminGZ_Histvalid = cell(numBasis,1);
         tareHistvalid = cell(numBasis,1);
@@ -590,21 +633,21 @@ if FLAGS.balVal == 1
         for u=1:numBasis
             %Call function to place single GRBF
             [rbfc_INminGZvalid]=place_GRBF(u,dainputsvalid,epsHist,cHist,center_daHist,h_GRBF);
-
+            
             %update the approximation
             aprxINminGZ2valid = aprxINminGZ2valid+rbfc_INminGZvalid;
             aprxINminGZ_Histvalid{u} = aprxINminGZ2valid;
-
+            
             % SOLVE FOR TARES BY TAKING THE MEAN
             [~,s_1st,~] = unique(seriesvalid);
             [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid);
             taresGRBFvalid = taresAllPointsvalid2(s_1st,:);
             taresGRBFSTDEVvalid = taretalstdvalid2(s_1st,:);
             tareHistvalid{u} = taresGRBFvalid;
-
+            
             %Calculate tare corrected load approximation
             aprxINminTARE2valid=aprxINminGZ2valid-taresAllPointsvalid2;
-
+            
             %Residuals
             targetRes2valid = targetMatrixvalid-aprxINminTARE2valid;      %0=b-Ax
             newRes2valid = targetRes2valid'*targetRes2valid;
@@ -612,7 +655,7 @@ if FLAGS.balVal == 1
             resSquareHistvalid(u,:) = resSquare2valid;
             resStdHistvalid(u,:)=std(targetRes2valid);
         end
-
+        
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         section={'Validation GRBF'};

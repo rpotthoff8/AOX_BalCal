@@ -30,16 +30,18 @@ xcalib = zeros(nterms+nseries0,dimFlag);
 % different depending on the channel.
 for k = 1:dimFlag
     comIN_k = comIN;
+    scale_k=scale;
     
     if FLAGS.model == 4
         comIN_k(:,customMatrix(:,k)==0) = [];
+        scale_k(:,customMatrix(:,k)==0) = [];
     end
     
     % SOLUTION
     xcalib_k = comIN_k\targetMatrix(:,k);
     
     % De-normalize the coefficients to be used with raw data
-    xcalib_k = xcalib_k./scale';
+    xcalib_k = xcalib_k./scale_k';
     
     if FLAGS.model == 4
         xcalib(customMatrix(:,k)==1,k) = xcalib_k;
