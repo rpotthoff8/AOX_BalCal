@@ -427,7 +427,7 @@ if FLAGS.balCal == 2
             eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
 
             rbfINminGZ(:,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-
+            rbfINminGZ(:,s)=rbfINminGZ(:,s)-mean(rbfINminGZ(:,s),1);
             coeffRBF(s) = lsqminnorm(rbfINminGZ(:,s),targetRes2(:,s));
 
             rbfc_INminGZ(:,s) = coeffRBF(s)*rbfINminGZ(:,s);
