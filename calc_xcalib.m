@@ -61,19 +61,19 @@ for k = 1:dimFlag
         ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
         
         % There are several ANOVA metrics that also must be denormalized
-        ANOVA(k).beta    = ANOVA(k).beta./scale';
-        ANOVA(k).beta_CI = ANOVA(k).beta_CI./scale';
+        ANOVA(k).beta    = ANOVA(k).beta./scale_k';
+        ANOVA(k).beta_CI = ANOVA(k).beta_CI./scale_k';
         
         % Prediction interval calculation does not include tares, so scale
         % vector has to be truncated
-        scale_PI = scale(1:end-nseries);
+        scale_PI = scale_k(1:end-nseries);
         ANOVA(k).PI.invXtX = ANOVA(k).PI.invXtX./(scale_PI'*scale_PI);
         
         fprintf('Complete\n')
     end
     
 end
-fprintf('\n')
+% fprintf('\n')
 
 if FLAGS.anova==0
     ANOVA='ANOVA NOT PERFORMED';

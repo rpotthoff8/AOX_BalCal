@@ -408,7 +408,9 @@ if FLAGS.balCal == 2
     max_mult=5;
     maxPer=ceil(max_mult*numBasis/size(dainputscalib,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
 %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
-    count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
+    maxPer=7; %Max per for 2000 RBFs
+
+count=zeros(size(dainputscalib)); %Initialize matrix to count how many RBFs have been placed at each location
 
     for u=1:numBasis
         for s=1:dimFlag
@@ -434,28 +436,32 @@ if FLAGS.balCal == 2
         %Make custom Matrix to solve for only RBF coefficinets in correct
         %channel
         if FLAGS.model==4
-            customMatrix_RBF=[customMatrix;repmat(eye(dimFlag,dimFlag),u,1)];
+            customMatrix_RBF=[customMatrix(1:nterms,:);repmat(eye(dimFlag,dimFlag),u,1);customMatrix(nterms+1:end,:)];
         else
-            customMatrix_RBF=[ones(size(comIN0,2),dimFlag);repmat(eye(dimFlag,dimFlag),u,1)];
+            customMatrix_RBF=[ones(nterms,dimFlag);repmat(eye(dimFlag,dimFlag),u,1);ones(nseries0,dimFlag)];
         end
         
         %Add RBFs to comIN0 variable to solve with alg coefficients
-        comIN0_RBF=[comIN0,zeros(size(comIN0,1),u*dimFlag)];
+        comIN0_RBF=[comIN0(:,1:nterms),zeros(size(comIN0,1),u*dimFlag),comIN0(:,nterms+1:end)];
         for i=1:u
-            comIN0_RBF(:,size(comIN0,2)+1+dimFlag*(i-1):size(comIN0,2)+dimFlag*(i))=rbfINminGZ(:,i,:);
+            comIN0_RBF(:,nterms+1+dimFlag*(i-1):nterms+dimFlag*(i))=rbfINminGZ(:,i,:);
         end
         
         %New flag structure for calc_xcalib
         FLAGS_RBF.model=4;
-        FLAGS_RBF.anova=0;
+        if u==numBasis
+            FLAGS_RBF.anova=FLAGS.anova;
+        else
+            FLAGS_RBF.anova=0;
+        end
         nterms_RBF=nterms+u*dimFlag; %New number of terms to solve for
         
-        xcalib_RBF = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
+        [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,dimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF');
         
         %Extract RBF coefficients
         coeff_alg_RBF=xcalib_RBF(1:nterms,:); %new algebraic coefficients
-        coeff_RBF_all=xcalib_RBF(size(xcalib,1)+1:end,:); %new RBF coefficients
+        coeff_RBF_all=xcalib_RBF(nterms+1:nterms+u*dimFlag,:); %new RBF coefficients
         for i=1:u
             coeffRBF(i,:)=diag(coeff_RBF_all(1+dimFlag*(i-1):dimFlag*i,:));
         end 
@@ -477,7 +483,7 @@ if FLAGS.balCal == 2
         aprxIN2=comIN0_RBF*xcalib_RBF;
         aprxIN2_Hist{u} = aprxIN2;
 
-        taresGRBF = -xcalib_RBF(nterms+1:nterms+nseries0,:);
+        taresGRBF = -xcalib_RBF(nterms+u*dimFlag+1:end,:);
         taretalRBF=taresGRBF(series0,:);
         aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
         tareGRBFHist{u} = taresGRBF;
