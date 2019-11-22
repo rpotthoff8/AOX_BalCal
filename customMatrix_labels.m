@@ -1,4 +1,4 @@
-function [leftColumn, topRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,model,combined_terms)
+function [leftColumn, topRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,model,combined_terms,numRBF)
 
 %Determine what terms should be combined: voltages or loads;
 if strcmp(combined_terms,{'voltages'})==1
@@ -50,6 +50,14 @@ elseif model==2
     leftColumn=[block1;block3;block5];
 else
     leftColumn=[block1;block2;block3;block4;block5;block6;block7;block8;block9;block10];
+end
+
+if nargin>=6
+    if numRBF>0
+        channel=repmat([1:dimFlag]',numRBF,1);
+        rbf_leftColumn=cellstr([repmat('ch ',numRBF*dimFlag,1), num2str(channel), repmat(' RBF ',numRBF*dimFlag,1), num2str(repelem([1:numRBF]',dimFlag,1))]);
+        leftColumn=[leftColumn;rbf_leftColumn];
+    end
 end
 
 end

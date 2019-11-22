@@ -637,6 +637,70 @@ if strcmp(section,{'Calibration GRBF'})==1
         end
     end
 
+        %%% ANOVA Stats AJM 6_12_19
+    if FLAGS.anova==1
+
+        totalnum = nterms+nseries0;
+        totalnumcoeffs = [1:totalnum];
+        totalnumcoeffs2 = [2:totalnum+1];
+        dsof = numpts-nterms-1;
+
+        loadstatlist = {'Load', 'Sum_Sqrs', 'PRESS_Stat', 'DOF', 'Mean_Sqrs', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
+        regresslist = {'Term_Index','Term_Name', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
+
+        STAT_LOAD=cell(dimFlag,1);
+        REGRESS_COEFFS=cell(dimFlag,1);
+        Term_Names=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages',numBasis); %Get label names for custom equation matrix
+        for k=1:dimFlag
+            RECOMM_ALG_EQN(:,k) = [1.0*ANOVA(k).sig([1:nterms])];
+            manoa2(k,:) = [loadlist(k), tR2(1,k), ANOVA(k).PRESS, dsof, gee(1,k), ANOVA(k).F, ANOVA(k).p_F, ANOVA(k).R_sq, ANOVA(k).R_sq_adj, ANOVA(k).R_sq_p];
+            ANOVA01(:,:) = [totalnumcoeffs; ANOVA(k).beta'; ANOVA(k).beta_CI'; ANOVA(k).T'; ANOVA(k).p_T'; ANOVA(k).VIF'; 1.0*ANOVA(k).sig']';
+            ANOVA1_2(:,:) = num2cell([ANOVA01([1:nterms],:)]);
+            STAT_LOAD{k} = array2table(manoa2(k,:),'VariableNames',loadstatlist(1:10));
+            REGRESS_COEFFS{k} = cell2table([ANOVA1_2(:,1),Term_Names,ANOVA1_2(:,2:end)],'VariableNames',regresslist);
+        end
+
+        warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
+        filename = 'DIRECT_GRBF_ANOVA_STATS.xlsx';
+        fullpath=fullfile(output_location,filename);
+
+        try
+            delete(char(fullpath))
+            for k=1:dimFlag
+                writetable(STAT_LOAD{k},fullpath,'Sheet',k,'Range','A1');
+                writetable(REGRESS_COEFFS{k},fullpath,'Sheet',k,'Range','A4');
+            end
+            fprintf('\nDIRECT GRBF METHOD ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n ');
+        catch ME
+            fprintf('\nUNABLE TO PRINT DIRECT METHOD ANOVA STATISTICS FILE. ');
+            if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
+                fprintf('ENSURE "'); fprintf(char(filename)); fprintf('" IS NOT OPEN AND TRY AGAIN')
+            end
+            fprintf('\n')
+        end
+        warning('on',  'MATLAB:DELETE:Permission'); warning('on', 'MATLAB:xlswrite:AddSheet'); warning('on', 'MATLAB:DELETE:FileNotFound')
+
+        %Output recommended custom equation
+        if FLAGS.Rec_Model==1
+            filename = 'DIRECT_GRBF_RECOMM_CustomEquationMatrix.csv';
+            fullpath=fullfile(output_location,filename);
+            [leftColumn,topRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages',numBasis); %Get label names for custom equation matrix
+            recTable=array2table(RECOMM_ALG_EQN,'VariableNames',topRow,'RowNames',leftColumn(:));
+            description='DIRECT METHOD GRBF ANOVA RECOMMENDED CUSTOM EQUATION MATRIX';
+            try
+                writetable(recTable,fullpath,'WriteRowNames',true);
+                fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+            catch ME
+                fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
+                if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
+                    fprintf('ENSURE "'); fprintf(char(filename)); fprintf('" IS NOT OPEN AND TRY AGAIN')
+                end
+                fprintf('\n')
+            end
+        end
+
+   end
+    %%% ANOVA Stats AJM 6_8_19
 end
 
 %% Algebraic Validation Specific Outputs
