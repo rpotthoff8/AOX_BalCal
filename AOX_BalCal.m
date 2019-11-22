@@ -433,19 +433,26 @@ maxVIF_all=zeros(numBasis,dimFlag);
 
             rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
             
-            %VIF checking
-%             VIF_RBF=vif(rbfINminGZ(:,1:u,s));
-            VIF_all=vif([comIN0,rbfINminGZ(:,1:u,s)]);
-%             maxVIF_RBF(u,s)=max(VIF_RBF);
-            maxVIF_all(u,s)=max(VIF_all);
-            
-            if max(VIF_all)>10
-                fprintf('VIF error, refinding RBF #'); fprintf(num2str(u)); fprintf(', Channel '); fprintf(num2str(s)); fprintf('\n');
+            VIF_check=0;
+            if VIF_check==1
+                
+                %VIF checking
+                %             VIF_RBF=vif(rbfINminGZ(:,1:u,s));
+                VIF_all=vif([comIN0,rbfINminGZ(:,1:u,s)]);
+                %             maxVIF_RBF(u,s)=max(VIF_RBF);
+                maxVIF_all(u,s)=max(VIF_all);
+                
+                if max(VIF_all)>10
+                    fprintf('VIF error, refinding RBF #'); fprintf(num2str(u)); fprintf(', Channel '); fprintf(num2str(s)); fprintf('\n');
+                else
+                    vif_good=1;
+                end
             else
                 vif_good=1;
             end
             end
         end
+        
         
 
         %Make custom Matrix to solve for only RBF coefficinets in correct
