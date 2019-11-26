@@ -432,6 +432,7 @@ maxVIF_all=zeros(numBasis,dimFlag);
             eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
 
             rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
+            rbfINminGZ(:,u,s)=rbfINminGZ(:,u,s)-mean(rbfINminGZ(:,u,s)); %Bias is mean of RBF
             
             VIF_check=0;
             if VIF_check==1
