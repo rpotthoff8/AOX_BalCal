@@ -96,6 +96,7 @@ FLAGS.input_save=out.input_save_FLAG;
 fprintf('\nWorking ...\n')
 % Load data and characterize series
 load(out.savePathcal,'-mat');
+output_location=out.output_location;
 series0 = series;
 series20=series2;
 pointID0=pointID;
