@@ -418,9 +418,28 @@ maxVIF_all=zeros(numBasis,dimFlag);
         for s=1:dimFlag
             vif_good=0;
             while vif_good==0
-            targetRes2_find=targetRes2;
-            targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
-            [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
+                if u==1 %First RBF placed at location of max residual
+                    targetRes2_find=targetRes2;
+                    targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
+                    [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
+                    
+                else %Following RBFs placed based on combination of max residual and distance from current centers
+                    norm_targetRes2=abs(targetRes2)./max(abs(targetRes2)); %Normalized absolute value residual: Value closer to 1 indicates higher residual
+                    
+                    minR_square_curRBF(:,s)=min(R_square(centerIndexHist(1:u-1,s),:),[],1)'; %Distance to closest current RBF Center
+                    norm_minR_square_curRBF(:,s)=minR_square_curRBF(:,s)./max(minR_square_curRBF(:,s)); %Normalized distance to current centers: Value closer to 1 indicates larger distance
+                    
+                    %Weighting factors for error and distance
+                    err_weight=0.5;
+                    dist_weight=1-err_weight;
+                    
+                    score=err_weight*(norm_targetRes2(:,s))+dist_weight*(norm_minR_square_curRBF(:,s)); %Combined score for each datapoint
+                    score(count(:,s)>=maxPer)=0; %Zero out points that have reach max number of RBFs
+                    [~,centerIndexLoop(s)] = max(score);
+                end
+
+            
+
 
             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
 
