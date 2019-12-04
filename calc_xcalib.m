@@ -30,25 +30,25 @@ xcalib = zeros(nterms+nseries0,dimFlag);
 % different depending on the channel.
 for k = 1:dimFlag
     comIN_k = comIN;
-    scale_k=scale;
-    
+    scale_k = scale;
+
     if FLAGS.model == 4
         comIN_k(:,customMatrix(:,k)==0) = [];
-        scale_k(:,customMatrix(:,k)==0) = [];
+        scale_k(customMatrix(:,k)==0) = [];
     end
-    
+
     % SOLUTION
     xcalib_k = comIN_k\targetMatrix(:,k);
-    
+
     % De-normalize the coefficients to be used with raw data
     xcalib_k = xcalib_k./scale_k';
-    
+
     if FLAGS.model == 4
         xcalib(customMatrix(:,k)==1,k) = xcalib_k;
     else
         xcalib(:,k) = xcalib_k;
     end
-    
+
     %Call Anova
     if FLAGS.anova==1
         %test_FLAG used to 'turn off' VIF when iterating to recommended
@@ -56,22 +56,22 @@ for k = 1:dimFlag
         if isfield(FLAGS,'test_FLAG')==0
             FLAGS.test_FLAG=0;
         end
-        
+
         fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
         ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
-        
+
         % There are several ANOVA metrics that also must be denormalized
         ANOVA(k).beta    = ANOVA(k).beta./scale_k';
         ANOVA(k).beta_CI = ANOVA(k).beta_CI./scale_k';
-        
+
         % Prediction interval calculation does not include tares, so scale
         % vector has to be truncated
         scale_PI = scale_k(1:end-nseries);
         ANOVA(k).PI.invXtX = ANOVA(k).PI.invXtX./(scale_PI'*scale_PI);
-        
+
         fprintf('Complete\n')
     end
-    
+
 end
 % fprintf('\n')
 
@@ -92,9 +92,9 @@ else
             ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);
             ANOVA_exp(j).PI.invXtX(customMatrix((1:nterms),j)==1,customMatrix((1:nterms),j)==1)=ANOVA(j).PI.invXtX;
         end
-        
+
         ANOVA=ANOVA_exp;
     end
-    
+
 end
 end

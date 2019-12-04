@@ -1,4 +1,5 @@
 function []=load_and_PI_file_output(aprxINminGZ,loadPI,pointID,series1,series2,loadlist,output_location,section)
+warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
 description=[upper(section), ' APPROXIMATION WITH PREDICTION INTERVAL'];
 try
     if strcmpi(section,'VALID')==1
@@ -38,7 +39,7 @@ end
 
 
 if xlsx==1
-    warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
+    
     try %Rename excel sheets and delete extra sheets, only possible on PC
         [~,sheets]=xlsfinfo(fullpath);
         s = what;
@@ -63,8 +64,8 @@ if xlsx==1
         e.Quit
         delete(e);
     end
-    warning('on',  'MATLAB:DELETE:Permission'); warning('on', 'MATLAB:xlswrite:AddSheet'); warning('on', 'MATLAB:DELETE:FileNotFound')
+    
     
 end
-
+warning('on',  'MATLAB:DELETE:Permission'); warning('on', 'MATLAB:xlswrite:AddSheet'); warning('on', 'MATLAB:DELETE:FileNotFound')
 end
