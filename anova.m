@@ -88,6 +88,9 @@ SSE = sum(e.^2);
 % information of the predictor matrix X
 [n,k] = size(X);
 dof_e = n-k;
+if dof_e<0
+    fprintf('WARNING: Negative Degrees of Freedom in ANOVA \n')
+end
 MSE = SSE/dof_e;
 sigma_hat_sq = MSE;
 
