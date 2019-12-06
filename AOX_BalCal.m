@@ -70,9 +70,6 @@ numSTD = out.numSTD;  %Number of St.D. for outlier threshold.
 %TO REMOVE POTENTIAL OUTLIERS                               set FLAGS.zeroed = 1;
 FLAGS.zeroed = out.zeroed;
 %
-%Uncertainty button outputs
-FLAGS.volt=out.voltFlag;
-voltTrust=out.voltTrust;
 
 FLAGS.anova = out.anova;
 FLAGS.loadPI = out.loadPI;
@@ -319,16 +316,6 @@ if FLAGS.anova==1
     end
 end
 %END: ANOVA data for uncertainty
-
-if FLAGS.volt==1
-    %uncertainty due to uncertainty in volt readings
-    uncert_comIN=balCal_algEquations_partialdiff(FLAGS.model, dimFlag, dainputs0);
-else
-    uncert_comIN=zeros(nterms,numpts0,dimFlag);
-end
-
-[combined_uncert_anova,tare_uncert_anova, FL_uncert_anova,coeff_uncert_anova]=...
-    uncert_prop_anova(xcalib,beta_CI_comb,comIN0,dimFlag,uncert_comIN,s_1st0,nterms,targetMatrix0,series0,voltTrust,FLAGS.anova,FLAGS.volt);
 %end uncertainty section
 
 %OUTPUT FUNCTION

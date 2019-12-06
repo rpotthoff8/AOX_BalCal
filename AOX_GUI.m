@@ -160,9 +160,6 @@ if exist(fileName,'file')
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
         grbf_Callback(handles.grbf, eventdata, handles);
         
-        set(handles.Volt_FLAGcheck,'Value',default.Volt_FLAGcheck);
-        set(handles.voltTrust,'String',default.voltTrust);
-        Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
         set(handles.anova_FLAGcheck,'Value',default.anova);
         anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
         
@@ -286,8 +283,6 @@ end
 outStruct.grbf = 1 + get(handles.grbf,'Value');
 outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 
-outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
-outStruct.voltTrust = str2num(get(handles.voltTrust,'String'));
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 outStruct.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
@@ -1324,8 +1319,6 @@ default.basis = get(handles.numBasisIn,'String');
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
 
-default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
-default.voltTrust=get(handles.voltTrust,'String');
 default.anova = get(handles.anova_FLAGcheck,'Value');
 default.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
@@ -2009,41 +2002,6 @@ if FileName ~= 0
     end
     set(handles.customPath,'String',FullPath)
 end
-
-
-function voltTrust_Callback(hObject, eventdata, handles)
-% hObject    handle to voltTrust (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of voltTrust as text
-%        str2double(get(hObject,'String')) returns contents of voltTrust as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function voltTrust_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to voltTrust (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in Volt_FLAGcheck.
-function Volt_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to Volt_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value') == 1
-    set(handles.voltTrust,'Enable','on');
-else
-    set(handles.voltTrust,'Enable','off');
-end
-% Hint: get(hObject,'Value') returns toggle state of Volt_FLAGcheck
 
 
 % --- Executes on button press in anova_FLAGcheck.
