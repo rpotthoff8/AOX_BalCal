@@ -104,9 +104,43 @@ nseries0 = length(s_1st0);
 % loadlabes, voltlabels (if they exist)
 % loadCapacities, natzeros, targetMatrix0, excessVec0, series0
 
-% Load the custom equation matrix if using a custom algebraic model
-% SEE: CustomEquationMatrixTemplate.csv
-if FLAGS.model == 4
+
+if FLAGS.model==5 
+    %Build bustom equation matrix based on the balance type selected
+    balanceType=out.balanceEqn;    
+    %Select the terms to be included
+    %Terms are listed in following order:
+    % F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|
+    termInclude=zeros(10,1);
+    if balanceType==1 %contains(balanceType,'1-A')
+        termInclude([1,3,5])=1;
+    elseif balanceType==2 %contains(balanceType,'1-B')
+        termInc5lude([1,3,5,9])=1;
+    elseif balanceType==3 %contains(balanceType,'1-C')
+        termInclude([1,5])=1;
+    elseif balanceType==4 %contains(balanceType,'1-D')
+        termInclude([1,3])=1;
+    elseif balanceType==5 %contains(balanceType,'2-A')
+        termInclude([1,2,3,5])=1;
+    elseif balanceType==6 %contains(balanceType,'2-B')
+        termInclude([1,2,3,4,5])=1;
+    elseif balanceType==7 %contains(balanceType,'2-C')
+        termInclude(1:8)=1;
+    elseif balanceType==8 %contains(balanceType,'2-D')
+        termInclude(1:10)=1;
+    elseif balanceType==9 %contains(balanceType,'2-E')
+        termInclude([1,2,4,5])=1;
+    elseif balanceType==10 %contains(balanceType,'2-F')
+        termInclude([1,2,5])=1;
+    end
+    %Assemble custom matrix
+    customMatrix=customMatrix_builder(dimFlag,termInclude);
+    customMatrix = [customMatrix; ones(nseries0,dimFlag)];
+    %Proceed through code with custom equation
+    FLAGS.model = 4;
+elseif FLAGS.model == 4
+    % Load the custom equation matrix if using a custom algebraic model
+    % SEE: CustomEquationMatrixTemplate.csv
     customMatrix = out.customMatrix;
     customMatrix = [customMatrix; ones(nseries0,dimFlag)];
 else
