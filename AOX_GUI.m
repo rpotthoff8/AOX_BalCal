@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 06-Dec-2019 16:31:06
+% Last Modified by GUIDE v2.5 07-Dec-2019 18:15:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -78,7 +78,7 @@ guidata(hObject, handles);
 fileName = [CurrentPath,filesep,'default.ini'];
 
 actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
-
+handles.termInclude=zeros(10,1); %Initialize for sub gui
 if exist(fileName,'file')
     try
         load(fileName,'-mat');
@@ -152,7 +152,8 @@ if exist(fileName,'file')
         set(handles.customPath,'String',default.customPath);
         set(handles.balanceType,'Value',default.balanceType);
         set(handles.balanceType_list,'Value',default.balanceType_list);
-        modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
+        set(handles.termSelect,'Value',default.termSelect);
+        set(handles.termSelectButton,'Tooltip',default.termInclude);
         
         set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
@@ -182,7 +183,7 @@ if exist(fileName,'file')
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
 end
-
+modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
 uiwait(handles.figure1);
 
 
@@ -281,6 +282,21 @@ switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
     case 'balanceType'
         outStruct.model=5;
         outStruct.balanceEqn=get(handles.balanceType_list,'Value');
+    case 'termSelect'
+        outStruct.model=6;
+        outStruct.termInclude=zeros(10,1);
+        terms=handles.termSelectButton.Tooltip;
+        termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G| ,', ' |F|*G, ', ' F*F*F, ', ' |F*F*F| '};
+        outStruct.termInclude(1)=contains(terms,termList{1});
+        outStruct.termInclude(2)=contains(terms,termList{2});
+        outStruct.termInclude(3)=contains(terms,termList{3});
+        outStruct.termInclude(4)=contains(terms,termList{4});
+        outStruct.termInclude(5)=contains(terms,termList{5});
+        outStruct.termInclude(6)=contains(terms,termList{6});
+        outStruct.termInclude(7)=contains(terms,termList{7});
+        outStruct.termInclude(8)=contains(terms,termList{8});
+        outStruct.termInclude(9)=contains(terms,termList{9});
+        outStruct.termInclude(10)=contains(terms,termList{10});
 end
 
 outStruct.grbf = 1 + get(handles.grbf,'Value');
@@ -484,6 +500,12 @@ if (handles.balanceType.Value == 1)
 else
     set(handles.balanceType_list, 'Enable', 'off');
 end
+if (handles.termSelect.Value==1)
+    set(handles.termSelectButton, 'Enable', 'on');
+else
+    set(handles.termSelectButton, 'Enable', 'off');
+end
+
 
 % --- Executes on button press in cancelbutton.
 function cancelbutton_Callback(hObject, eventdata, handles)
@@ -1323,7 +1345,8 @@ default.custom = get(handles.custom,'Value');
 default.customPath = get(handles.customPath,'String');
 default.balanceType = get(handles.balanceType,'Value');
 default.balanceType_list=get(handles.balanceType_list, 'Value');
-
+default.termSelect=get(handles.termSelect,'Value');
+default.termInclude=handles.termSelectButton.Tooltip;
 default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
@@ -2260,3 +2283,17 @@ function balanceType_list_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in termSelectButton.
+function termSelectButton_Callback(hObject, eventdata, handles)
+% hObject    handle to termSelectButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+set(handles.runbutton,'Enable','off');
+set(handles.cancelbutton,'Enable','off');
+termSelectOut=termSelect_GUI(handles.termSelectButton.Tooltip);
+set(handles.termSelectButton,'TooltipString',termSelectOut.termInclude);
+set(handles.runbutton,'Enable','on');
+set(handles.cancelbutton,'Enable','on');
+

@@ -103,9 +103,14 @@ nseries0 = length(s_1st0);
 % Loads:
 % loadlabes, voltlabels (if they exist)
 % loadCapacities, natzeros, targetMatrix0, excessVec0, series0
-
-
-if FLAGS.model==5 
+if FLAGS.model==6 %If user has selected a custom model
+    termInclude=out.termInclude;
+    %Assemble custom matrix
+    customMatrix=customMatrix_builder(dimFlag,termInclude);
+    customMatrix = [customMatrix; ones(nseries0,dimFlag)];
+    %Proceed through code with custom equation
+    FLAGS.model = 4;
+elseif FLAGS.model==5 
     %Build bustom equation matrix based on the balance type selected
     balanceType=out.balanceEqn;    
     %Select the terms to be included
