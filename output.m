@@ -360,11 +360,11 @@ if strcmp(section,{'Calibration Algebraic'})==1
 
         %Output recommended custom equation
         if FLAGS.Rec_Model==1
-            filename = 'DIRECT_RECOMM_CustomEquationMatrix.csv';
+            filename = 'DIRECT_RECOMM_EquationMatrix.csv';
             fullpath=fullfile(output_location,filename);
             [leftColumn,topRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
             recTable=array2table(RECOMM_ALG_EQN,'VariableNames',topRow,'RowNames',leftColumn(:));
-            description='DIRECT METHOD ANOVA RECOMMENDED CUSTOM EQUATION MATRIX';
+            description='DIRECT METHOD ANOVA RECOMMENDED EQUATION MATRIX';
             try
                 writetable(recTable,fullpath,'WriteRowNames',true);
                 fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
@@ -378,11 +378,11 @@ if strcmp(section,{'Calibration Algebraic'})==1
         end
 
         if FLAGS.custom_eqn_iter==1
-            filename = 'STABLE_DIRECT_RECOMM_CustomEquationMatrix.csv';
+            filename = 'STABLE_DIRECT_RECOMM_EquationMatrix.csv';
             fullpath=fullfile(output_location,filename);
             [leftColumn,topRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
             recTable=array2table(RECOMM_ALG_EQN_STABLE,'VariableNames',topRow,'RowNames',leftColumn(:));
-            description='DIRECT METHOD ANOVA RECOMMENDED CUSTOM EQUATION MATRIX';
+            description='DIRECT METHOD ANOVA RECOMMENDED EQUATION MATRIX';
             try
                 writetable(recTable,fullpath,'WriteRowNames',true);
                 fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
