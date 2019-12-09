@@ -286,7 +286,7 @@ switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
         outStruct.model=6;
         outStruct.termInclude=zeros(10,1);
         terms=handles.termSelectButton.Tooltip;
-        termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G| ,', ' |F|*G, ', ' F*F*F, ', ' |F*F*F| '};
+        termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G|, ', ' |F|*G, ', ' F*F*F, ', ' |F*F*F| '};
         outStruct.termInclude(1)=contains(terms,termList{1});
         outStruct.termInclude(2)=contains(terms,termList{2});
         outStruct.termInclude(3)=contains(terms,termList{3});

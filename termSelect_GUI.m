@@ -62,7 +62,7 @@ guidata(hObject, handles);
 
 %Terms are listed in following order:
 % F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|
-termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G| ,', ' |F|*G, ', ' F*F*F, ', ' |F*F*F| '};
+termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G|, ', ' |F|*G, ', ' F*F*F, ', ' |F*F*F| '};
 % Update terms with defaults
 if isempty(varargin)==0
     defaultTerms=varargin{1};
