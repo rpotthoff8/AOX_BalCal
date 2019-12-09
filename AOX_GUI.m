@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 23-Sep-2019 15:44:48
+% Last Modified by GUIDE v2.5 07-Dec-2019 18:15:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -78,7 +78,7 @@ guidata(hObject, handles);
 fileName = [CurrentPath,filesep,'default.ini'];
 
 actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
-
+handles.termInclude=zeros(10,1); %Initialize for sub gui
 if exist(fileName,'file')
     try
         load(fileName,'-mat');
@@ -150,9 +150,10 @@ if exist(fileName,'file')
         set(handles.linear,'Value',default.linear);
         set(handles.custom,'Value',default.custom);
         set(handles.customPath,'String',default.customPath);
-        if default.custom
-            modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
-        end
+        set(handles.balanceType,'Value',default.balanceType);
+        set(handles.balanceType_list,'Value',default.balanceType_list);
+        set(handles.termSelect,'Value',default.termSelect);
+        set(handles.termSelectButton,'Tooltip',default.termInclude);
         
         set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
@@ -160,9 +161,6 @@ if exist(fileName,'file')
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
         grbf_Callback(handles.grbf, eventdata, handles);
         
-        set(handles.Volt_FLAGcheck,'Value',default.Volt_FLAGcheck);
-        set(handles.voltTrust,'String',default.voltTrust);
-        Volt_FLAGcheck_Callback(handles.Volt_FLAGcheck, eventdata, handles);
         set(handles.anova_FLAGcheck,'Value',default.anova);
         anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
         
@@ -185,7 +183,7 @@ if exist(fileName,'file')
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
 end
-
+modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
 uiwait(handles.figure1);
 
 
@@ -281,13 +279,29 @@ switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
         outStruct.model = 4;
         customPath = get(handles.customPath,'String');
         outStruct.customMatrix = csvread(customPath,1,1);
+    case 'balanceType'
+        outStruct.model=5;
+        outStruct.balanceEqn=get(handles.balanceType_list,'Value');
+    case 'termSelect'
+        outStruct.model=6;
+        outStruct.termInclude=zeros(10,1);
+        terms=handles.termSelectButton.Tooltip;
+        termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G|, ', ' |F|*G, ', ' F*F*F, ', ' |F*F*F| '};
+        outStruct.termInclude(1)=contains(terms,termList{1});
+        outStruct.termInclude(2)=contains(terms,termList{2});
+        outStruct.termInclude(3)=contains(terms,termList{3});
+        outStruct.termInclude(4)=contains(terms,termList{4});
+        outStruct.termInclude(5)=contains(terms,termList{5});
+        outStruct.termInclude(6)=contains(terms,termList{6});
+        outStruct.termInclude(7)=contains(terms,termList{7});
+        outStruct.termInclude(8)=contains(terms,termList{8});
+        outStruct.termInclude(9)=contains(terms,termList{9});
+        outStruct.termInclude(10)=contains(terms,termList{10});
 end
 
 outStruct.grbf = 1 + get(handles.grbf,'Value');
 outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 
-outStruct.voltFlag = get(handles.Volt_FLAGcheck,'Value');
-outStruct.voltTrust = str2num(get(handles.voltTrust,'String'));
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 outStruct.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
@@ -474,13 +488,24 @@ function modelPanel_SelectionChangeFcn(hObject, eventdata, handles)
 %	OldValue: handle of the previously selected object or empty if none was selected
 %	NewValue: handle of the currently selected object
 % handles    structure with handles and user data (see GUIDATA)
-if (hObject == handles.custom)
+if (handles.custom.Value == 1)
     set(handles.customPath, 'Enable', 'on');
     set(handles.customFind, 'Enable', 'on');
 else
     set(handles.customPath, 'Enable', 'off');
     set(handles.customFind, 'Enable', 'off');
 end
+if (handles.balanceType.Value == 1)
+    set(handles.balanceType_list, 'Enable', 'on');
+else
+    set(handles.balanceType_list, 'Enable', 'off');
+end
+if (handles.termSelect.Value==1)
+    set(handles.termSelectButton, 'Enable', 'on');
+else
+    set(handles.termSelectButton, 'Enable', 'off');
+end
+
 
 % --- Executes on button press in cancelbutton.
 function cancelbutton_Callback(hObject, eventdata, handles)
@@ -1318,14 +1343,15 @@ default.truncated = get(handles.truncated,'Value');
 default.linear = get(handles.linear,'Value');
 default.custom = get(handles.custom,'Value');
 default.customPath = get(handles.customPath,'String');
-
+default.balanceType = get(handles.balanceType,'Value');
+default.balanceType_list=get(handles.balanceType_list, 'Value');
+default.termSelect=get(handles.termSelect,'Value');
+default.termInclude=handles.termSelectButton.Tooltip;
 default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
 
-default.Volt_FLAGcheck=get(handles.Volt_FLAGcheck,'Value');
-default.voltTrust=get(handles.voltTrust,'String');
 default.anova = get(handles.anova_FLAGcheck,'Value');
 default.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
@@ -2011,41 +2037,6 @@ if FileName ~= 0
 end
 
 
-function voltTrust_Callback(hObject, eventdata, handles)
-% hObject    handle to voltTrust (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of voltTrust as text
-%        str2double(get(hObject,'String')) returns contents of voltTrust as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function voltTrust_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to voltTrust (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in Volt_FLAGcheck.
-function Volt_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to Volt_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value') == 1
-    set(handles.voltTrust,'Enable','on');
-else
-    set(handles.voltTrust,'Enable','off');
-end
-% Hint: get(hObject,'Value') returns toggle state of Volt_FLAGcheck
-
-
 % --- Executes on button press in anova_FLAGcheck.
 function anova_FLAGcheck_Callback(hObject, eventdata, handles)
 % hObject    handle to anova_FLAGcheck (see GCBO)
@@ -2269,3 +2260,40 @@ function input_save_FLAG_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of input_save_FLAG
+
+
+% --- Executes on selection change in balanceType_list.
+function balanceType_list_Callback(hObject, eventdata, handles)
+% hObject    handle to balanceType_list (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns balanceType_list contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from balanceType_list
+
+
+% --- Executes during object creation, after setting all properties.
+function balanceType_list_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to balanceType_list (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in termSelectButton.
+function termSelectButton_Callback(hObject, eventdata, handles)
+% hObject    handle to termSelectButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+set(handles.runbutton,'Enable','off');
+set(handles.cancelbutton,'Enable','off');
+termSelectOut=termSelect_GUI(handles.termSelectButton.Tooltip);
+set(handles.termSelectButton,'TooltipString',termSelectOut.termInclude);
+set(handles.runbutton,'Enable','on');
+set(handles.cancelbutton,'Enable','on');
+
