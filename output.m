@@ -304,19 +304,17 @@ end
 
 %% Algebraic Calibration Specific Outputs
 if strcmp(section,{'Calibration Algebraic'})==1
-
+    Term_Names=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
     %Prints coefficients to csv file
     if FLAGS.excel == 1
         filename = 'AOX_ALG_MODEL_COEFFICIENT_MATRIX.csv';
-        input=[coeff;zeros(1,dimFlag)];
-        precision='%.16f';
         description='CALIBRATION ALGEBRAIC MODEL COEFFICIENT MATRIX';
-        print_dlmwrite(filename,input,precision,description,output_location);
+        print_coeff(filename,coeff,description,Term_Names,loadlist,output_location)
     end
 
     %%% ANOVA Stats AJM 6_12_19
     if FLAGS.anova==1
-        Term_Names=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
+        
         RECOMM_ALG_EQN=anova_output(ANOVA,nterms,nseries0,numpts,dimFlag,'CALIB ALG',output_location,Term_Names,loadlist,tR2,gee);
         
         %Output recommended custom equation
@@ -537,14 +535,14 @@ end
 
 %% GRBF Calibration Specific Outputs
 if strcmp(section,{'Calibration GRBF'})==1 
-    
+    Term_Names=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages',numBasis); %Get label names for custom equation matrix
+
     if FLAGS.excel == 1
         %Prints coefficients to csv file
         filename = 'AOX_ALG-GRBF_MODEL_COEFFICIENT_MATRIX.csv';
-        input=[coeff_algRBFmodel;zeros(1,dimFlag)];
-        precision='%.16f';
         description='CALIBRATION GRBF MODEL ALGEBRAIC COEFFICIENT MATRIX';
-        print_dlmwrite(filename,input,precision,description,output_location);
+        print_coeff(filename,coeff_algRBFmodel,description,Term_Names,loadlist,output_location)
+
         
         %Output calibration load approximation
         filename = 'CALIB GRBF Tare Corrected Load Approximation.csv';
@@ -598,7 +596,6 @@ if strcmp(section,{'Calibration GRBF'})==1
 
         %%% ANOVA Stats AJM 6_12_19
     if FLAGS.anova==1
-        Term_Names=customMatrix_labels(loadlist,voltagelist,dimFlag,FLAGS.model,'voltages',numBasis); %Get label names for custom equation matrix
         anova_output(ANOVA_GRBF,nterms,nseries0,numpts,dimFlag,'CALIB GRBF',output_location,Term_Names,loadlist,tR2,gee);
    end
     %%% ANOVA Stats AJM 6_8_19
@@ -679,4 +676,23 @@ function [RECOMM_ALG_EQN]=anova_output(ANOVA,nterms,nseries0,numpts,dimFlag,sect
             fprintf('\n')
         end
         warning('on',  'MATLAB:DELETE:Permission'); warning('on', 'MATLAB:xlswrite:AddSheet'); warning('on', 'MATLAB:DELETE:FileNotFound')
+end
+
+
+function []=print_coeff(filename,coeff_input,description,termList,loadlist,output_location)
+%Function prints coefficients to csv file.  Error handling
+%included to catch if the file is open and unable to write
+fullpath=fullfile(output_location,filename);
+try
+    top_row=[{'Term Name'},loadlist]; %Top label row
+    full_out=[top_row; termList, num2cell(coeff_input)]; %full output
+    writetable(cell2table(full_out),fullpath,'writevariablenames',0); %write to csv
+    fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
+catch ME
+    fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
+    if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess')) || (strcmp(ME.identifier,'MATLAB:table:write:FileOpenError'))
+        fprintf('ENSURE "'); fprintf(char(filename));fprintf('" IS NOT OPEN AND TRY AGAIN')
+    end
+    fprintf('\n')
+end
 end
