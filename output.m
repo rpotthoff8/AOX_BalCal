@@ -1,7 +1,7 @@
 %Function creates all the outputs for the calibration, algebraic section
 %This simplifies following the main code
 
-function [] = output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID,series2,output_location,REPORT_NO,uniqueOut)
+function [] = output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series,excessVec0,dimFlag,voltagelist,reslist,numBasis,pointID,series2,output_location,REPORT_NO,algebraic_model,uniqueOut)
 %Split uniqueOut structure into individual variables
 names = fieldnames(uniqueOut);
 for i=1:length(names)
@@ -50,8 +50,7 @@ if FLAGS.print == 1 || FLAGS.disp==1
     else
         Header_cells{5,1}='Calibration Outliers Removed: FALSE';
     end
-    algebraic_models=[{'FULL'},{'TRUNCATED'},{'LINEAR'},{'CUSTOM'}];
-    Header_cells{6,1}=char(strcat('Algebraic Model Used:',{' '},algebraic_models(FLAGS.model)));
+    Header_cells{6,1}=char(strcat('Algebraic Model Used:',{' '},algebraic_model));
     Header_cells{7,1}=char(strcat('Number of Datapoints:',{' '},string(numpts)));
     if FLAGS.balCal == 2
         Header_cells{8,1}='GRBF Addition Performed: TRUE';

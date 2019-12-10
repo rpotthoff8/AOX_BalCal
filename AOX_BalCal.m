@@ -107,8 +107,10 @@ if FLAGS.model==6 %If user has selected a custom model
     %Assemble custom matrix
     customMatrix=customMatrix_builder(dimFlag,termInclude);
     customMatrix = [customMatrix; ones(nseries0,dimFlag)];
+    
     %Proceed through code with custom equation
     FLAGS.model = 4;
+    algebraic_model={'CUSTOM'};
 elseif FLAGS.model==5 
     %Build bustom equation matrix based on the balance type selected
     balanceType=out.balanceEqn;    
@@ -116,26 +118,36 @@ elseif FLAGS.model==5
     %Terms are listed in following order:
     % F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|
     termInclude=zeros(10,1);
-    if balanceType==1 %contains(balanceType,'1-A')
+    if balanceType==1 
         termInclude([1,3,5])=1;
-    elseif balanceType==2 %contains(balanceType,'1-B')
+        algebraic_model={'TRUNCATED (BALANCE TYPE 1-A)'};
+    elseif balanceType==2 
         termInc5lude([1,3,5,9])=1;
-    elseif balanceType==3 %contains(balanceType,'1-C')
+        algebraic_model={'BALANCE TYPE 1-B'};
+    elseif balanceType==3 
         termInclude([1,5])=1;
-    elseif balanceType==4 %contains(balanceType,'1-D')
+        algebraic_model={'BALANCE TYPE 1-C'};
+    elseif balanceType==4 
         termInclude([1,3])=1;
-    elseif balanceType==5 %contains(balanceType,'2-A')
+        algebraic_model={'BALANCE TYPE 1-D'};
+    elseif balanceType==5 
         termInclude([1,2,3,5])=1;
-    elseif balanceType==6 %contains(balanceType,'2-B')
+        algebraic_model={'BALANCE TYPE 2-A'};
+    elseif balanceType==6 
         termInclude([1,2,3,4,5])=1;
-    elseif balanceType==7 %contains(balanceType,'2-C')
+        algebraic_model={'BALANCE TYPE 2-B'};
+    elseif balanceType==7 
         termInclude(1:8)=1;
-    elseif balanceType==8 %contains(balanceType,'2-D')
+        algebraic_model={'BALANCE TYPE 2-C'};
+    elseif balanceType==8 
         termInclude(1:10)=1;
-    elseif balanceType==9 %contains(balanceType,'2-E')
+        algebraic_model={'FULL (BALANCE TYPE 2-D)'};
+    elseif balanceType==9 
         termInclude([1,2,4,5])=1;
-    elseif balanceType==10 %contains(balanceType,'2-F')
+        algebraic_model={'BALANCE TYPE 2-E'};
+    elseif balanceType==10
         termInclude([1,2,5])=1;
+        algebraic_model={'BALANCE TYPE 2-F'};
     end
     %Assemble custom matrix
     customMatrix=customMatrix_builder(dimFlag,termInclude);
@@ -147,8 +159,16 @@ elseif FLAGS.model == 4
     % SEE: CustomEquationMatrixTemplate.csv
     customMatrix = out.customMatrix;
     customMatrix = [customMatrix; ones(nseries0,dimFlag)];
+    algebraic_model={'CUSTOM'};
 else
     customMatrix = 1;
+    if FLAGS.model == 3
+        algebraic_model={'FULL (BALANCE TYPE 2-D)'};
+    elseif FLAGS.model == 2
+        algebraic_model={'TRUNCATED (BALANCE TYPE 1-A)'};
+    elseif FLAGS.model == 1
+        algebraic_model={'LINEAR'};
+    end
 end
 
 % Load data labels if present, otherwise use default values.
@@ -380,7 +400,7 @@ uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
 
 output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,...
     tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,...
-    reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,uniqueOut)
+    reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
 
 %END CALIBRATION ALGEBRAIC SECTION
 %%
@@ -544,7 +564,7 @@ count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have bee
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,...
         taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,...
-        reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,uniqueOut)
+        reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
 
 end
 %END CALIBRATION GRBF SECTION
@@ -626,7 +646,7 @@ if FLAGS.balVal == 1
     section={'Validation Algebraic'};
     output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
         taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,dimFlag,voltagelist,...
-        reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,uniqueOut)
+        reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
 
     %END VALIDATION ALGEBRAIC SECTION
 
@@ -678,7 +698,7 @@ if FLAGS.balVal == 1
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
             taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,dimFlagvalid,voltagelist,...
-            reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,uniqueOut)
+            reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
     end
     %END GRBF SECTION FOR VALIDATION
 end
