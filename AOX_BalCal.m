@@ -436,12 +436,8 @@ if FLAGS.balCal == 2
     maxPer=1; %Max per for 2000 RBFs
 
 count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have been placed at each location
-maxVIF_RBF=zeros(numBasis,dimFlag);
-maxVIF_all=zeros(numBasis,dimFlag);
     for u=1:numBasis
         for s=1:dimFlag
-            vif_good=0;
-            while vif_good==0
             targetRes2_find=targetRes2;
             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
             [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
@@ -455,25 +451,6 @@ maxVIF_all=zeros(numBasis,dimFlag);
 
             rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
             rbfINminGZ(:,u,s)=rbfINminGZ(:,u,s)-mean(rbfINminGZ(:,u,s)); %Bias is mean of RBF
-            
-            VIF_check=0;
-            if VIF_check==1
-                
-                %VIF checking
-                %             VIF_RBF=vif(rbfINminGZ(:,1:u,s));
-                VIF_all=vif([comIN0,rbfINminGZ(:,1:u,s)]);
-                %             maxVIF_RBF(u,s)=max(VIF_RBF);
-                maxVIF_all(u,s)=max(VIF_all);
-                
-                if max(VIF_all)>10
-                    fprintf('VIF error, refinding RBF #'); fprintf(num2str(u)); fprintf(', Channel '); fprintf(num2str(s)); fprintf('\n');
-                else
-                    vif_good=1;
-                end
-            else
-                vif_good=1;
-            end
-            end
         end
 
         %Make custom Matrix to solve for only RBF coefficinets in correct channel
@@ -761,27 +738,4 @@ fprintf('\n \n');
 
 if isdeployed % Optional, use if you want the non-deployed version to exit immediately
     input('Press enter to finish and close');
-end
-
-function VIF = vif(X)
-warning('off','MATLAB:nearlySingularMatrix');
-[~,k] = size(X);
-VIF = zeros(k,1);
-for j = 1:k
-    y = X(:,j);
-    X_j = X; X_j(:,j) = []; %x_vif = [ones(n_data,1),x_vif];
-    H = X_j*inv(X_j'*X_j)*X_j';
-
-    y_bar = mean(y);
-    y_hat = H*y;
-
-    SSE = sum((y-y_hat).^2);
-    SST = sum((y-y_bar).^2);
-
-    R_sq = 1 - SSE/SST;
-    VIF(j,1) = 1/(1-R_sq);
-end
-
-%% Turn warnings back on
-warning('on','all');
 end
