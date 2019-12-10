@@ -55,7 +55,7 @@ end
 if nargin>=6
     if numRBF>0
         channel=repmat([1:dimFlag]',numRBF,1);
-        rbf_leftColumn=cellstr([repmat('ch ',numRBF*dimFlag,1), num2str(channel), repmat(' RBF ',numRBF*dimFlag,1), num2str(repelem([1:numRBF]',dimFlag,1))]);
+        rbf_leftColumn=cellstr(strcat(toplist(channel)', repmat(' RBF ',numRBF*dimFlag,1), num2str(repelem([1:numRBF]',dimFlag,1))));
         leftColumn=[leftColumn;rbf_leftColumn];
     end
 end

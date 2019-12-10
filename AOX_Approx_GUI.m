@@ -782,10 +782,17 @@ if exist('coeff','var') == 1 && exist('ANOVA','var')==1 && exist('loadlist','var
     end
     loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
     
-    if exist('cHist','var')==1 && exist('center_daHist','var')==1 && exist('epsHist','var')==1 && exist('h_GRBF','var')==1
+    if exist('coeff_algRBFmodel','var')==1 && exist('center_daHist','var')==1 && exist('epsHist','var')==1 && exist('h_GRBF','var')==1 && exist('ANOVA_GRBF','var')==1
         set(handles.grbf,'Enable','on');
         grbf_message=strcat(num2str(size(epsHist,1)), ' GRBFs per channel');
         set(handles.GRBF_text,'String',grbf_message, 'ForegroundColor','blue');
+        if isfield(ANOVA_GRBF,'PI')==1
+            set(handles.loadPI_FLAGcheck,'Enable','on');
+            set(handles.PI_text,'String','');
+        else
+            set(handles.loadPI_FLAGcheck,'Enable','off','Value',0);
+            set(handles.PI_text,'String','ANOVA NOT FOUND IN CALIBRATION FILE');
+        end
     else
         set(handles.grbf,'Enable','off','Value',0);
         set(handles.GRBF_text,'String','GRBFS NOT FOUND IN CALIBRATION FILE','ForegroundColor','red');

@@ -6,9 +6,9 @@
 %   AOX_Approx_GUI.fig
 %   AOX_approx_funct.m
 %   balCal_algEqns.m
-%   calc_alg_PI.m
+%   calc_PI.m
 %   print_approxcsv.m
-%   place_GRBF.m
+%   create_comIN_RBF.m
 
 %%
 %initialize the workspace
@@ -46,9 +46,10 @@ output_location=out.output_location;
 
 if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
     GRBF.epsHist=epsHist;
-    GRBF.cHist=cHist;
+    GRBF.coeff_algRBFmodel=coeff_algRBFmodel;
     GRBF.center_daHist=center_daHist;
     GRBF.h_GRBF=h_GRBF;
+    GRBF.ANOVA=ANOVA_GRBF;
 else
     GRBF='GRBFS NOT PLACED';
 end
