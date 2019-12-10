@@ -1,4 +1,4 @@
-function [loadPI]=calc_alg_PI(ANOVA,pct,comIN,aprxIN)
+function [loadPI]=calc_PI(ANOVA,pct,comIN,aprxIN)
 %Function computes the load prediction interval from the ANOVA results and
 %user specified % confidence level
 
