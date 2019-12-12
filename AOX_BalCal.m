@@ -162,11 +162,11 @@ elseif FLAGS.model == 4
     algebraic_model={'CUSTOM'};
 else
     customMatrix = 1;
-    if FLAGS.model == 3
+    if FLAGS.model == 1
         algebraic_model={'FULL (BALANCE TYPE 2-D)'};
     elseif FLAGS.model == 2
         algebraic_model={'TRUNCATED (BALANCE TYPE 1-A)'};
-    elseif FLAGS.model == 1
+    elseif FLAGS.model == 3
         algebraic_model={'LINEAR'};
     end
 end
