@@ -1,8 +1,5 @@
-%balanceCalibration_with_RBF_8D.m
 %requires "balCal_meritFunction.m" to run
-%input file: "BuffetBalance-CalDataOfOct2015-3F3M.csv"
-%output file: "balCal_output_ALGB.xls"
-%output file: "balCal_output_GRBF.xls"
+
 %%
 %initialize the workspace
 clc;
@@ -111,38 +108,38 @@ if FLAGS.model==6 %If user has selected a custom model
     %Proceed through code with custom equation
     FLAGS.model = 4;
     algebraic_model={'CUSTOM'};
-elseif FLAGS.model==5 
+elseif FLAGS.model==5
     %Build bustom equation matrix based on the balance type selected
-    balanceType=out.balanceEqn;    
+    balanceType=out.balanceEqn;
     %Select the terms to be included
     %Terms are listed in following order:
     % F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|
     termInclude=zeros(10,1);
-    if balanceType==1 
+    if balanceType==1
         termInclude([1,3,5])=1;
         algebraic_model={'TRUNCATED (BALANCE TYPE 1-A)'};
-    elseif balanceType==2 
+    elseif balanceType==2
         termInc5lude([1,3,5,9])=1;
         algebraic_model={'BALANCE TYPE 1-B'};
-    elseif balanceType==3 
+    elseif balanceType==3
         termInclude([1,5])=1;
         algebraic_model={'BALANCE TYPE 1-C'};
-    elseif balanceType==4 
+    elseif balanceType==4
         termInclude([1,3])=1;
         algebraic_model={'BALANCE TYPE 1-D'};
-    elseif balanceType==5 
+    elseif balanceType==5
         termInclude([1,2,3,5])=1;
         algebraic_model={'BALANCE TYPE 2-A'};
-    elseif balanceType==6 
+    elseif balanceType==6
         termInclude([1,2,3,4,5])=1;
         algebraic_model={'BALANCE TYPE 2-B'};
-    elseif balanceType==7 
+    elseif balanceType==7
         termInclude(1:8)=1;
         algebraic_model={'BALANCE TYPE 2-C'};
-    elseif balanceType==8 
+    elseif balanceType==8
         termInclude(1:10)=1;
         algebraic_model={'FULL (BALANCE TYPE 2-D)'};
-    elseif balanceType==9 
+    elseif balanceType==9
         termInclude([1,2,4,5])=1;
         algebraic_model={'BALANCE TYPE 2-E'};
     elseif balanceType==10
@@ -257,12 +254,12 @@ targetRes = targetMatrix0-aprxIN;
 % Identify Outliers After Filtering
 % (Threshold approach)
 if FLAGS.balOut == 1
-
+    
     %Identify outliers based on residuals
     fprintf('\n Identifying Outliers....')
-
+    
     [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut] = ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS);
-
+    
     newStruct = struct('num_outliers',num_outliers,...
         'prcnt_outliers',prcnt_outliers,...
         'rowOut',rowOut,...
@@ -270,9 +267,9 @@ if FLAGS.balOut == 1
         'numSTD',numSTD);
     uniqueOut = cell2struct([struct2cell(uniqueOut);struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-
+    
     fprintf('Complete\n')
-
+    
     % Use the reduced input and target files
     if FLAGS.zeroed == 1
         fprintf('\n Removing Outliers....')
@@ -288,21 +285,21 @@ if FLAGS.balOut == 1
         [~,s_1st0,~] = unique(series0);
         nseries0 = length(s_1st0);
         fprintf('Complete\n')
-
+        
         %Calculate xcalib (coefficients)
         [xcalib,ANOVA] = calc_xcalib(comIN0,targetMatrix0,series0,...
             nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
-
+        
         %%% Balfit Stats and Regression Coeff Matrix
         [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,...
             nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT');
         %%% Balfit Stats and Matrix
-
+        
         % APPROXIMATION
         % define the approximation for inputs minus global zeros (includes
         % intercept terms)
         aprxIN = comIN0*xcalib;
-
+        
         % RESIDUAL
         targetRes = targetMatrix0-aprxIN;
     end
@@ -319,23 +316,23 @@ if FLAGS.custom_eqn_iter==1
     for i=1:dimFlag
         customMatrix_iter(1:nterms,i)=ANOVA_iter(i).sig(1:nterms);
     end
-
+    
     samRec=0;
     iter_count=0;
     while samRec==0
         iter_count=iter_count+1;
         fprintf('\n Searching for stable recommended equation. Iteration '); fprintf(string(iter_count)); fprintf('\n');
         customMatrix_last=customMatrix_iter;
-
+        
         [~,ANOVA_iter] = calc_xcalib(comIN0,targetMatrix0,series0,...
             nterms,nseries0,dimFlag,FLAGS_iter,customMatrix_iter,anova_pct,loadlist,'Direct');
         for i=1:dimFlag
             customMatrix_iter(1:nterms,i)=ANOVA_iter(i).sig(1:nterms);
         end
-
+        
         samRec=isequal(customMatrix_last,customMatrix_iter);
-
-
+        
+        
     end
     RECOMM_ALG_EQN_STABLE=customMatrix_iter(1:nterms,:);
     newStruct = struct('RECOMM_ALG_EQN_STABLE',RECOMM_ALG_EQN_STABLE);
@@ -403,6 +400,89 @@ output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,...
     reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
 
 %END CALIBRATION ALGEBRAIC SECTION
+
+%%
+if FLAGS.balVal == 1
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %                       VALIDATION - ALGEBRAIC SECTION                        %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %Initialize structure for unique outputs for section
+    uniqueOut=struct();
+    
+    load(out.savePathval,'-mat');
+    [validSeries,s_1stV,~] = unique(seriesvalid);
+    
+    % num of data points
+    numptsvalid = length(seriesvalid);
+    dimFlagvalid = length(excessVecvalid(1,:));
+    
+    %find the average natural zeros (also called global zeros)
+    globalZerosvalid = mean(natzerosvalid,1);
+    
+    %load capacities
+    loadCapacitiesvalid(loadCapacitiesvalid == 0) = realmin;
+    
+    %find number of series0; this will tell us the number of tares
+    nseriesvalid = max(seriesvalid);
+    
+    %find zero points of each series0 and number of points in a series0
+    %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
+    %section
+    globalZerosAllPointsvalid = ones(numptsvalid,1)*globalZerosvalid;
+    
+    % Subtract the Global Zeros from the Inputs and Local Zeros
+    dainputsvalid = excessVecvalid-globalZerosvalid;
+    
+    %%% 5/16/18
+    %Remember that  excessVec0 = excessVec0_complete - globalZerosAllPoints;
+    excessVecvalidkeep = excessVecvalid  - globalZerosAllPointsvalid;
+    %%%
+    
+    % Call the Algebraic Subroutine
+    comINvalid = balCal_algEqns(FLAGS.model,dainputsvalid,seriesvalid,0);
+    
+    %VALIDATION APPROXIMATION
+    %define the approximation for inputs minus global zeros
+    aprxINvalid = comINvalid*coeff;        %to find approximation, JUST USE COEFF FOR VALIDATION (NO ITERCEPTS)
+    
+    %%%%% 3/23/17 Zap intercepts %%%
+    aprxINminGZvalid = aprxINvalid;
+    checkitvalid = aprxINminGZvalid-targetMatrixvalid;
+    
+    % SOLVE FOR TARES BY TAKING THE MEAN
+    [taresAllPointsvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
+    taresvalid     = taresAllPointsvalid(s_1stV,:);
+    tares_STDEV_valid = taretalstdvalid(s_1stV,:);
+    
+    %Tare corrected approximation
+    aprxINminTAREvalid=aprxINminGZvalid-taresAllPointsvalid;
+    
+    %RESIDUAL
+    targetResvalid = targetMatrixvalid-aprxINminTAREvalid;
+    
+    %CALCULATE PREDICTION INTERVAL FOR POINTS
+    if FLAGS.loadPI==1
+        
+        [loadPI_valid]=calc_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
+        
+        newStruct=struct('loadPI_valid',loadPI_valid);
+        uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+    end
+    
+    %OUTPUT FUNCTION
+    %Function creates all outputs for validation, algebraic section
+    newStruct=struct('aprxINminTAREvalid',aprxINminTAREvalid);
+    uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+    section={'Validation Algebraic'};
+    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
+        taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,dimFlag,voltagelist,...
+        reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
+    
+end
+%END VALIDATION ALGEBRAIC SECTION
+
 %%
 if FLAGS.balCal == 2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -414,13 +494,13 @@ if FLAGS.balCal == 2
     %find centers by finding the index of max residual, using that index to
     %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
     %product of the resulting column vector
-
+    
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
-
+    
     targetRes2=targetRes;
     aprxINminGZ2 = aprxINminGZ;
-
+    
     %Initialize Variables
     aprxIN2_Hist = cell(numBasis,1);
     tareGRBFHist = cell(numBasis,1);
@@ -437,7 +517,7 @@ if FLAGS.balCal == 2
     resStdHist=zeros(numBasis,dimFlag);
     coeffRBF=zeros(numBasis,dimFlag);
     dist=zeros(size(dainputs0,1),size(dainputs0,1),size(dainputs0,2));
-
+    
     for i=1:size(dainputs0,2)
         dist(:,:,i)=dainputs0(:,i)'-dainputs0(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
     end
@@ -449,30 +529,30 @@ if FLAGS.balCal == 2
     h_GRBF=sqrt(max(min(R_square_find)));
     eps_min=0.1; %Fasshauer pg 234
     eps_max=1.0;
-
+    
     max_mult=5;
     maxPer=ceil(max_mult*numBasis/size(dainputs0,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
-%     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
+    %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     maxPer=1; %Max per for 2000 RBFs
-
-count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have been placed at each location
+    
+    count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have been placed at each location
     for u=1:numBasis
         for s=1:dimFlag
             targetRes2_find=targetRes2;
             targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
             [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
-
+            
             count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
-
+            
             eta(:,s)=R_square(:,centerIndexLoop(s));
-
+            
             %find widths 'w' by optimization routine
             eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
-
+            
             rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
             rbfINminGZ(:,u,s)=rbfINminGZ(:,u,s)-mean(rbfINminGZ(:,u,s)); %Bias is mean of RBF
         end
-
+        
         %Make custom Matrix to solve for only RBF coefficinets in correct channel
         if FLAGS.model==4
             customMatrix_RBF=[customMatrix(1:nterms,:);repmat(eye(dimFlag,dimFlag),u,1);customMatrix(nterms+1:end,:)];
@@ -507,7 +587,7 @@ count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have bee
         coeff_algRBFmodel_RBF=zeros(u,dimFlag);
         for i=1:u
             coeff_algRBFmodel_RBF(i,:)=diag(coeff_algRBFmodel_RBF_diag(1+dimFlag*(i-1):dimFlag*i,:));
-        end 
+        end
         
         %Store basis parameters in Hist variables
         epsHist(u,:) = eps;
@@ -519,23 +599,23 @@ count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have bee
             %Dim 2= Channel for voltage
             %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
         end
-
+        
         %update the approximation
         aprxIN2=comIN0_RBF*xcalib_RBF;
         aprxIN2_Hist{u} = aprxIN2;
-
+        
         taresGRBF = -xcalib_RBF(nterms+u*dimFlag+1:end,:);
         taretalRBF=taresGRBF(series0,:);
         aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
-        tareGRBFHist{u} = taresGRBF;        
+        tareGRBFHist{u} = taresGRBF;
         
         %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
         [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
         taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
-
+        
         %Calculate tare corrected load approximation
         aprxINminTARE2=aprxINminGZ2-taretalRBF;
-
+        
         %Calculate and store residuals
         targetRes2 = targetMatrix0-aprxINminTARE2;
         newRes2 = targetRes2'*targetRes2;
@@ -543,7 +623,7 @@ count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have bee
         resSquareHist(u,:) = resSquare2;
         resStdHist(u,:)=std(targetRes2);
     end
-
+    
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
@@ -565,99 +645,16 @@ count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have bee
     output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,...
         taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,...
         reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
-
-end
-%END CALIBRATION GRBF SECTION
-
-%%
-if FLAGS.balVal == 1
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %                       VALIDATION SECTION                                %
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Initialize structure for unique outputs for section
-    uniqueOut=struct();
-
-    load(out.savePathval,'-mat');
-    [validSeries,s_1stV,~] = unique(seriesvalid);
-
-    % num of data points
-    numptsvalid = length(seriesvalid);
-    dimFlagvalid = length(excessVecvalid(1,:));
-
-    %find the average natural zeros (also called global zeros)
-    globalZerosvalid = mean(natzerosvalid,1);
-
-    %load capacities
-    loadCapacitiesvalid(loadCapacitiesvalid == 0) = realmin;
-
-    %find number of series0; this will tell us the number of tares
-    nseriesvalid = max(seriesvalid);
-
-    %find zero points of each series0 and number of points in a series0
-    %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
-    %section
-    globalZerosAllPointsvalid = ones(numptsvalid,1)*globalZerosvalid;
-
-    % Subtract the Global Zeros from the Inputs and Local Zeros
-    dainputsvalid = excessVecvalid-globalZerosvalid;
-
-    %%% 5/16/18
-    %Remember that  excessVec0 = excessVec0_complete - globalZerosAllPoints;
-    excessVecvalidkeep = excessVecvalid  - globalZerosAllPointsvalid;
-    %%%
-
-    % Call the Algebraic Subroutine
-    comINvalid = balCal_algEqns(FLAGS.model,dainputsvalid,seriesvalid,0);
-
-    %VALIDATION APPROXIMATION
-    %define the approximation for inputs minus global zeros
-    aprxINvalid = comINvalid*coeff;        %to find approximation, JUST USE COEFF FOR VALIDATION (NO ITERCEPTS)
-
-    %%%%% 3/23/17 Zap intercepts %%%
-    aprxINminGZvalid = aprxINvalid;
-    checkitvalid = aprxINminGZvalid-targetMatrixvalid;
-
-    % SOLVE FOR TARES BY TAKING THE MEAN
-    [taresAllPointsvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
-    taresvalid     = taresAllPointsvalid(s_1stV,:);
-    tares_STDEV_valid = taretalstdvalid(s_1stV,:);
-
-    %Tare corrected approximation
-    aprxINminTAREvalid=aprxINminGZvalid-taresAllPointsvalid;
-
-    %RESIDUAL
-    targetResvalid = targetMatrixvalid-aprxINminTAREvalid;
-
-    %CALCULATE PREDICTION INTERVAL FOR POINTS
-    if FLAGS.loadPI==1
-
-        [loadPI_valid]=calc_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
-
-        newStruct=struct('loadPI_valid',loadPI_valid);
-        uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-    end
-
-    %OUTPUT FUNCTION
-    %Function creates all outputs for validation, algebraic section
-    newStruct=struct('aprxINminTAREvalid',aprxINminTAREvalid);
-    uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-    section={'Validation Algebraic'};
-    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
-        taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,dimFlag,voltagelist,...
-        reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
-
-    %END VALIDATION ALGEBRAIC SECTION
-
+    %END CALIBRATION GRBF SECTION
+    
     %%
-    if FLAGS.balCal == 2
+    if FLAGS.balVal == 1
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %                    RBF SECTION FOR VALIDATION                           %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %goal to use centers, width and coefficients to validate parameters against
         %independent data
-
+        
         %Initialize structure for unique outputs for section
         uniqueOut=struct();
         
@@ -702,7 +699,7 @@ if FLAGS.balVal == 1
     end
     %END GRBF SECTION FOR VALIDATION
 end
-%END VALIDATION SECTION
+%END GRBF SECTION
 
 %%
 if FLAGS.balApprox == 1
@@ -712,7 +709,7 @@ if FLAGS.balApprox == 1
     %
     %DEFINE THE PRODUCTION CSV INPUT FILE AND SELECT THE RANGE OF DATA VALUES TO READ
     load(out.savePathapp,'-mat');
-
+    
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
         GRBF.epsHist=epsHist;
         GRBF.coeff_algRBFmodel=coeff_algRBFmodel;
@@ -722,11 +719,11 @@ if FLAGS.balApprox == 1
     else
         GRBF='GRBFS NOT PLACED';
     end
-
+    
     %Function that performs all ANOVA calculations and outputs
     [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,...
         series2approx,pointIDapprox,loadlist,file_output_location,GRBF,ANOVA,anova_pct);
-
+    
 end
 %END APPROXIMATION SECTION
 
