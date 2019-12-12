@@ -1,5 +1,10 @@
-function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix, anova_pct, labels,method)
+function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix, anova_pct, labels,method,calc_channel)
 %Function calculates coefficient matrix (xcalib)
+% calc_channel is used as a flag to determine if coefficients in that
+% channel should be calculated, used for RBF self termination
+if exist('calc_channel','var')==0
+    calc_channel=ones(1,dimFlag);
+end
 
 %Orders data by series (needed for bootstrap)
 [series,sortI]=sort(series);
@@ -7,6 +12,7 @@ comIN=comIN(sortI,:);
 
 % Normalize the data for a better conditioned matrix
 scale = max(abs(comIN));
+scale(scale==0)=1; %To avoid NaN for channels where RBFs have self-terminated
 comIN = comIN./scale;
 
 targetMatrix=targetMatrix(sortI,:);
@@ -29,49 +35,50 @@ xcalib = zeros(nterms+nseries0,dimFlag);
 % This is to account for Custom Models, where the terms may be
 % different depending on the channel.
 for k = 1:dimFlag
-    comIN_k = comIN;
-    scale_k = scale;
-
-    if FLAGS.model == 4
-        comIN_k(:,customMatrix(:,k)==0) = [];
-        scale_k(customMatrix(:,k)==0) = [];
-    end
-
-    % SOLUTION
-    xcalib_k = comIN_k\targetMatrix(:,k);
-
-    % De-normalize the coefficients to be used with raw data
-    xcalib_k = xcalib_k./scale_k';
-
-    if FLAGS.model == 4
-        xcalib(customMatrix(:,k)==1,k) = xcalib_k;
-    else
-        xcalib(:,k) = xcalib_k;
-    end
-
-    %Call Anova
-    if FLAGS.anova==1
-        %test_FLAG used to 'turn off' VIF when iterating to recommended
-        %equation for time saving
-        if isfield(FLAGS,'test_FLAG')==0
-            FLAGS.test_FLAG=0;
+    if calc_channel(k)==1
+        comIN_k = comIN;
+        scale_k = scale;
+        
+        if FLAGS.model == 4
+            comIN_k(:,customMatrix(:,k)==0) = [];
+            scale_k(customMatrix(:,k)==0) = [];
         end
-
-        fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
-        ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
-
-        % There are several ANOVA metrics that also must be denormalized
-        ANOVA(k).beta    = ANOVA(k).beta./scale_k';
-        ANOVA(k).beta_CI = ANOVA(k).beta_CI./scale_k';
-
-        % Prediction interval calculation does not include tares, so scale
-        % vector has to be truncated
-        scale_PI = scale_k(1:end-nseries);
-        ANOVA(k).PI.invXtX = ANOVA(k).PI.invXtX./(scale_PI'*scale_PI);
-
-        fprintf('Complete\n')
+        
+        % SOLUTION
+        xcalib_k = comIN_k\targetMatrix(:,k);
+        
+        % De-normalize the coefficients to be used with raw data
+        xcalib_k = xcalib_k./scale_k';
+        
+        if FLAGS.model == 4
+            xcalib(customMatrix(:,k)==1,k) = xcalib_k;
+        else
+            xcalib(:,k) = xcalib_k;
+        end
+        
+        %Call Anova
+        if FLAGS.anova==1
+            %test_FLAG used to 'turn off' VIF when iterating to recommended
+            %equation for time saving
+            if isfield(FLAGS,'test_FLAG')==0
+                FLAGS.test_FLAG=0;
+            end
+            
+            fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
+            ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
+            
+            % There are several ANOVA metrics that also must be denormalized
+            ANOVA(k).beta    = ANOVA(k).beta./scale_k';
+            ANOVA(k).beta_CI = ANOVA(k).beta_CI./scale_k';
+            
+            % Prediction interval calculation does not include tares, so scale
+            % vector has to be truncated
+            scale_PI = scale_k(1:end-nseries);
+            ANOVA(k).PI.invXtX = ANOVA(k).PI.invXtX./(scale_PI'*scale_PI);
+            
+            fprintf('Complete\n')
+        end
     end
-
 end
 % fprintf('\n')
 
@@ -92,9 +99,9 @@ else
             ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);
             ANOVA_exp(j).PI.invXtX(customMatrix((1:nterms),j)==1,customMatrix((1:nterms),j)==1)=ANOVA(j).PI.invXtX;
         end
-
+        
         ANOVA=ANOVA_exp;
     end
-
+    
 end
 end

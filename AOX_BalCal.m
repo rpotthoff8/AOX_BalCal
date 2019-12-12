@@ -26,6 +26,11 @@ end
 FLAGS.balCal = out.grbf;
 %DEFINE THE NUMBER OF BASIS FUNCTIONS
 numBasis = out.basis;
+%SET SELF TERMINATE OPTION FOR RBFS
+FLAGS.valid_selfTerm=out.valid_selfTerm;
+if out.valid==0
+    FLAGS.valid_selfTerm=0;
+end
 %
 %SELECT ALGEBRAIC MODE                                      set FLAGS.model = 1 (full)
 %                                                                             2 (trunc)
@@ -194,6 +199,8 @@ end
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                  CALIBRATION - ALGEBRAIC SECTION                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+fprintf('\n ********** Starting Calibration Algebraic Calculations **********\n')
+
 %Initialize structure for unique outputs for section
 uniqueOut=struct();
 
@@ -229,7 +236,7 @@ balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
 balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,1);
 %%% Balfit Stats and Regression Coeff Matrix
 
-fprintf('\nStarting Calibration Calculations\n')
+
 
 %Creates vectors that will not have outliers removed for balfit
 series = series0;
@@ -406,6 +413,8 @@ if FLAGS.balVal == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                       VALIDATION - ALGEBRAIC SECTION                        %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    fprintf('\n ********** Starting Validation Algebraic Calculations **********\n')
+
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
     
@@ -459,6 +468,7 @@ if FLAGS.balVal == 1
     
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminTAREvalid;
+    std_targetResvalid=std(targetResvalid);
     
     %CALCULATE PREDICTION INTERVAL FOR POINTS
     if FLAGS.loadPI==1
@@ -495,6 +505,8 @@ if FLAGS.balCal == 2
     %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
     %product of the resulting column vector
     
+    fprintf('\n ********** Starting Calibration GRBF Calculations **********\n')
+
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
     
@@ -515,7 +527,7 @@ if FLAGS.balCal == 2
     center_daHist=zeros(numBasis,dimFlag,dimFlag);
     resSquareHist=zeros(numBasis,dimFlag);
     resStdHist=zeros(numBasis,dimFlag);
-    coeffRBF=zeros(numBasis,dimFlag);
+    comINvalid_RBF=zeros(size(dainputsvalid,1),numBasis*dimFlag);
     dist=zeros(size(dainputs0,1),size(dainputs0,1),size(dainputs0,2));
     
     for i=1:size(dainputs0,2)
@@ -527,7 +539,7 @@ if FLAGS.balCal == 2
     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
     h_GRBF=sqrt(max(min(R_square_find)));
-    eps_min=0.1; %Fasshauer pg 234
+    eps_min=0.1; %Fasshauer pg 234, large epsilon= 'spiky'
     eps_max=1.0;
     
     max_mult=5;
@@ -535,29 +547,46 @@ if FLAGS.balCal == 2
     %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     maxPer=1; %Max per for 2000 RBFs
     
+    %Initialize self terminate vector:
+    self_Terminate=false(1,dimFlag);
+    RBFs_added=zeros(1,dimFlag);
+    if FLAGS.valid_selfTerm==1
+        resStdHistvalid=zeros(numBasis,dimFlag);
+        period_change=zeros(numBasis,dimFlag);
+        period_length=max([10,0.1*numBasis]); %CHANGE? 
+    end
+    
+    
     count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have been placed at each location
     for u=1:numBasis
+        RBFs_added(not(self_Terminate))=u;
         for s=1:dimFlag
-            targetRes2_find=targetRes2;
-            targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
-            [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
-            
-            count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
-            
-            eta(:,s)=R_square(:,centerIndexLoop(s));
-            
-            %find widths 'w' by optimization routine
-            eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
-            
-            rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-            rbfINminGZ(:,u,s)=rbfINminGZ(:,u,s)-mean(rbfINminGZ(:,u,s)); %Bias is mean of RBF
+            if self_Terminate(s)==0
+                targetRes2_find=targetRes2;
+                targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reach max number of RBFs
+                [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s)));
+                
+                count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1;
+                
+                eta(:,s)=R_square(:,centerIndexLoop(s));
+                
+                %find widths 'w' by optimization routine
+                eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,dimFlag),eps_min,eps_max );
+                
+                rbfINminGZ(:,u,s)=((eps(s)^dimFlag)/(sqrt(pi^dimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
+                rbfINminGZ(:,u,s)=rbfINminGZ(:,u,s)-mean(rbfINminGZ(:,u,s)); %Bias is mean of RBF
+            end
         end
         
         %Make custom Matrix to solve for only RBF coefficinets in correct channel
+        RBF_custom=repmat(eye(dimFlag,dimFlag),u,1);
+        for i=1:dimFlag
+            RBF_custom(dimFlag*RBFs_added(i)+1:end,i)=0;
+        end
         if FLAGS.model==4
-            customMatrix_RBF=[customMatrix(1:nterms,:);repmat(eye(dimFlag,dimFlag),u,1);customMatrix(nterms+1:end,:)];
+            customMatrix_RBF=[customMatrix(1:nterms,:);RBF_custom;customMatrix(nterms+1:end,:)];
         else
-            customMatrix_RBF=[ones(nterms,dimFlag);repmat(eye(dimFlag,dimFlag),u,1);ones(nseries0,dimFlag)];
+            customMatrix_RBF=[ones(nterms,dimFlag);RBF_custom;ones(nseries0,dimFlag)];
         end
         
         %Add RBFs to comIN0 variable to solve with alg coefficients
@@ -570,19 +599,26 @@ if FLAGS.balCal == 2
         FLAGS_RBF.model=4;
         if u==numBasis
             FLAGS_RBF.anova=FLAGS.anova;
+            calc_channel=ones(1,dimFlag);
         else
             FLAGS_RBF.anova=0;
+            calc_channel=not(self_Terminate);
         end
         nterms_RBF=nterms+u*dimFlag; %New number of terms to solve for
         
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
         [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
-            nterms_RBF,nseries0,dimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF');
+            nterms_RBF,nseries0,dimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
         
+        if u>1 && any(self_Terminate)
+            xcalib_RBF(1:size(xcalib_RBF_last,1)-nseries0,self_Terminate)=xcalib_RBF_last(1:end-nseries0,self_Terminate);
+            xcalib_RBF(end-nseries0:end,self_Terminate)=xcalib_RBF_last(end-nseries0:end,self_Terminate);
+        end
+        xcalib_RBF_last=xcalib_RBF;
         %Extract RBF coefficients
-        coeff_algRBFmodel=xcalib_RBF(1:nterms+u*dimFlag,:); %Algebraic and RBF coefficient matrix
+        coeff_algRBFmodel=xcalib_RBF(1:nterms_RBF,:); %Algebraic and RBF coefficient matrix
         coeff_algRBFmodel_alg=xcalib_RBF(1:nterms,:); %new algebraic coefficients
-        coeff_algRBFmodel_RBF_diag=xcalib_RBF(nterms+1:nterms+u*dimFlag,:); %new RBF coefficients, spaced on diagonals
+        coeff_algRBFmodel_RBF_diag=xcalib_RBF(nterms+1:nterms_RBF,:); %new RBF coefficients, spaced on diagonals
         %Extract only RBF coefficients in compact matrix
         coeff_algRBFmodel_RBF=zeros(u,dimFlag);
         for i=1:u
@@ -590,14 +626,16 @@ if FLAGS.balCal == 2
         end
         
         %Store basis parameters in Hist variables
-        epsHist(u,:) = eps;
+        epsHist(u,not(self_Terminate)) = eps(not(self_Terminate));
         cHist_tot{u} = coeff_algRBFmodel;
-        centerIndexHist(u,:) = centerIndexLoop;
+        centerIndexHist(u,not(self_Terminate)) = centerIndexLoop(not(self_Terminate));
         for s=1:dimFlag
-            center_daHist(u,:,s)=dainputs0(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.
-            %Dim 1= RBF #
-            %Dim 2= Channel for voltage
-            %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
+            if self_Terminate(s)==0
+                center_daHist(u,:,s)=dainputs0(centerIndexLoop(s),:); %Variable stores the voltages of the RBF centers.
+                %Dim 1= RBF #
+                %Dim 2= Channel for voltage
+                %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
+            end
         end
         
         %update the approximation
@@ -622,6 +660,147 @@ if FLAGS.balCal == 2
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
         resStdHist(u,:)=std(targetRes2);
+        
+        %Self-Termination Check
+        if FLAGS.valid_selfTerm==1
+            
+            comINvalid_RBF(:,(u-1)*dimFlag+1:u*dimFlag)=create_comIN_RBF(dainputsvalid,epsHist(u,:),center_daHist(u,:,:),h_GRBF); %Generate comIN for RBFs
+            comINvalid_algRBF=[comINvalid, comINvalid_RBF(:,1:u*dimFlag)]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
+            
+            aprxINminGZ2valid=comINvalid_algRBF*coeff_algRBFmodel; %find approximation with alg and RBF Coefficients
+            
+            % SOLVE FOR TARES BY TAKING THE MEAN
+            [~,s_1st,~] = unique(seriesvalid);
+            [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid);
+            
+            %Calculate tare corrected load approximation
+            aprxINminTARE2valid=aprxINminGZ2valid-taresAllPointsvalid2;
+            
+            %Residuals
+            targetRes2valid = targetMatrixvalid-aprxINminTARE2valid;      %0=b-Ax
+            newRes2valid = targetRes2valid'*targetRes2valid;
+            resSquare2valid = diag(newRes2valid);
+            resStdHistvalid(u,:)=std(targetRes2valid);
+            
+            %Self termination criteria
+            %Calculate period_change, the difference between the minimum
+            %error in the last 9 iterations and the error 10 iterations ago
+            if u>period_length
+                period_change(u,:)=min(resStdHistvalid(u-(period_length-1):u,:))-resStdHistvalid(u-period_length,:);
+            elseif u==period_length
+                period_change(u,:)=min(resStdHistvalid(1:u,:))-std_targetResvalid;
+            end
+            
+            %Self Terminate if validation error has only gotten worse over
+            %the last 10 iterations
+            for i=1:dimFlag
+                if period_change(u,i)>0 && self_Terminate(i)==0
+                    fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
+                    self_Terminate(i)=1;
+                end
+            end
+            if all(self_Terminate)==1
+                %Trim Variables
+                aprxIN2_Hist(u+1:end)=[];
+                tareGRBFHist(u+1:end)=[];
+                cHist_tot(u+1:end)=[];
+                rbfINminGZ(:,u+1:end,:)=[];
+                epsHist(u+1:end,:)=[];
+                centerIndexHist(u+1:end,:)=[];
+                center_daHist(u+1:end,:,:)=[];
+                resSquareHist(u+1:end,:)=[];
+                resStdHist(u+1:end,:)=[];
+                fprintf('\n');
+                break
+            end
+        end
+    end
+    
+    %If self-termination selected, recalculate for RBF number of min
+    %validation STD
+    if FLAGS.valid_selfTerm==1
+        fprintf(strcat('\n Trimming RBFs for minimum validation STD'));
+        %Find RBF number for lowest Validation STD
+        min_validSTD_num=zeros(1,dimFlag);
+        for i=1:dimFlag
+            %Find RBF number for lowest Validation STD
+            [~,min_validSTD_num(i)]=min([std_targetResvalid(i);resStdHistvalid(1:u,i)]);
+            min_validSTD_num(i)=min_validSTD_num(i)-1;
+            fprintf(strcat('\n Channel'," ", string(i), ' Final # RBF=',string(min_validSTD_num(i))));
+        end
+        fprintf('\n');
+        if any(min_validSTD_num<u)
+            %Make custom Matrix to solve for only RBF coefficinets in correct channel
+            RBF_custom=repmat(eye(dimFlag,dimFlag),max(min_validSTD_num),1);
+            for i=1:dimFlag
+                RBF_custom(dimFlag*min_validSTD_num(i)+1:end,i)=0;
+            end
+            if FLAGS.model==4
+                customMatrix_RBF=[customMatrix(1:nterms,:);RBF_custom;customMatrix(nterms+1:end,:)];
+            else
+                customMatrix_RBF=[ones(nterms,dimFlag);RBF_custom;ones(nseries0,dimFlag)];
+            end
+            
+            %New flag structure for calc_xcalib
+            FLAGS_RBF.model=4;
+            FLAGS_RBF.anova=FLAGS.anova;
+            calc_channel=ones(1,dimFlag);
+            nterms_RBF=nterms+max(min_validSTD_num)*dimFlag; %New number of terms to solve for
+            
+            %Trim comIN
+            comIN0_RBF(:,nterms_RBF+1:nterms+u*dimFlag)=[];
+            %Calculate Algebraic and RBF coefficients with calc_xcalib function
+            [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
+                nterms_RBF,nseries0,dimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
+            
+            %Extract RBF coefficients
+            coeff_algRBFmodel=xcalib_RBF(1:nterms_RBF,:); %Algebraic and RBF coefficient matrix
+            coeff_algRBFmodel_alg=xcalib_RBF(1:nterms,:); %new algebraic coefficients
+            coeff_algRBFmodel_RBF_diag=xcalib_RBF(nterms+1:nterms_RBF,:); %new RBF coefficients, spaced on diagonals
+            %Extract only RBF coefficients in compact matrix
+            coeff_algRBFmodel_RBF=zeros(max(min_validSTD_num),dimFlag);
+            for i=1:max(min_validSTD_num)
+                coeff_algRBFmodel_RBF(i,:)=diag(coeff_algRBFmodel_RBF_diag(1+dimFlag*(i-1):dimFlag*i,:));
+            end
+            
+            %Update basis parameters in Hist variables
+            cHist_tot{u+1} = coeff_algRBFmodel;
+            for s=1:dimFlag
+                epsHist(min_validSTD_num(s)+1:end,s) = 0;
+                centerIndexHist(min_validSTD_num(s)+1:end,s) = 0;
+                center_daHist(min_validSTD_num(s)+1:end,:,s)=0; %Variable stores the voltages of the RBF centers.
+                %Dim 1= RBF #
+                %Dim 2= Channel for voltage
+                %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
+            end
+            %Trim Variables
+            epsHist(max(min_validSTD_num)+1:end,:) = [];
+            centerIndexHist(max(min_validSTD_num)+1:end,:) = [];
+            center_daHist(max(min_validSTD_num)+1:end,:,:)=[];
+                        
+            %update the approximation
+            aprxIN2=comIN0_RBF*xcalib_RBF;
+            aprxIN2_Hist{u+1} = aprxIN2;
+            
+            taresGRBF = -xcalib_RBF(nterms_RBF:end,:);
+            taretalRBF=taresGRBF(series0,:);
+            aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
+            tareGRBFHist{u+1} = taresGRBF;
+            
+            %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
+            [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
+            taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
+            
+            %Calculate tare corrected load approximation
+            aprxINminTARE2=aprxINminGZ2-taretalRBF;
+            
+            %Calculate and store residuals
+            targetRes2 = targetMatrix0-aprxINminTARE2;
+            newRes2 = targetRes2'*targetRes2;
+            resSquare2 = diag(newRes2);
+            resSquareHist(u+1,:) = resSquare2;
+            resStdHist(u+1,:)=std(targetRes2);
+        end
     end
     
     %OUTPUT FUNCTION
@@ -655,6 +834,7 @@ if FLAGS.balCal == 2
         %goal to use centers, width and coefficients to validate parameters against
         %independent data
         
+        fprintf('\n ********** Starting Validation GRBF Calculations **********\n')
         %Initialize structure for unique outputs for section
         uniqueOut=struct();
         

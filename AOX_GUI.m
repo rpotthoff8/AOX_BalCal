@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 07-Dec-2019 18:15:00
+% Last Modified by GUIDE v2.5 12-Dec-2019 10:06:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -92,7 +92,6 @@ if exist(fileName,'file')
         set(handles.res_FLAGcheck,'Value',default.res);
         set(handles.hist_FLAGcheck,'Value',default.hist);
         set(handles.outlier_FLAGcheck,'Value',default.outlier);
-        outlier_FLAGcheck_Callback(handles.outlier_FLAGcheck, eventdata, handles);
         set(handles.numSTD,'String',default.numSTD);
         set(handles.zeroed_FLAGcheck,'Value',default.zeroed);
         set(handles.corr_FLAGcheck,'Value',default.corr);
@@ -111,7 +110,7 @@ if exist(fileName,'file')
         set(handles.c42,'String',default.calRange{4,2});
         set(handles.c51,'String',default.calRange{5,1});
         set(handles.c52,'String',default.calRange{5,2});
-        calPath_Callback(handles.calPath, eventdata, handles)
+        
         
         set(handles.validate,'Value',default.validate);
         set(handles.valPath,'String',default.valPath);
@@ -125,7 +124,7 @@ if exist(fileName,'file')
         set(handles.v42,'String',default.valRange{4,2});
         set(handles.v51,'String',default.valRange{5,1});
         set(handles.v52,'String',default.valRange{5,2});
-        valPath_Callback(handles.valPath, eventdata, handles)
+       
         
         set(handles.approximate,'Value',default.approximate);
         set(handles.appPath,'String',default.appPath);
@@ -137,7 +136,7 @@ if exist(fileName,'file')
         set(handles.a32,'String',default.appRange{3,2});
         set(handles.a41,'String',default.appRange{4,1});
         set(handles.a42,'String',default.appRange{4,2});
-        appPath_Callback(handles.appPath, eventdata, handles)
+        
         
         switch default.action
             case 'calibrate', actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
@@ -157,15 +156,13 @@ if exist(fileName,'file')
         
         set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
+        set(handles.valid_selfTerm,'Value',default.valid_selfTerm);
         %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
-        grbf_Callback(handles.grbf, eventdata, handles);
         
         set(handles.anova_FLAGcheck,'Value',default.anova);
-        anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
-        
+                
         set(handles.loadPI_FLAGcheck,'Value',default.loadPI);
-        loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
         set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
         set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
         set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
@@ -174,7 +171,6 @@ if exist(fileName,'file')
         
         set(handles.output_to_calib_FLAG,'Value',default.output_to_calib_FLAG);
         set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
-        output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
         set(handles.output_location,'String',default.output_location);
         set(handles.calib_model_save_FLAG,'Value',default.calib_model_save_FLAG);
         set(handles.input_save_FLAG,'Value',default.input_save_FLAG);
@@ -183,7 +179,17 @@ if exist(fileName,'file')
         disp('local default.ini may be outdated or incompatible with GUI.');
     end
 end
-modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles)
+outlier_FLAGcheck_Callback(handles.outlier_FLAGcheck, eventdata, handles);
+calPath_Callback(handles.calPath, eventdata, handles);
+valPath_Callback(handles.valPath, eventdata, handles);
+appPath_Callback(handles.appPath, eventdata, handles);
+grbf_Callback(handles.grbf, eventdata, handles);
+anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
+loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
+output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
+
+modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles);
+
 uiwait(handles.figure1);
 
 
@@ -301,6 +307,7 @@ end
 
 outStruct.grbf = 1 + get(handles.grbf,'Value');
 outStruct.basis = str2num(get(handles.numBasisIn,'String'));
+outStruct.valid_selfTerm=get(handles.valid_selfTerm,'Value');
 
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
@@ -682,12 +689,16 @@ function grbf_Callback(hObject, eventdata, handles)
 if get(hObject,'Value') == 1
     set(handles.numBasisIn,'Enable','on');
     set(handles.RBF_text,'Enable','on');
+    if handles.validate.Value==1
+        set(handles.valid_selfTerm,'Enable','on');
+    end
     %set(handles.loglog_FLAGcheck,'Enable','on');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','on');
     %set(handles.grbftares_FLAGcheck,'Enable','on');
 else
     set(handles.numBasisIn,'Enable','off');
     set(handles.RBF_text,'Enable','off');
+    set(handles.valid_selfTerm,'Enable','off');
     %set(handles.loglog_FLAGcheck,'Enable','off');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','off');
     %set(handles.grbftares_FLAGcheck,'Enable','off');
@@ -1165,6 +1176,7 @@ function actionpanel_SelectionChangeFcn(hObject, eventdata, handles)
 calPath_Callback(handles.calPath,eventdata,handles);
 set(handles.calPath, 'Enable', 'on');
 set(handles.calFind, 'Enable', 'on');
+set(handles.valid_selfTerm,'Enable','off');
 if (hObject == handles.calibrate)
     set(handles.valPath, 'Enable', 'off');
     set(handles.valFind, 'Enable', 'off');
@@ -1220,6 +1232,9 @@ elseif hObject == handles.validate
     set(handles.a41, 'Enable', 'off');
     set(handles.a42, 'Enable', 'off');
     %set(handles.zeroed_FLAGcheck,'Enable','off');
+    if handles.grbf.Value==1
+        set(handles.valid_selfTerm,'Enable','on');
+    end
 elseif hObject == handles.approximate
     set(handles.valPath, 'Enable', 'off');
     set(handles.valFind, 'Enable', 'off');
@@ -1349,6 +1364,7 @@ default.termSelect=get(handles.termSelect,'Value');
 default.termInclude=handles.termSelectButton.Tooltip;
 default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
+default.valid_selfTerm=get(handles.valid_selfTerm,'Value');
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
 
@@ -2297,3 +2313,12 @@ set(handles.termSelectButton,'TooltipString',termSelectOut.termInclude);
 set(handles.runbutton,'Enable','on');
 set(handles.cancelbutton,'Enable','on');
 
+
+
+% --- Executes on button press in valid_selfTerm.
+function valid_selfTerm_Callback(hObject, eventdata, handles)
+% hObject    handle to valid_selfTerm (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of valid_selfTerm

@@ -21,6 +21,8 @@ function [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox
 % aprxINminGZapprox = Global Load Approximation
 % loadPI_approx = Prediction Interval for Global Load Approximations
 
+fprintf('\n ********** Starting Approximation Algebraic Calculations **********\n')
+
 %natural zeros (also called global zeros)
 globalZerosapprox = mean(natzerosapprox,1);
 
@@ -42,7 +44,6 @@ else
 end
 
 %OUTPUT
-fprintf('\n ********************************************************************* \n');
 
 %OUTPUTING APPROXIMATION WITH PI FILE
 if FLAGS.approx_and_PI_print==1
@@ -66,6 +67,7 @@ end
 %independent data
 
 if FLAGS.balCal == 2
+    fprintf('\n ********** Starting Approximation GRBF Calculations **********\n')
 
     comINapprox_RBF=create_comIN_RBF(dainputsapprox,GRBF.epsHist,GRBF.center_daHist,GRBF.h_GRBF); %Generate comIN for RBFs
     comINapprox_algRBF=[comINapprox, comINapprox_RBF]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
