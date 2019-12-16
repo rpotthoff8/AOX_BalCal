@@ -2,10 +2,10 @@ function []=load_and_PI_file_output(aprxINminGZ,loadPI,pointID,series1,series2,l
 warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
 description=[upper(section), ' APPROXIMATION WITH PREDICTION INTERVAL'];
 try
-    if strcmpi(section,'VALID')==1
-        filename='VALID ALG Tare Corrected Load Approximation w PI.xlsx';
-    elseif strcmpi(section,'APPROX')==1
-        filename='APPROX ALG Global Load Approximation w PI.xlsx';
+    if contains(section,'VALID')==1
+        filename=[section,' Tare Corrected Load Approximation w PI.xlsx'];
+    elseif contains(section,'APPROX')==1
+        filename=[section, ' Global Load Approximation w PI.xlsx'];
     end
     fullpath=fullfile(output_location,filename);
     

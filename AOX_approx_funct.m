@@ -18,9 +18,8 @@ function [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox
 %  pct  =  Percent confidence level for PI
 
 %OUTPUTS:
-
-
-[~, dimFlag] = size(excessVecapprox);
+% aprxINminGZapprox = Global Load Approximation
+% loadPI_approx = Prediction Interval for Global Load Approximations
 
 %natural zeros (also called global zeros)
 globalZerosapprox = mean(natzerosapprox,1);
@@ -37,7 +36,7 @@ aprxINapprox = comINapprox*coeff;        %to find approximation AJM111516
 aprxINminGZapprox.ALG = aprxINapprox;
 
 if FLAGS.loadPI==1
-    loadPI_approx.ALG=calc_alg_PI(ANOVA,pct,comINapprox,aprxINapprox); %Calculate load PI
+    loadPI_approx.ALG=calc_PI(ANOVA,pct,comINapprox,aprxINapprox); %Calculate load PI
 else
     loadPI_approx='PI NOT COMPUTED';
 end
@@ -47,7 +46,7 @@ fprintf('\n ********************************************************************
 
 %OUTPUTING APPROXIMATION WITH PI FILE
 if FLAGS.approx_and_PI_print==1
-    section='APPROX';
+    section='APPROX ALG';
     load_and_PI_file_output(aprxINminGZapprox.ALG,loadPI_approx.ALG,pointIDapprox,seriesapprox,series2approx,loadlist,output_location,section)
 
 elseif FLAGS.excel == 1
@@ -67,37 +66,35 @@ end
 %independent data
 
 if FLAGS.balCal == 2
+
+    comINapprox_RBF=create_comIN_RBF(dainputsapprox,GRBF.epsHist,GRBF.center_daHist,GRBF.h_GRBF); %Generate comIN for RBFs
+    comINapprox_algRBF=[comINapprox, comINapprox_RBF]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
     
-    numBasis=size(GRBF.epsHist,1);
+    aprxINminGZ2approx=comINapprox_algRBF*GRBF.coeff_algRBFmodel; %find approximation with alg and RBF Coefficients
     
-    aprxINminGZ2approx = aprxINminGZapprox.ALG;
-    aprxINminGZ_Histapprox = cell(numBasis,1);
-    
-    for u=1:numBasis
-        
-        %Call function to place single GRBF
-        [rbfc_INminGZapprox]=place_GRBF(u,dainputsapprox,GRBF.epsHist,GRBF.cHist,GRBF.center_daHist,GRBF.h_GRBF);
-        
-        %update the approximation
-        aprxINminGZ2approx = aprxINminGZ2approx+rbfc_INminGZapprox;
-        aprxINminGZ_Histapprox{u} = aprxINminGZ2approx;
-        
+    if FLAGS.loadPI==1
+        loadPI_approx.GRBF=calc_PI(GRBF.ANOVA,pct,comINapprox_algRBF,aprxINminGZ2approx); %Calculate load PI
+    else
+        loadPI_approx='PI NOT COMPUTED';
     end
     
     %OUTPUT
     aprxINminGZapprox.GRBF=aprxINminGZ2approx;
     
-    
     fprintf('\n ********************************************************************* \n');
-    if FLAGS.excel == 1
+    if FLAGS.approx_and_PI_print==1
+        section='APPROX GRBF';
+        load_and_PI_file_output(aprxINminGZapprox.GRBF,loadPI_approx.GRBF,pointIDapprox,seriesapprox,series2approx,loadlist,output_location,section)
+        
+    elseif FLAGS.excel == 1
         %Output approximation load approximation
         filename = 'APPROX GRBF Global Load Approximation.csv';
-        approxinput=aprxINminGZ2approx;
+        approxinput=aprxINminGZapprox.GRBF;
         description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
     else
         fprintf('\nAPPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
     end
-    
+     
 end
 % END APPROXIMATION GRBF SECTION

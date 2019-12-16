@@ -88,6 +88,9 @@ SSE = sum(e.^2);
 % information of the predictor matrix X
 [n,k] = size(X);
 dof_e = n-k;
+if dof_e<0
+    fprintf('WARNING: Negative Degrees of Freedom in ANOVA \n')
+end
 MSE = SSE/dof_e;
 sigma_hat_sq = MSE;
 
@@ -220,6 +223,12 @@ ANOVA.PI.sigma_hat_sq = sigma_hat_sq;
 ANOVA.PI.invXtX = invXtX(1:(size(X,2)-nseries),1:(size(X,2)-nseries));
 ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
 ANOVA.PI.dof_e=dof_e;
+%START TEST
+for j = 1:n
+    ANOVA.PI.TESTPI(j,1) = T_cr*sqrt(sigma_hat_sq*(1+(X(j,1:(size(X,2)-nseries))*ANOVA.PI.invXtX*X(j,1:(size(X,2)-nseries))')));
+end
+%END TEST
+
 
 %% Coded values for polynomial regressions
 % Values of the variables are coded by centering or expressing the levels

@@ -6,7 +6,7 @@ s=dimFlag;
 %    y=dot(residvec,residvec);
 
 phi=((eps^s)/(sqrt(pi^s)))*exp(-((eps^2)*(R_square))/h^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-
+phi=phi-mean(phi);
 b=dot(phi,residvec);
 z=dot(phi,phi);
 
