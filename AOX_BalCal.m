@@ -5,6 +5,7 @@
 clc;
 clearvars;
 close all;
+tic;
 % workspace;
 fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh, Javier Villarreal, and John Potthoff.  All Rights Reserved.\n')
 % Because of measurement noise in the voltage the APPROXIMATION tare is computed
@@ -124,7 +125,7 @@ elseif FLAGS.model==5
         termInclude([1,3,5])=1;
         algebraic_model={'TRUNCATED (BALANCE TYPE 1-A)'};
     elseif balanceType==2
-        termInc5lude([1,3,5,9])=1;
+        termInclude([1,3,5,9])=1;
         algebraic_model={'BALANCE TYPE 1-B'};
     elseif balanceType==3
         termInclude([1,5])=1;
@@ -932,7 +933,7 @@ fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
 fprintf('%s',strcat('Check '," ",file_output_location,' for output files.'))
 fprintf('\n \n');
-
+runTime=toc;
 if isdeployed % Optional, use if you want the non-deployed version to exit immediately
     input('Press enter to finish and close');
 end
