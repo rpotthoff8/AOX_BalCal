@@ -63,8 +63,9 @@ for k = 1:dimFlag
             if isfield(FLAGS,'test_FLAG')==0
                 FLAGS.test_FLAG=0;
             end
-            
-            fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
+            if FLAGS.test_FLAG==0
+                fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
+            end
             ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
             
             % There are several ANOVA metrics that also must be denormalized
@@ -75,8 +76,9 @@ for k = 1:dimFlag
             % vector has to be truncated
             scale_PI = scale_k(1:end-nseries);
             ANOVA(k).PI.invXtX = ANOVA(k).PI.invXtX./(scale_PI'*scale_PI);
-            
-            fprintf('Complete\n')
+            if FLAGS.test_FLAG==0
+                fprintf('Complete\n')
+            end
         end
     end
 end
@@ -90,14 +92,18 @@ else
         ExpandList=["beta","beta_CI","T","p_T","VIF","sig"]; %List of ANOVA structure elements that should be expanded
         for i=1:size(ExpandList,2)
             for j=1:dimFlag
-                eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'=zeros(size(xcalib,1),1);')); %initialize zeros
-                eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'(customMatrix(:,j)==1,:)=ANOVA(',num2str(j),').',ExpandList(i),';')); %fill with ANOVA statistics
+                if calc_channel(j)==1
+                    eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'=zeros(size(xcalib,1),1);')); %initialize zeros
+                    eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'(customMatrix(:,j)==1,:)=ANOVA(',num2str(j),').',ExpandList(i),';')); %fill with ANOVA statistics
+                end
             end
         end
         %Expand to 96x96 matrix for invXtX
         for j=1:dimFlag
-            ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);
-            ANOVA_exp(j).PI.invXtX(customMatrix((1:nterms),j)==1,customMatrix((1:nterms),j)==1)=ANOVA(j).PI.invXtX;
+            if calc_channel(j)==1
+                ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);
+                ANOVA_exp(j).PI.invXtX(customMatrix((1:nterms),j)==1,customMatrix((1:nterms),j)==1)=ANOVA(j).PI.invXtX;
+            end
         end
         
         ANOVA=ANOVA_exp;

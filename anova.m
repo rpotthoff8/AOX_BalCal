@@ -224,9 +224,9 @@ ANOVA.PI.invXtX = invXtX(1:(size(X,2)-nseries),1:(size(X,2)-nseries));
 ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
 ANOVA.PI.dof_e=dof_e;
 %START TEST
-for j = 1:n
-    ANOVA.PI.TESTPI(j,1) = T_cr*sqrt(sigma_hat_sq*(1+(X(j,1:(size(X,2)-nseries))*ANOVA.PI.invXtX*X(j,1:(size(X,2)-nseries))')));
-end
+% for j = 1:n
+%     ANOVA.PI.TESTPI(j,1) = T_cr*sqrt(sigma_hat_sq*(1+(X(j,1:(size(X,2)-nseries))*ANOVA.PI.invXtX*X(j,1:(size(X,2)-nseries))')));
+% end
 %END TEST
 
 

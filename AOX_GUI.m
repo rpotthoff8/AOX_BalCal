@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 12-Dec-2019 10:06:47
+% Last Modified by GUIDE v2.5 02-Jan-2020 10:29:15
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -157,6 +157,8 @@ if exist(fileName,'file')
         set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
         set(handles.valid_selfTerm,'Value',default.valid_selfTerm);
+        set(handles.PI_selfTerm,'Value',default.PI_selfTerm);
+        
         %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
         
@@ -187,6 +189,8 @@ grbf_Callback(handles.grbf, eventdata, handles);
 anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
 loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
 output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
+valid_selfTerm_Callback(handles.valid_selfTerm,eventdata,handles)
+PI_selfTerm_Callback(handles.PI_selfTerm,eventdata,handles)
 
 modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles);
 
@@ -308,6 +312,7 @@ end
 outStruct.grbf = 1 + get(handles.grbf,'Value');
 outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 outStruct.valid_selfTerm=get(handles.valid_selfTerm,'Value');
+outStruct.PI_selfTerm=get(handles.PI_selfTerm,'Value');
 
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
@@ -692,6 +697,9 @@ if get(hObject,'Value') == 1
     if handles.validate.Value==1
         set(handles.valid_selfTerm,'Enable','on');
     end
+    if handles.anova_FLAGcheck.Value==1
+        set(handles.PI_selfTerm,'Enable','on');
+    end
     %set(handles.loglog_FLAGcheck,'Enable','on');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','on');
     %set(handles.grbftares_FLAGcheck,'Enable','on');
@@ -699,6 +707,7 @@ else
     set(handles.numBasisIn,'Enable','off');
     set(handles.RBF_text,'Enable','off');
     set(handles.valid_selfTerm,'Enable','off');
+    set(handles.PI_selfTerm,'Enable','off');
     %set(handles.loglog_FLAGcheck,'Enable','off');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','off');
     %set(handles.grbftares_FLAGcheck,'Enable','off');
@@ -1176,7 +1185,8 @@ function actionpanel_SelectionChangeFcn(hObject, eventdata, handles)
 calPath_Callback(handles.calPath,eventdata,handles);
 set(handles.calPath, 'Enable', 'on');
 set(handles.calFind, 'Enable', 'on');
-set(handles.valid_selfTerm,'Enable','off');
+set(handles.valid_selfTerm,'Enable','off','Value',0);
+valid_selfTerm_Callback(handles.valid_selfTerm,eventdata,handles);
 if (hObject == handles.calibrate)
     set(handles.valPath, 'Enable', 'off');
     set(handles.valFind, 'Enable', 'off');
@@ -1232,7 +1242,7 @@ elseif hObject == handles.validate
     set(handles.a41, 'Enable', 'off');
     set(handles.a42, 'Enable', 'off');
     %set(handles.zeroed_FLAGcheck,'Enable','off');
-    if handles.grbf.Value==1
+    if handles.grbf.Value==1 && handles.PI_selfTerm.Value==0
         set(handles.valid_selfTerm,'Enable','on');
     end
 elseif hObject == handles.approximate
@@ -1365,6 +1375,7 @@ default.termInclude=handles.termSelectButton.Tooltip;
 default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
 default.valid_selfTerm=get(handles.valid_selfTerm,'Value');
+default.PI_selfTerm=get(handles.PI_selfTerm,'Value');
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
 
@@ -2067,6 +2078,8 @@ if get(hObject,'Value') == 0
     set(handles.anova_pct,'Enable','off');
     set(handles.anova_pct_text,'Enable','off');
     set(handles.stableRec_FLAGcheck,'Enable','off','Value',0);
+    set(handles.PI_selfTerm,'Enable','off','Value',0);
+    PI_selfTerm_Callback(handles.PI_selfTerm,eventdata,handles);
 else
     set(handles.loadPI_FLAGcheck,'Enable','on');
     set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','on');
@@ -2074,7 +2087,9 @@ else
     set(handles.anova_pct,'Enable','on');
     set(handles.anova_pct_text,'Enable','on');
     set(handles.stableRec_FLAGcheck,'Enable','on');
-    
+    if get(handles.grbf,'Value')==1 && get(handles.valid_selfTerm,'Value')==0
+        set(handles.PI_selfTerm,'Enable','on');
+    end
 end
 loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles);
 
@@ -2316,9 +2331,30 @@ set(handles.cancelbutton,'Enable','on');
 
 
 % --- Executes on button press in valid_selfTerm.
-function valid_selfTerm_Callback(hObject, eventdata, handles)
+function valid_selfTerm_Callback(hObject, ~, handles)
 % hObject    handle to valid_selfTerm (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+if get(hObject,'Value')==1
+    set(handles.PI_selfTerm,'Enable','off')
+else
+    if get(handles.anova_FLAGcheck,'Value')==1 && get(handles.grbf,'Value')==1
+        set(handles.PI_selfTerm,'Enable','on')
+    end
+end
 % Hint: get(hObject,'Value') returns toggle state of valid_selfTerm
+
+
+% --- Executes on button press in PI_selfTerm.
+function PI_selfTerm_Callback(hObject, eventdata, handles)
+% hObject    handle to PI_selfTerm (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if get(hObject,'Value')==1
+    set(handles.valid_selfTerm,'Enable','off')
+else
+    if get(handles.validate,'Value')==1 && get(handles.grbf,'Value')==1
+        set(handles.valid_selfTerm,'Enable','on')
+    end
+end
+% Hint: get(hObject,'Value') returns toggle state of PI_selfTerm
