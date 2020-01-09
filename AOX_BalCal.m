@@ -609,16 +609,28 @@ if FLAGS.balCal == 2
         %New flag structure for calc_xcalib
         FLAGS_RBF.model=4;
         if u==numBasis %If final RBF placed
-            FLAGS_RBF.anova=FLAGS.anova;
-            calc_channel=ones(1,dimFlag);
-        else
+            if any(self_Terminate) %If self terminated, stats will be recalculated below
+                calc_channel=not(self_Terminate);
+                if FLAGS.PI_selfTerm==1 %If self terminating based on Prediction Interval
+                    FLAGS_RBF.anova=1; %perform ANOVA analysis
+                    FLAGS_RBF.test_FLAG=1; %Do not calculate VIF for time savings
+                else %If not self terminating with PI
+                    FLAGS_RBF.anova=0; %do not perform ANOVA analysis
+                end
+            else %Otherwise, final calculation with RBFs
+                FLAGS_RBF.anova=FLAGS.anova; %Calculate ANOVA based on user preference
+                FLAGS_RBF.test_FLAG=0; %calculate VIF
+                calc_channel=ones(1,dimFlag); %Calculate every channel
+            end
+
+        else %NOT final RBF Placed
             if FLAGS.PI_selfTerm==1 %If self terminating based on Prediction Interval
                 FLAGS_RBF.anova=1; %perform ANOVA analysis
                 FLAGS_RBF.test_FLAG=1; %Do not calculate VIF for time savings
             else
-                FLAGS_RBF.anova=0;
+                FLAGS_RBF.anova=0; %Do not calculate ANOVA
             end
-            calc_channel=not(self_Terminate);
+            calc_channel=not(self_Terminate); %Calculate channels that have not been terminated
         end
         nterms_RBF=nterms+u*dimFlag; %New number of terms to solve for
         
@@ -814,9 +826,10 @@ if FLAGS.balCal == 2
         end
         
         %New flag structure for calc_xcalib
-        FLAGS_RBF.model=4;
-        FLAGS_RBF.anova=FLAGS.anova;
-        calc_channel=ones(1,dimFlag);
+        FLAGS_RBF.model=4; %Calculate with custom model
+        FLAGS_RBF.anova=FLAGS.anova; %Calculate ANOVA based on user preference
+        FLAGS_RBF.test_FLAG=0; %Calculate VIF
+        calc_channel=ones(1,dimFlag); %Calculate stats for every channel
         nterms_RBF=nterms+max(final_RBFs_added)*dimFlag; %New number of terms to solve for
         
         %Trim comIN
