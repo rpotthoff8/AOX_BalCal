@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 02-Jan-2020 10:29:15
+% Last Modified by GUIDE v2.5 10-Jan-2020 15:54:02
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -156,8 +156,9 @@ if exist(fileName,'file')
         
         set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
-        set(handles.valid_selfTerm,'Value',default.valid_selfTerm);
-        set(handles.PI_selfTerm,'Value',default.PI_selfTerm);
+        set(handles.selfTerm_pop,'String',default.selfTerm_pop_str);
+        set(handles.selfTerm_pop,'Value',default.selfTerm_pop_val);
+        
         
         %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
@@ -189,8 +190,6 @@ grbf_Callback(handles.grbf, eventdata, handles);
 anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
 loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
 output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
-valid_selfTerm_Callback(handles.valid_selfTerm,eventdata,handles)
-PI_selfTerm_Callback(handles.PI_selfTerm,eventdata,handles)
 
 modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles);
 
@@ -311,8 +310,7 @@ end
 
 outStruct.grbf = 1 + get(handles.grbf,'Value');
 outStruct.basis = str2num(get(handles.numBasisIn,'String'));
-outStruct.valid_selfTerm=get(handles.valid_selfTerm,'Value');
-outStruct.PI_selfTerm=get(handles.PI_selfTerm,'Value');
+outStruct.selfTerm_str=handles.selfTerm_pop.String(handles.selfTerm_pop.Value);
 
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
@@ -694,20 +692,15 @@ function grbf_Callback(hObject, eventdata, handles)
 if get(hObject,'Value') == 1
     set(handles.numBasisIn,'Enable','on');
     set(handles.RBF_text,'Enable','on');
-    if handles.validate.Value==1
-        set(handles.valid_selfTerm,'Enable','on');
-    end
-    if handles.anova_FLAGcheck.Value==1
-        set(handles.PI_selfTerm,'Enable','on');
-    end
+    selfTerm_strSet(handles);
+    set(handles.selfTerm_pop,'Enable','on');
     %set(handles.loglog_FLAGcheck,'Enable','on');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','on');
     %set(handles.grbftares_FLAGcheck,'Enable','on');
 else
     set(handles.numBasisIn,'Enable','off');
     set(handles.RBF_text,'Enable','off');
-    set(handles.valid_selfTerm,'Enable','off');
-    set(handles.PI_selfTerm,'Enable','off');
+    set(handles.selfTerm_pop,'Enable','off');
     %set(handles.loglog_FLAGcheck,'Enable','off');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','off');
     %set(handles.grbftares_FLAGcheck,'Enable','off');
@@ -1185,8 +1178,8 @@ function actionpanel_SelectionChangeFcn(hObject, eventdata, handles)
 calPath_Callback(handles.calPath,eventdata,handles);
 set(handles.calPath, 'Enable', 'on');
 set(handles.calFind, 'Enable', 'on');
-set(handles.valid_selfTerm,'Enable','off','Value',0);
-valid_selfTerm_Callback(handles.valid_selfTerm,eventdata,handles);
+selfTerm_strSet(handles);
+
 if (hObject == handles.calibrate)
     set(handles.valPath, 'Enable', 'off');
     set(handles.valFind, 'Enable', 'off');
@@ -1242,9 +1235,7 @@ elseif hObject == handles.validate
     set(handles.a41, 'Enable', 'off');
     set(handles.a42, 'Enable', 'off');
     %set(handles.zeroed_FLAGcheck,'Enable','off');
-    if handles.grbf.Value==1 && handles.PI_selfTerm.Value==0
-        set(handles.valid_selfTerm,'Enable','on');
-    end
+    
 elseif hObject == handles.approximate
     set(handles.valPath, 'Enable', 'off');
     set(handles.valFind, 'Enable', 'off');
@@ -1374,8 +1365,8 @@ default.termSelect=get(handles.termSelect,'Value');
 default.termInclude=handles.termSelectButton.Tooltip;
 default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
-default.valid_selfTerm=get(handles.valid_selfTerm,'Value');
-default.PI_selfTerm=get(handles.PI_selfTerm,'Value');
+default.selfTerm_pop_str= get(handles.selfTerm_pop,'String');
+default.selfTerm_pop_val= get(handles.selfTerm_pop,'Value');
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
 
@@ -2071,6 +2062,8 @@ function anova_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of anova_FLAGcheck
+selfTerm_strSet(handles);
+
 if get(hObject,'Value') == 0
     set(handles.loadPI_FLAGcheck,'Enable','off','Value',0);
     set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','off','Value',0);
@@ -2078,8 +2071,6 @@ if get(hObject,'Value') == 0
     set(handles.anova_pct,'Enable','off');
     set(handles.anova_pct_text,'Enable','off');
     set(handles.stableRec_FLAGcheck,'Enable','off','Value',0);
-    set(handles.PI_selfTerm,'Enable','off','Value',0);
-    PI_selfTerm_Callback(handles.PI_selfTerm,eventdata,handles);
 else
     set(handles.loadPI_FLAGcheck,'Enable','on');
     set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','on');
@@ -2087,9 +2078,6 @@ else
     set(handles.anova_pct,'Enable','on');
     set(handles.anova_pct_text,'Enable','on');
     set(handles.stableRec_FLAGcheck,'Enable','on');
-    if get(handles.grbf,'Value')==1 && get(handles.valid_selfTerm,'Value')==0
-        set(handles.PI_selfTerm,'Enable','on');
-    end
 end
 loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles);
 
@@ -2267,7 +2255,7 @@ function subfolder_FLAG_Callback(hObject, eventdata, handles)
 
 
 % --- Executes on button press in calib_model_save_FLAG.
-function calib_model_save_FLAG_Callback(hObject, eventdata, handles)
+function calib_model_save_FLAG_Callback(hObject, ~, handles)
 % hObject    handle to calib_model_save_FLAG (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -2328,33 +2316,58 @@ set(handles.termSelectButton,'TooltipString',termSelectOut.termInclude);
 set(handles.runbutton,'Enable','on');
 set(handles.cancelbutton,'Enable','on');
 
-
-
-% --- Executes on button press in valid_selfTerm.
-function valid_selfTerm_Callback(hObject, ~, handles)
-% hObject    handle to valid_selfTerm (see GCBO)
+% --- Executes on selection change in selfTerm_pop.
+function selfTerm_pop_Callback(hObject, eventdata, handles)
+% hObject    handle to selfTerm_pop (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value')==1
-    set(handles.PI_selfTerm,'Enable','off')
-else
-    if get(handles.anova_FLAGcheck,'Value')==1 && get(handles.grbf,'Value')==1
-        set(handles.PI_selfTerm,'Enable','on')
-    end
-end
-% Hint: get(hObject,'Value') returns toggle state of valid_selfTerm
+
+% Hints: contents = cellstr(get(hObject,'String')) returns selfTerm_pop contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from selfTerm_pop
 
 
-% --- Executes on button press in PI_selfTerm.
-function PI_selfTerm_Callback(hObject, eventdata, handles)
-% hObject    handle to PI_selfTerm (see GCBO)
+% --- Executes during object creation, after setting all properties.
+function selfTerm_pop_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to selfTerm_pop (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if get(hObject,'Value')==1
-    set(handles.valid_selfTerm,'Enable','off')
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function selfTerm_strSet(handles) %Function sets the string for RBF self-termination popup
+pos_str={'No Self-Termination','Validation Error Self-Terminate','Prediction Interval Self-Terminate','VIF Self-Terminate'}; %Possible self-termination options
+str_include=logical([1,0,0,0]); %Logical array of what options should be possible
+if handles.validate.Value==1 %If validation data is provided
+    str_include(2)=1;
+end
+if handles.anova_FLAGcheck.Value==1 %If ANOVA is turned on
+    str_include(3)=1;
+    str_include(4)=1;
+end
+%Retrieve current popup state
+cur_str=handles.selfTerm_pop.String; 
+cur_val=handles.selfTerm_pop.Value;
+
+if ischar(cur_str) %If currently only 1 option for popup
+    new_val=1;
 else
-    if get(handles.validate,'Value')==1 && get(handles.grbf,'Value')==1
-        set(handles.valid_selfTerm,'Enable','on')
+    match=strcmp(cur_str(cur_val),pos_str(str_include)); %Find if current selected string matches any of new possible options
+    if any(match) 
+        new_val=find(match); %Set new value to maintain selection
+    else
+        new_val=1; %No longer option
     end
 end
-% Hint: get(hObject,'Value') returns toggle state of PI_selfTerm
+%Update popup
+set(handles.selfTerm_pop,'String',pos_str(str_include));
+set(handles.selfTerm_pop,'Value',new_val);
+
+
+    
+    
+    
+

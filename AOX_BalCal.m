@@ -29,8 +29,11 @@ FLAGS.balCal = out.grbf;
 %DEFINE THE NUMBER OF BASIS FUNCTIONS
 numBasis = out.basis;
 %SET SELF TERMINATE OPTION FOR RBFS
-FLAGS.valid_selfTerm=out.valid_selfTerm;
-FLAGS.PI_selfTerm=out.PI_selfTerm;
+pos_str={'No Self-Termination','Validation Error Self-Terminate','Prediction Interval Self-Terminate','VIF Self-Terminate'}; %Possible self-termination options
+match=strcmp(pos_str,out.selfTerm_str);
+FLAGS.valid_selfTerm=match(2);
+FLAGS.PI_selfTerm=match(3);
+FLAGS.VIF_selfTerm=match(4);
 if out.valid==0
     FLAGS.valid_selfTerm=0;
 end
@@ -568,7 +571,6 @@ if FLAGS.balCal == 2
         calib_ALG_PI_rms=sqrt(sum((loadPI_ALG).^2,1)/numpts0); %RMS for calibration PI
     end
     
-    FLAGS.VIF_selfTerm=1; %CHANGE
     if FLAGS.VIF_selfTerm==1 %Initialize variables for self terminating based on VIF
         max_VIF_hist=zeros(numBasis,dimFlag); %History variable of VIF as RBFs are added
         comIN0_RBF=comIN0; %Initialize 'X' matrix for RBF predictor variables
