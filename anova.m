@@ -49,6 +49,10 @@ end
 %recommended equation solving for time saving
 if test_FLAG==0
     VIF = vif(X);
+    
+    VIF_dl=vif_dl(X)';
+    VIF_dl2=vif_dl2(X);
+    
     if any(VIF>=10)
         warning('VIF calculation indicates strong multicollinearity. Analysis of Variance results cannot be trusted.')
     elseif any(VIF>=4)
@@ -213,6 +217,8 @@ ANOVA.beta_CI  = beta_CI;  % Coefficient Confidence Intervals
 ANOVA.T = T;               % T-statistic of coefficients
 ANOVA.p_T = p_T;           % P-value of coefficients
 ANOVA.VIF = VIF;           % Variance Inflation Factors
+ANOVA.VIF_dl=VIF_dl;
+ANOVA.VIF_dl2=VIF_dl2;
 ANOVA.sig = sig;            %If term is significant
 
 ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
@@ -224,9 +230,9 @@ ANOVA.PI.invXtX = invXtX(1:(size(X,2)-nseries),1:(size(X,2)-nseries));
 ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
 ANOVA.PI.dof_e=dof_e;
 %START TEST
-for j = 1:n
-    ANOVA.PI.TESTPI(j,1) = T_cr*sqrt(sigma_hat_sq*(1+(X(j,1:(size(X,2)-nseries))*ANOVA.PI.invXtX*X(j,1:(size(X,2)-nseries))')));
-end
+% for j = 1:n
+%     ANOVA.PI.TESTPI(j,1) = T_cr*sqrt(sigma_hat_sq*(1+(X(j,1:(size(X,2)-nseries))*ANOVA.PI.invXtX*X(j,1:(size(X,2)-nseries))')));
+% end
 %END TEST
 
 
