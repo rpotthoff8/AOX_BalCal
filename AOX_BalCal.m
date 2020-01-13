@@ -34,10 +34,7 @@ match=strcmp(pos_str,out.selfTerm_str);
 FLAGS.valid_selfTerm=match(2);
 FLAGS.PI_selfTerm=match(3);
 FLAGS.VIF_selfTerm=match(4);
-if out.valid==0
-    FLAGS.valid_selfTerm=0;
-end
-%
+
 %SELECT ALGEBRAIC MODE                                      set FLAGS.model = 1 (full)
 %                                                                             2 (trunc)
 %                                                                             3 (linear)
@@ -78,7 +75,7 @@ numSTD = out.numSTD;  %Number of St.D. for outlier threshold.
 %TO REMOVE POTENTIAL OUTLIERS                               set FLAGS.zeroed = 1;
 FLAGS.zeroed = out.zeroed;
 %
-
+%ANOVA OPTIONS
 FLAGS.anova = out.anova;
 FLAGS.loadPI = out.loadPI;
 FLAGS.BALFIT_Matrix=out.BALFIT_Matrix;
@@ -98,6 +95,7 @@ FLAGS.input_save=out.input_save_FLAG;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       INITIALIZATION SECTION
+
 fprintf('\nWorking ...\n')
 % Load data and characterize series
 load(out.savePathcal,'-mat');
@@ -189,7 +187,7 @@ else
     voltagelist = voltlabels;
     reslist = strcat('res',loadlist);
 end
-
+% Voltage data labels if present, otherwise use default values.
 if exist('loadunits','var')==0
     loadunits = {'lbs','in-lbs','lbs','lbs','in-lbs','lbs','in-lbs', 'in-lbs', 'in-lbs', 'in-lbs'};
     voltunits = {'microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V'};
@@ -242,8 +240,6 @@ balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
 balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,1);
 %%% Balfit Stats and Regression Coeff Matrix
 
-
-
 %Creates vectors that will not have outliers removed for balfit
 series = series0;
 targetMatrix = targetMatrix0;
@@ -252,7 +248,7 @@ comIN = comIN0;
 %Calculate xcalib (coefficients)
 [xcalib, ANOVA] = calc_xcalib(comIN       ,targetMatrix       ,series,...
     nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
-
+%Calculate balfit coefficeints
 [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,...
     nterms,nseries0,dimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT');
 
@@ -267,12 +263,12 @@ targetRes = targetMatrix0-aprxIN;
 % Identify Outliers After Filtering
 % (Threshold approach)
 if FLAGS.balOut == 1
-    
-    %Identify outliers based on residuals
     fprintf('\n Identifying Outliers....')
     
+    %Identify outliers based on residuals
     [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut] = ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS);
     
+    %Store outlier specific variables for output
     newStruct = struct('num_outliers',num_outliers,...
         'prcnt_outliers',prcnt_outliers,...
         'rowOut',rowOut,...
@@ -318,7 +314,7 @@ if FLAGS.balOut == 1
     end
 end
 
-%Iterate to find stable recommended equation
+%OPTIONAL: Iterate to find stable recommended equation
 if FLAGS.custom_eqn_iter==1
     FLAGS_iter.anova=1;
     FLAGS_iter.model=4;
@@ -326,34 +322,33 @@ if FLAGS.custom_eqn_iter==1
     customMatrix_iter=[zeros(nterms,dimFlag);ones(nseries0,dimFlag)];
     customMatrix_last=customMatrix_iter;
     ANOVA_iter=ANOVA;
+    %Custom matrix for next iteration is defined by significant terms from ANOVA
     for i=1:dimFlag
         customMatrix_iter(1:nterms,i)=ANOVA_iter(i).sig(1:nterms);
     end
     
     samRec=0;
     iter_count=0;
-    while samRec==0
+    while samRec==0 %Iterate until no change in significant variables between iteration
         iter_count=iter_count+1;
         fprintf('\n Searching for stable recommended equation. Iteration '); fprintf(string(iter_count)); fprintf('\n');
-        customMatrix_last=customMatrix_iter;
+        customMatrix_last=customMatrix_iter; %Store custom matrix from previous iteration
         
         [~,ANOVA_iter] = calc_xcalib(comIN0,targetMatrix0,series0,...
-            nterms,nseries0,dimFlag,FLAGS_iter,customMatrix_iter,anova_pct,loadlist,'Direct');
+            nterms,nseries0,dimFlag,FLAGS_iter,customMatrix_iter,anova_pct,loadlist,'Direct'); %Store ANOVA results with new model
+        %Custom matrix for next iteration is defined by significant terms from ANOVA
         for i=1:dimFlag
             customMatrix_iter(1:nterms,i)=ANOVA_iter(i).sig(1:nterms);
         end
         
-        samRec=isequal(customMatrix_last,customMatrix_iter);
-        
-        
+        samRec=isequal(customMatrix_last,customMatrix_iter); %Check if no change between previous and current iteration 
     end
+    %Store variables for output
     RECOMM_ALG_EQN_STABLE=customMatrix_iter(1:nterms,:);
     newStruct = struct('RECOMM_ALG_EQN_STABLE',RECOMM_ALG_EQN_STABLE);
     uniqueOut = cell2struct([struct2cell(uniqueOut);struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-end
-
-
+end %END ITERATIONS FOR STABLE CUSTOM EQUATION
 
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
 coeff = xcalib(1:nterms,:);
@@ -374,23 +369,10 @@ balfit_C1INVC2 = balfitxcalib((dimFlag+1:nterms), :)*balfit_C1INV;
 balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_D1 ; balfit_C1INVC2 ];
 %%% Balfit Stats and Matrix
 
-%Start uncertainty section
-%ANOVA data for uncertainty
-beta_CI_comb=zeros(size(xcalib,1),dimFlag);
-y_hat_PI_comb=zeros(size(targetMatrix0));
-if FLAGS.anova==1
-    for j=1:dimFlag
-        beta_CI_comb(:,j)=ANOVA(j).beta_CI;
-        y_hat_PI_comb(:,j)=ANOVA(j).y_hat_PI;
-    end
-end
-%END: ANOVA data for uncertainty
-%end uncertainty section
 
 %OUTPUT FUNCTION
 %Function creates all outputs for calibration, algebraic section
 section={'Calibration Algebraic'};
-
 newStruct=struct('aprxIN',aprxIN,...
     'coeff',coeff,...
     'nterms',nterms,...
@@ -407,7 +389,7 @@ newStruct=struct('aprxIN',aprxIN,...
     'description',description);
 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
     [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-
+%Output results from calibration algebraic section
 output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,...
     tares,tares_STDDEV,loadlist,series0,excessVec0,dimFlag,voltagelist,...
     reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
@@ -424,10 +406,10 @@ if FLAGS.balVal == 1
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
     
-    load(out.savePathval,'-mat');
-    [validSeries,s_1stV,~] = unique(seriesvalid);
+    load(out.savePathval,'-mat'); %Load validation data
+    [validSeries,s_1stV,~] = unique(seriesvalid); %Define series for validation data
     
-    % num of data points
+    % number of data points
     numptsvalid = length(seriesvalid);
     dimFlagvalid = length(excessVecvalid(1,:));
     
@@ -454,7 +436,7 @@ if FLAGS.balVal == 1
     %%%
     
     % Call the Algebraic Subroutine
-    comINvalid = balCal_algEqns(FLAGS.model,dainputsvalid,seriesvalid,0);
+    comINvalid = balCal_algEqns(FLAGS.model,dainputsvalid,seriesvalid,0); %Generate term combinations
     
     %VALIDATION APPROXIMATION
     %define the approximation for inputs minus global zeros
@@ -478,9 +460,9 @@ if FLAGS.balVal == 1
     
     %CALCULATE PREDICTION INTERVAL FOR POINTS
     if FLAGS.loadPI==1
-        
         [loadPI_valid]=calc_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
         
+        %Save variables for output
         newStruct=struct('loadPI_valid',loadPI_valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
@@ -515,12 +497,10 @@ if FLAGS.balCal == 2
     
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
-    add_RBFs=1;
-    
+
+    %Initialize Variables
     targetRes2=targetRes;
     aprxINminGZ2 = aprxINminGZ;
-    
-    %Initialize Variables
     aprxIN2_Hist = cell(numBasis,1);
     tareGRBFHist = cell(numBasis,1);
     cHist_tot=cell(numBasis,1);
@@ -537,36 +517,37 @@ if FLAGS.balCal == 2
     comINvalid_RBF=zeros(size(dainputsvalid,1),numBasis*dimFlag);
     dist=zeros(size(dainputs0,1),size(dainputs0,1),size(dainputs0,2));
     
+    
     for i=1:size(dainputs0,2)
-        dist(:,:,i)=dainputs0(:,i)'-dainputs0(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
+        dist(:,:,i)=dainputs0(:,i)'-dainputs0(:,i); %solve distance between each datapoint in each dimension, Eqn 16 from Javier's notes
     end
     R_square=sum(dist.^2,3); %Eqn 17 from Javier's notes: squared distance between each point
-    R_square_find=R_square;
+    R_square_find=R_square; %Save copy of distance matrix
     R_square_find(R_square_find==0)=NaN; %Eliminate zero values (on diagonal)
     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
-    h_GRBF=sqrt(max(min(R_square_find)));
+    h_GRBF=sqrt(max(min(R_square_find))); %Point spacing parameter
     eps_min=0.1; %Fasshauer pg 234, large epsilon= 'spiky'
-    eps_max=1.0;
+    eps_max=1.0; 
     
-    max_mult=5;
+    max_mult=5; %CHANGE
     maxPer=ceil(max_mult*numBasis/size(dainputs0,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
     %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     maxPer=1;
     
     %Initialize self terminate variables:
-    self_Terminate=false(1,dimFlag);
-    RBFs_added=zeros(1,dimFlag);
-    if FLAGS.valid_selfTerm==1
-        resStdHistvalid=zeros(numBasis,dimFlag);
-        period_change=zeros(numBasis,dimFlag);
-        period_length=max([10,0.1*numBasis]); %CHANGE?
+    self_Terminate=false(1,dimFlag); %Logical vector that stores if RBF addition has been terminated in each channel
+    RBFs_added=zeros(1,dimFlag); %Count of how many RBFs have been added in each channel
+    if FLAGS.valid_selfTerm==1 %If RBF addition will be terminated based on validation data error
+        resStdHistvalid=zeros(numBasis,dimFlag); %History of valid data residual standard deviation vs RBF number
+        period_change=zeros(numBasis,dimFlag); %Storge for Change in validation standard deviation over last 'n' additions
+        period_length=max([10,0.1*numBasis]); %CHANGE?: Length of period for self termination
     end
-    if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1)
-        calib_PI_rms_Hist=zeros(numBasis,dimFlag);
-        period_change=zeros(numBasis,dimFlag);
-        period_length=max([10,0.1*numBasis]); %CHANGE?
-        [loadPI_ALG]=calc_PI(ANOVA,anova_pct,comIN0(:,1:nterms),aprxIN); %Calculate prediction interval for loads
+    if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If RBF addition will be terminated based on VIF or Prediction interval
+        calib_PI_rms_Hist=zeros(numBasis,dimFlag); %History of prediction interval RMS vs RBF number
+        period_change=zeros(numBasis,dimFlag);  %Storge for Change in PI over last 'n' additions
+        period_length=max([10,0.1*numBasis]); %CHANGE?: Length of period for self termination
+        [loadPI_ALG]=calc_PI(ANOVA,anova_pct,comIN0(:,1:nterms),aprxIN); %Calculate prediction interval for loads with algebraic model
         calib_ALG_PI_rms=sqrt(sum((loadPI_ALG).^2,1)/numpts0); %RMS for calibration PI
     end
     
@@ -593,6 +574,7 @@ if FLAGS.balCal == 2
             customMatrix_RBF=[ones(nterms,dimFlag);ones(nseries0,dimFlag)];
         end
     end
+    %END SELF-TERMINATION INITIALIZATION
     
     count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have been placed at each location
     for u=1:numBasis
@@ -636,7 +618,7 @@ if FLAGS.balCal == 2
                                 rbfINminGZ_temp=0; %Zero out new RBF since VIF limit not met
                                 fprintf(strcat('\n Channel'," ", string(s), ' Reached VIF termination criteria, # RBF=',string(u-1))); %Output message
                                 if all(self_Terminate) %If all channels have now terminated
-                                    calib_PI_rms_Hist(u:end,:)=[];
+                                    calib_PI_rms_Hist(u:end,:)=[]; %Trim history variable
                                 end
                                 break %Exit while loop
                             end
@@ -646,7 +628,7 @@ if FLAGS.balCal == 2
                     end %END VIF_selfTerm section
                     
                 end %END loop for iterating until good VIF
-                rbfINminGZ(:,u,s)=rbfINminGZ_temp; %Store temp RBF
+                rbfINminGZ(:,u,s)=rbfINminGZ_temp; %Store temp RBF 
             end
         end
         
@@ -699,7 +681,7 @@ if FLAGS.balCal == 2
         [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,dimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
         
-        if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run
+        if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run for channels that have self terminated
             xcalib_RBF(1:size(xcalib_RBF_last,1)-nseries0,self_Terminate)=xcalib_RBF_last(1:end-nseries0,self_Terminate);
             xcalib_RBF(end-nseries0:end,self_Terminate)=xcalib_RBF_last(end-nseries0:end,self_Terminate);
         end
@@ -731,6 +713,7 @@ if FLAGS.balCal == 2
         aprxIN2=comIN0_RBF*xcalib_RBF;
         aprxIN2_Hist{u} = aprxIN2;
         
+        %Store tares
         taresGRBF = -xcalib_RBF(nterms+u*dimFlag+1:end,:);
         taretalRBF=taresGRBF(series0,:);
         aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
@@ -750,7 +733,8 @@ if FLAGS.balCal == 2
         resSquareHist(u,:) = resSquare2;
         resStdHist(u,:)=std(targetRes2);
         
-        %Validation Error Self-Termination Check
+        %Validation Error Self-Termination Check: use new ALG+RBF model to
+        %determine standard deviation of residuals for validation data
         if FLAGS.valid_selfTerm==1
             %Test on validation data
             comINvalid_RBF(:,(u-1)*dimFlag+1:u*dimFlag)=create_comIN_RBF(dainputsvalid,epsHist(u,:),center_daHist(u,:,:),h_GRBF); %Generate comIN for RBFs
@@ -790,15 +774,14 @@ if FLAGS.balCal == 2
             end
         end
         
-        %Prediction Error Self-Termination Check
-        if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) && any(~self_Terminate)
+        %Prediction Error Self-Termination Check: caculate PI for
+        %calibration data and store RMS of all calibration points
+        if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) && any(~self_Terminate) %If terminating based on PI or VIF and not all the channels have been self terminated
             [loadPI_GRBF_iter]=calc_PI(ANOVA_GRBF,anova_pct,comIN0_RBF(:,1:nterms_RBF),aprxIN2,calc_channel); %Calculate prediction interval for loads
             for i=1:dimFlag
                 if self_Terminate(i)==1 %If channel is self terminated, use PI RMS from previous iteration
-                    %                     calib_PI_rms_Hist(u,i)=calib_PI_rms_Hist(u-1,i);
                     calib_PI_rms_Hist(u,i)=calib_PI_rms_Hist(u-1,i);
                 else
-                    %                     calib_PI_rms_Hist(u,i)=sqrt(sum((ANOVA_GRBF(i).y_hat_PI).^2)/numpts0); %RMS for calibration PI: from ANOVA
                     calib_PI_rms_Hist(u,i)=sqrt(sum((loadPI_GRBF_iter(:,i)).^2)/numpts0); %RMS for calibration PI
                 end
             end
@@ -818,8 +801,8 @@ if FLAGS.balCal == 2
                 if period_change(u,i)>0 && self_Terminate(i)==0
                     fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
                     self_Terminate(i)=1;
-                    if all(self_Terminate)
-                        calib_PI_rms_Hist(u+1:end,:)=[];
+                    if all(self_Terminate) %If all the channels have now been self-terminated
+                        calib_PI_rms_Hist(u+1:end,:)=[];  %Trim storage variable
                     end
                 end
             end
@@ -840,7 +823,7 @@ if FLAGS.balCal == 2
             break %Exit loop placing RBFs
         end
     end
-    final_RBFs_added=RBFs_added;
+    final_RBFs_added=RBFs_added; %Initialize count of # RBFs/channel for final model
     
     %If validation self-termination selected, recalculate for RBF number of min
     %validation STD
@@ -860,7 +843,6 @@ if FLAGS.balCal == 2
     
     %If PI self-termination selected, recalculate for RBF number of min
     %PI STD
-    
     if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1)
         fprintf(strcat('\n Trimming RBFs for minimum calibration prediction interval RMS'));
         %Find RBF number for lowest calibration PI rms
@@ -1008,9 +990,9 @@ if FLAGS.balCal == 2
         
         %CALCULATE PREDICTION INTERVAL FOR POINTS
         if FLAGS.loadPI==1
-            
             [loadPI_valid_GRBF]=calc_PI(ANOVA_GRBF,anova_pct,comINvalid_algRBF,aprxINminTARE2valid); %Calculate prediction interval for loads
             
+            %Store Variables for output
             newStruct=struct('loadPI_valid_GRBF',loadPI_valid_GRBF);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
@@ -1049,7 +1031,7 @@ if FLAGS.balApprox == 1
         GRBF='GRBFS NOT PLACED';
     end
     
-    %Function that performs all ANOVA calculations and outputs
+    %Function that performs all Approximation calculations and outputs
     [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,...
         series2approx,pointIDapprox,loadlist,file_output_location,GRBF,ANOVA,anova_pct);
     
@@ -1057,7 +1039,7 @@ end
 %END APPROXIMATION SECTION
 
 %File Cleanup
-if FLAGS.input_save==0
+if FLAGS.input_save==0  %If user did not want to save input data files, delete
     if isfield(out,'cal_create')==1
         try
             delete(out.savePathcal);
@@ -1082,6 +1064,6 @@ fprintf('\nCalculations Complete.\n');
 fprintf('%s',strcat('Check '," ",file_output_location,' for output files.'))
 fprintf('\n \n');
 runTime=toc;
-if isdeployed % Optional, use if you want the non-deployed version to exit immediately
+if isdeployed % Optional, use if you want the non-deployed version to not exit immediately
     input('Press enter to finish and close');
 end

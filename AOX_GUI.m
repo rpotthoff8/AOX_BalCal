@@ -56,6 +56,7 @@ set(handles.figure1, 'units', 'normalized', 'position', [0.15 0.1 0.5 0.8])
 set(handles.output_location,'String',pwd);
 global VERSION
 VERSION = 16;
+
 try
     
     [nasalogo,~,aln] = imread('nasa.png','BackgroundColor',[0.941, 0.941, 0.941]);
@@ -65,7 +66,6 @@ try
     [ricelogo,~,alr] = imread('rice.png','BackgroundColor',[0.941, 0.941, 0.941]);
     axes(handles.axesRice);
     imshow(ricelogo, []);
-    
 end
 
 % Choose default command line output for AOX_GUI
