@@ -84,10 +84,10 @@ for k = 1:dimFlag
 end
 % fprintf('\n')
 
-if FLAGS.anova==0
+if FLAGS.anova==0 || all(~calc_channel)
     ANOVA='ANOVA NOT PERFORMED';
 else
-    if FLAGS.model==4 %If custom equation, expand ANOVA statistics to standard 96 term matrix
+    if FLAGS.model==4 && any(calc_channel) %If custom equation, expand ANOVA statistics to standard 96 term matrix
         ANOVA_exp=ANOVA;
         ExpandList=["beta","beta_CI","T","p_T","VIF","sig"]; %List of ANOVA structure elements that should be expanded
         for i=1:size(ExpandList,2)

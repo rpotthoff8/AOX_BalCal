@@ -217,8 +217,10 @@ ANOVA.beta_CI  = beta_CI;  % Coefficient Confidence Intervals
 ANOVA.T = T;               % T-statistic of coefficients
 ANOVA.p_T = p_T;           % P-value of coefficients
 ANOVA.VIF = VIF;           % Variance Inflation Factors
-ANOVA.VIF_dl=VIF_dl;
-ANOVA.VIF_dl2=VIF_dl2;
+if test_FLAG==0
+    ANOVA.VIF_dl=VIF_dl;
+    ANOVA.VIF_dl2=VIF_dl2;
+end
 ANOVA.sig = sig;            %If term is significant
 
 ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints

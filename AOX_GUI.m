@@ -2339,7 +2339,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function selfTerm_strSet(handles) %Function sets the string for RBF self-termination popup
-pos_str={'No Self-Termination','Validation Error Self-Terminate','Prediction Interval Self-Terminate','VIF Self-Terminate'}; %Possible self-termination options
+pos_str={'No Self-Termination','Validation Error Self-Terminate','Prediction Interval Self-Terminate','VIF + Prediction Interval Self-Terminate'}; %Possible self-termination options
 str_include=logical([1,0,0,0]); %Logical array of what options should be possible
 if handles.validate.Value==1 %If validation data is provided
     str_include(2)=1;
