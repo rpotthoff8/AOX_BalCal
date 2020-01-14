@@ -77,7 +77,7 @@ FLAGS.zeroed = out.zeroed;
 %
 %ANOVA OPTIONS
 FLAGS.anova = out.anova;
-FLAGS.loadPI = out.loadPI;
+FLAGS.loadPI = out.anova; %Previous separate option in GUI, now PI is calculated for valid/approx automatically if ANOVA is performed
 FLAGS.BALFIT_Matrix=out.BALFIT_Matrix;
 FLAGS.BALFIT_ANOVA=out.BALFIT_ANOVA;
 FLAGS.Rec_Model=out.Rec_Model;

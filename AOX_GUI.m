@@ -88,7 +88,6 @@ valPath_Callback(handles.valPath, eventdata, handles);
 appPath_Callback(handles.appPath, eventdata, handles);
 grbf_Callback(handles.grbf, eventdata, handles);
 anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
-loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles)
 output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
 
 modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles);
@@ -213,7 +212,6 @@ outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 outStruct.selfTerm_str=handles.selfTerm_pop.String(handles.selfTerm_pop.Value);
 
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
-outStruct.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 outStruct.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
 outStruct.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 outStruct.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
@@ -1885,35 +1883,20 @@ function anova_FLAGcheck_Callback(hObject, eventdata, handles)
 selfTerm_strSet(handles);
 
 if get(hObject,'Value') == 0
-    set(handles.loadPI_FLAGcheck,'Enable','off','Value',0);
     set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','off','Value',0);
     set(handles.Rec_Model_FLAGcheck,'Enable','off','Value',0);
     set(handles.anova_pct,'Enable','off');
     set(handles.anova_pct_text,'Enable','off');
     set(handles.stableRec_FLAGcheck,'Enable','off','Value',0);
+    set(handles.approx_and_PI_print,'Enable','off','Value',0);
 else
-    set(handles.loadPI_FLAGcheck,'Enable','on');
     set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','on');
     set(handles.Rec_Model_FLAGcheck,'Enable','on');
     set(handles.anova_pct,'Enable','on');
     set(handles.anova_pct_text,'Enable','on');
     set(handles.stableRec_FLAGcheck,'Enable','on');
-end
-loadPI_FLAGcheck_Callback(handles.loadPI_FLAGcheck, eventdata, handles);
-
-% --- Executes on button press in loadPI_FLAGcheck.
-function loadPI_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to loadPI_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of loadPI_FLAGcheck
-if get(hObject,'Value') == 0
-    set(handles.approx_and_PI_print,'Enable','off','Value',0);
-else
     set(handles.approx_and_PI_print,'Enable','on');
 end
-
 
 
 % --- Executes on button press in BALFIT_Matrix_FLAGcheck.
@@ -2262,7 +2245,6 @@ default.selfTerm_pop_val= get(handles.selfTerm_pop,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
 
 default.anova = get(handles.anova_FLAGcheck,'Value');
-default.loadPI = get(handles.loadPI_FLAGcheck,'Value');
 default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
 default.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
@@ -2370,7 +2352,6 @@ if exist(fullfileName,'file')
         
         set(handles.anova_FLAGcheck,'Value',default.anova);
                 
-        set(handles.loadPI_FLAGcheck,'Value',default.loadPI);
         set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
         set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
         set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
