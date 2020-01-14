@@ -23,7 +23,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 10-Jan-2020 15:54:02
+% Last Modified by GUIDE v2.5 14-Jan-2020 13:50:17
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -79,109 +79,9 @@ fileName = [CurrentPath,filesep,'default.ini'];
 
 actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
 handles.termInclude=zeros(10,1); %Initialize for sub gui
-if exist(fileName,'file')
-    try
-        load(fileName,'-mat');
-        
-        versionCheck(default);
-        
-        %set(handles.tares_FLAGcheck,'Value',default.tares);
-        set(handles.disp_FLAGcheck,'Value',default.disp);
-        %set(handles.grbftares_FLAGcheck,'Value',default.grbftares);
-        set(handles.print_FLAGcheck,'Value',default.print);
-        set(handles.res_FLAGcheck,'Value',default.res);
-        set(handles.hist_FLAGcheck,'Value',default.hist);
-        set(handles.outlier_FLAGcheck,'Value',default.outlier);
-        set(handles.numSTD,'String',default.numSTD);
-        set(handles.zeroed_FLAGcheck,'Value',default.zeroed);
-        set(handles.corr_FLAGcheck,'Value',default.corr);
-        set(handles.rescorr_FLAGcheck,'Value',default.rescorr);
-        set(handles.excel_FLAGcheck,'Value',default.excel);
-        
-        set(handles.calibrate,'Value',default.calibrate);
-        set(handles.calPath,'String',default.calPath);
-        set(handles.c11,'String',default.calRange{1,1});
-        set(handles.c12,'String',default.calRange{1,2});
-        set(handles.c21,'String',default.calRange{2,1});
-        set(handles.c22,'String',default.calRange{2,2});
-        set(handles.c31,'String',default.calRange{3,1});
-        set(handles.c32,'String',default.calRange{3,2});
-        set(handles.c41,'String',default.calRange{4,1});
-        set(handles.c42,'String',default.calRange{4,2});
-        set(handles.c51,'String',default.calRange{5,1});
-        set(handles.c52,'String',default.calRange{5,2});
-        
-        
-        set(handles.validate,'Value',default.validate);
-        set(handles.valPath,'String',default.valPath);
-        set(handles.v11,'String',default.valRange{1,1});
-        set(handles.v12,'String',default.valRange{1,2});
-        set(handles.v21,'String',default.valRange{2,1});
-        set(handles.v22,'String',default.valRange{2,2});
-        set(handles.v31,'String',default.valRange{3,1});
-        set(handles.v32,'String',default.valRange{3,2});
-        set(handles.v41,'String',default.valRange{4,1});
-        set(handles.v42,'String',default.valRange{4,2});
-        set(handles.v51,'String',default.valRange{5,1});
-        set(handles.v52,'String',default.valRange{5,2});
-       
-        
-        set(handles.approximate,'Value',default.approximate);
-        set(handles.appPath,'String',default.appPath);
-        set(handles.a11,'String',default.appRange{1,1});
-        set(handles.a12,'String',default.appRange{1,2});
-        set(handles.a21,'String',default.appRange{2,1});
-        set(handles.a22,'String',default.appRange{2,2});
-        set(handles.a31,'String',default.appRange{3,1});
-        set(handles.a32,'String',default.appRange{3,2});
-        set(handles.a41,'String',default.appRange{4,1});
-        set(handles.a42,'String',default.appRange{4,2});
-        
-        
-        switch default.action
-            case 'calibrate', actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
-            case 'validate', actionpanel_SelectionChangeFcn(handles.validate, eventdata, handles)
-            case 'approximate', actionpanel_SelectionChangeFcn(handles.approximate, eventdata, handles)
-        end
-        
-        set(handles.full,'Value',default.full);
-        set(handles.truncated,'Value',default.truncated);
-        set(handles.linear,'Value',default.linear);
-        set(handles.custom,'Value',default.custom);
-        set(handles.customPath,'String',default.customPath);
-        set(handles.balanceType,'Value',default.balanceType);
-        set(handles.balanceType_list,'Value',default.balanceType_list);
-        set(handles.termSelect,'Value',default.termSelect);
-        set(handles.termSelectButton,'Tooltip',default.termInclude);
-        
-        set(handles.grbf,'Value',default.grbf);
-        set(handles.numBasisIn,'String',default.basis);
-        set(handles.selfTerm_pop,'String',default.selfTerm_pop_str);
-        set(handles.selfTerm_pop,'Value',default.selfTerm_pop_val);
-        
-        
-        %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
-        %set(handles.loglog_FLAGcheck,'Value',default.loglog);
-        
-        set(handles.anova_FLAGcheck,'Value',default.anova);
-                
-        set(handles.loadPI_FLAGcheck,'Value',default.loadPI);
-        set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
-        set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
-        set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
-        set(handles.anova_pct,'String',default.anova_pct);
-        set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
-        
-        set(handles.output_to_calib_FLAG,'Value',default.output_to_calib_FLAG);
-        set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
-        set(handles.output_location,'String',default.output_location);
-        set(handles.calib_model_save_FLAG,'Value',default.calib_model_save_FLAG);
-        set(handles.input_save_FLAG,'Value',default.input_save_FLAG);
-        set(handles.stableRec_FLAGcheck,'Value',default.stableRec_FLAGcheck);
-    catch
-        disp('local default.ini may be outdated or incompatible with GUI.');
-    end
-end
+
+loadSettings(handles, fileName, eventdata);
+
 outlier_FLAGcheck_Callback(handles.outlier_FLAGcheck, eventdata, handles);
 calPath_Callback(handles.calPath, eventdata, handles);
 valPath_Callback(handles.valPath, eventdata, handles);
@@ -466,6 +366,12 @@ if outStruct.approx == 1
     end
 end
 
+%Save run settings
+if outStruct.input_save_FLAG==1 %Option to save run settings
+    [savePath,~,~]=fileparts(outStruct.output_location); %new output location
+    saveSettings(handles,'runSettings',savePath,outStruct.REPORT_NO);
+end
+ 
 outStruct.cancel = 0;
 
 handles.output = outStruct;
@@ -1300,95 +1206,9 @@ function ini_button_Callback(hObject, eventdata, handles)
 % hObject    handle to ini_button (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global VERSION
-default.version = VERSION;
+[savePath,~,~] = fileparts(mfilename('fullpath'));
+saveSettings(handles,'default',savePath);
 
-%default.tares = get(handles.tares_FLAGcheck,'Value');
-default.disp = get(handles.disp_FLAGcheck,'Value');
-%default.grbftares = get(handles.grbftares_FLAGcheck,'Value');
-default.print = get(handles.print_FLAGcheck,'Value');
-default.res = get(handles.res_FLAGcheck,'Value');
-default.hist = get(handles.hist_FLAGcheck,'Value');
-default.outlier = get(handles.outlier_FLAGcheck,'Value');
-default.numSTD = get(handles.numSTD,'String');
-default.zeroed = get(handles.zeroed_FLAGcheck,'Value');
-default.corr = get(handles.corr_FLAGcheck,'Value');
-default.rescorr = get(handles.rescorr_FLAGcheck,'Value');
-default.excel = get(handles.excel_FLAGcheck,'Value');
-
-default.action = get(get(handles.actionpanel,'SelectedObject'),'tag');
-default.calibrate = get(handles.calibrate,'Value');
-default.calPath = get(handles.calPath,'String');
-default.calRange{1,1} = get(handles.c11,'String');
-default.calRange{1,2} = get(handles.c12,'String');
-default.calRange{2,1} = get(handles.c21,'String');
-default.calRange{2,2} = get(handles.c22,'String');
-default.calRange{3,1} = get(handles.c31,'String');
-default.calRange{3,2} = get(handles.c32,'String');
-default.calRange{4,1} = get(handles.c41,'String');
-default.calRange{4,2} = get(handles.c42,'String');
-default.calRange{5,1} = get(handles.c51,'String');
-default.calRange{5,2} = get(handles.c52,'String');
-
-default.validate = get(handles.validate,'Value');
-default.valPath = get(handles.valPath,'String');
-default.valRange{1,1} = get(handles.v11,'String');
-default.valRange{1,2} = get(handles.v12,'String');
-default.valRange{2,1} = get(handles.v21,'String');
-default.valRange{2,2} = get(handles.v22,'String');
-default.valRange{3,1} = get(handles.v31,'String');
-default.valRange{3,2} = get(handles.v32,'String');
-default.valRange{4,1} = get(handles.v41,'String');
-default.valRange{4,2} = get(handles.v42,'String');
-default.valRange{5,1} = get(handles.v51,'String');
-default.valRange{5,2} = get(handles.v52,'String');
-
-default.approximate = get(handles.approximate,'Value');
-default.appPath = get(handles.appPath,'String');
-default.appRange{1,1} = get(handles.a11,'String');
-default.appRange{1,2} = get(handles.a12,'String');
-default.appRange{2,1} = get(handles.a21,'String');
-default.appRange{2,2} = get(handles.a22,'String');
-default.appRange{3,1} = get(handles.a31,'String');
-default.appRange{3,2} = get(handles.a32,'String');
-default.appRange{4,1} = get(handles.a41,'String');
-default.appRange{4,2} = get(handles.a42,'String');
-
-default.full = get(handles.full,'Value');
-default.truncated = get(handles.truncated,'Value');
-default.linear = get(handles.linear,'Value');
-default.custom = get(handles.custom,'Value');
-default.customPath = get(handles.customPath,'String');
-default.balanceType = get(handles.balanceType,'Value');
-default.balanceType_list=get(handles.balanceType_list, 'Value');
-default.termSelect=get(handles.termSelect,'Value');
-default.termInclude=handles.termSelectButton.Tooltip;
-default.grbf = get(handles.grbf,'Value');
-default.basis = get(handles.numBasisIn,'String');
-default.selfTerm_pop_str= get(handles.selfTerm_pop,'String');
-default.selfTerm_pop_val= get(handles.selfTerm_pop,'Value');
-%default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
-%default.loglog = get(handles.loglog_FLAGcheck,'Value');
-
-default.anova = get(handles.anova_FLAGcheck,'Value');
-default.loadPI = get(handles.loadPI_FLAGcheck,'Value');
-default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
-default.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
-default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
-default.anova_pct = get(handles.anova_pct,'String');
-default.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
-
-default.output_location=get(handles.output_location,'String');
-default.output_to_calib_FLAG=get(handles.output_to_calib_FLAG,'Value');
-default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
-default.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
-default.input_save_FLAG=get(handles.input_save_FLAG,'Value');
-
-default.stableRec_FLAGcheck=get(handles.stableRec_FLAGcheck,'Value');
-
-[CurrentPath,~,~] = fileparts(mfilename('fullpath'));
-fileName = [CurrentPath,filesep,'default.ini'];
-save(fileName,'default');
 set(hObject,'String','Saving...');
 pause(1);
 set(hObject,'String','Saved');
@@ -2366,8 +2186,222 @@ end
 set(handles.selfTerm_pop,'String',pos_str(str_include));
 set(handles.selfTerm_pop,'Value',new_val);
 
+function [] = saveSettings(handles, fileName, filePath, runID) %Function saves all current settings for default or run settings .ini file
+global VERSION
+default.version = VERSION;
 
+if nargin==4
+    default.runID=runID;
+end
+
+%default.tares = get(handles.tares_FLAGcheck,'Value');
+default.disp = get(handles.disp_FLAGcheck,'Value');
+%default.grbftares = get(handles.grbftares_FLAGcheck,'Value');
+default.print = get(handles.print_FLAGcheck,'Value');
+default.res = get(handles.res_FLAGcheck,'Value');
+default.hist = get(handles.hist_FLAGcheck,'Value');
+default.outlier = get(handles.outlier_FLAGcheck,'Value');
+default.numSTD = get(handles.numSTD,'String');
+default.zeroed = get(handles.zeroed_FLAGcheck,'Value');
+default.corr = get(handles.corr_FLAGcheck,'Value');
+default.rescorr = get(handles.rescorr_FLAGcheck,'Value');
+default.excel = get(handles.excel_FLAGcheck,'Value');
+
+default.action = get(get(handles.actionpanel,'SelectedObject'),'tag');
+default.calibrate = get(handles.calibrate,'Value');
+default.calPath = get(handles.calPath,'String');
+default.calRange{1,1} = get(handles.c11,'String');
+default.calRange{1,2} = get(handles.c12,'String');
+default.calRange{2,1} = get(handles.c21,'String');
+default.calRange{2,2} = get(handles.c22,'String');
+default.calRange{3,1} = get(handles.c31,'String');
+default.calRange{3,2} = get(handles.c32,'String');
+default.calRange{4,1} = get(handles.c41,'String');
+default.calRange{4,2} = get(handles.c42,'String');
+default.calRange{5,1} = get(handles.c51,'String');
+default.calRange{5,2} = get(handles.c52,'String');
+
+default.validate = get(handles.validate,'Value');
+default.valPath = get(handles.valPath,'String');
+default.valRange{1,1} = get(handles.v11,'String');
+default.valRange{1,2} = get(handles.v12,'String');
+default.valRange{2,1} = get(handles.v21,'String');
+default.valRange{2,2} = get(handles.v22,'String');
+default.valRange{3,1} = get(handles.v31,'String');
+default.valRange{3,2} = get(handles.v32,'String');
+default.valRange{4,1} = get(handles.v41,'String');
+default.valRange{4,2} = get(handles.v42,'String');
+default.valRange{5,1} = get(handles.v51,'String');
+default.valRange{5,2} = get(handles.v52,'String');
+
+default.approximate = get(handles.approximate,'Value');
+default.appPath = get(handles.appPath,'String');
+default.appRange{1,1} = get(handles.a11,'String');
+default.appRange{1,2} = get(handles.a12,'String');
+default.appRange{2,1} = get(handles.a21,'String');
+default.appRange{2,2} = get(handles.a22,'String');
+default.appRange{3,1} = get(handles.a31,'String');
+default.appRange{3,2} = get(handles.a32,'String');
+default.appRange{4,1} = get(handles.a41,'String');
+default.appRange{4,2} = get(handles.a42,'String');
+
+default.full = get(handles.full,'Value');
+default.truncated = get(handles.truncated,'Value');
+default.linear = get(handles.linear,'Value');
+default.custom = get(handles.custom,'Value');
+default.customPath = get(handles.customPath,'String');
+default.balanceType = get(handles.balanceType,'Value');
+default.balanceType_list=get(handles.balanceType_list, 'Value');
+default.termSelect=get(handles.termSelect,'Value');
+default.termInclude=handles.termSelectButton.Tooltip;
+default.grbf = get(handles.grbf,'Value');
+default.basis = get(handles.numBasisIn,'String');
+default.selfTerm_pop_str= get(handles.selfTerm_pop,'String');
+default.selfTerm_pop_val= get(handles.selfTerm_pop,'Value');
+%default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
+%default.loglog = get(handles.loglog_FLAGcheck,'Value');
+
+default.anova = get(handles.anova_FLAGcheck,'Value');
+default.loadPI = get(handles.loadPI_FLAGcheck,'Value');
+default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
+default.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
+default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
+default.anova_pct = get(handles.anova_pct,'String');
+default.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
+
+default.output_location=get(handles.output_location,'String');
+default.output_to_calib_FLAG=get(handles.output_to_calib_FLAG,'Value');
+default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
+default.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
+default.input_save_FLAG=get(handles.input_save_FLAG,'Value');
+
+default.stableRec_FLAGcheck=get(handles.stableRec_FLAGcheck,'Value');
+
+% [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
+fullfileName = [filePath,filesep,fileName,'.ini'];
+save(fullfileName,'default');
+
+function []=loadSettings(handles, fullfileName, eventdata)
+[~,fileName,~]=fileparts(fullfileName);
+
+if exist(fullfileName,'file')
+    try
+        load(fullfileName,'-mat');
+        
+        versionCheck(default);
+        
+        %set(handles.tares_FLAGcheck,'Value',default.tares);
+        set(handles.disp_FLAGcheck,'Value',default.disp);
+        %set(handles.grbftares_FLAGcheck,'Value',default.grbftares);
+        set(handles.print_FLAGcheck,'Value',default.print);
+        set(handles.res_FLAGcheck,'Value',default.res);
+        set(handles.hist_FLAGcheck,'Value',default.hist);
+        set(handles.outlier_FLAGcheck,'Value',default.outlier);
+        set(handles.numSTD,'String',default.numSTD);
+        set(handles.zeroed_FLAGcheck,'Value',default.zeroed);
+        set(handles.corr_FLAGcheck,'Value',default.corr);
+        set(handles.rescorr_FLAGcheck,'Value',default.rescorr);
+        set(handles.excel_FLAGcheck,'Value',default.excel);
+        
+        set(handles.calibrate,'Value',default.calibrate);
+        set(handles.calPath,'String',default.calPath);
+        set(handles.c11,'String',default.calRange{1,1});
+        set(handles.c12,'String',default.calRange{1,2});
+        set(handles.c21,'String',default.calRange{2,1});
+        set(handles.c22,'String',default.calRange{2,2});
+        set(handles.c31,'String',default.calRange{3,1});
+        set(handles.c32,'String',default.calRange{3,2});
+        set(handles.c41,'String',default.calRange{4,1});
+        set(handles.c42,'String',default.calRange{4,2});
+        set(handles.c51,'String',default.calRange{5,1});
+        set(handles.c52,'String',default.calRange{5,2});
+        
+        
+        set(handles.validate,'Value',default.validate);
+        set(handles.valPath,'String',default.valPath);
+        set(handles.v11,'String',default.valRange{1,1});
+        set(handles.v12,'String',default.valRange{1,2});
+        set(handles.v21,'String',default.valRange{2,1});
+        set(handles.v22,'String',default.valRange{2,2});
+        set(handles.v31,'String',default.valRange{3,1});
+        set(handles.v32,'String',default.valRange{3,2});
+        set(handles.v41,'String',default.valRange{4,1});
+        set(handles.v42,'String',default.valRange{4,2});
+        set(handles.v51,'String',default.valRange{5,1});
+        set(handles.v52,'String',default.valRange{5,2});
+       
+        
+        set(handles.approximate,'Value',default.approximate);
+        set(handles.appPath,'String',default.appPath);
+        set(handles.a11,'String',default.appRange{1,1});
+        set(handles.a12,'String',default.appRange{1,2});
+        set(handles.a21,'String',default.appRange{2,1});
+        set(handles.a22,'String',default.appRange{2,2});
+        set(handles.a31,'String',default.appRange{3,1});
+        set(handles.a32,'String',default.appRange{3,2});
+        set(handles.a41,'String',default.appRange{4,1});
+        set(handles.a42,'String',default.appRange{4,2});
+        
+        
+        switch default.action
+            case 'calibrate', actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
+            case 'validate', actionpanel_SelectionChangeFcn(handles.validate, eventdata, handles)
+            case 'approximate', actionpanel_SelectionChangeFcn(handles.approximate, eventdata, handles)
+        end
+        
+        set(handles.full,'Value',default.full);
+        set(handles.truncated,'Value',default.truncated);
+        set(handles.linear,'Value',default.linear);
+        set(handles.custom,'Value',default.custom);
+        set(handles.customPath,'String',default.customPath);
+        set(handles.balanceType,'Value',default.balanceType);
+        set(handles.balanceType_list,'Value',default.balanceType_list);
+        set(handles.termSelect,'Value',default.termSelect);
+        set(handles.termSelectButton,'Tooltip',default.termInclude);
+        
+        set(handles.grbf,'Value',default.grbf);
+        set(handles.numBasisIn,'String',default.basis);
+        set(handles.selfTerm_pop,'String',default.selfTerm_pop_str);
+        set(handles.selfTerm_pop,'Value',default.selfTerm_pop_val);
+        
+        
+        %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
+        %set(handles.loglog_FLAGcheck,'Value',default.loglog);
+        
+        set(handles.anova_FLAGcheck,'Value',default.anova);
+                
+        set(handles.loadPI_FLAGcheck,'Value',default.loadPI);
+        set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
+        set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
+        set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
+        set(handles.anova_pct,'String',default.anova_pct);
+        set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
+        
+        set(handles.output_to_calib_FLAG,'Value',default.output_to_calib_FLAG);
+        set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
+        set(handles.output_location,'String',default.output_location);
+        set(handles.calib_model_save_FLAG,'Value',default.calib_model_save_FLAG);
+        set(handles.input_save_FLAG,'Value',default.input_save_FLAG);
+        set(handles.stableRec_FLAGcheck,'Value',default.stableRec_FLAGcheck);
+        if isfield(default,'runID')
+            disp(['Loaded Settings from Test: ',default.runID])
+        else
+            disp('Default Settings Loaded')
+        end
+    catch
+        disp(['Unable to fully load settings. ',fileName,'.ini may be outdated or incompatible with GUI.']);
+    end
+end
     
-    
-    
+
+% --- Executes on button press in load_settings_button.
+function load_settings_button_Callback(hObject, eventdata, handles)
+% hObject    handle to load_settings_button (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+[set_name,set_path]=uigetfile('*.ini');
+if ~isequal(set_name,0)
+    fileName=fullfile(set_path,set_name);
+    loadSettings(handles, fileName, eventdata);
+end
 

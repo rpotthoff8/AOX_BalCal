@@ -95,8 +95,9 @@ FLAGS.input_save=out.input_save_FLAG;
 %                       END USER INPUT SECTION
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       INITIALIZATION SECTION
-
+fprintf('\n Starting Test: '); fprintf(out.REPORT_NO); fprintf('\n');
 fprintf('\nWorking ...\n')
+
 % Load data and characterize series
 load(out.savePathcal,'-mat');
 series0 = series;
