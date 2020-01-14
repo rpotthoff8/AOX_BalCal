@@ -7,6 +7,9 @@
 *.mat
 *.lhs
 *.xlsx
+*.png
+!nasa.png
+!rice.png
 
 # GUI config files #
 ####################
