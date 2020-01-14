@@ -29,7 +29,7 @@ FLAGS.balCal = out.grbf;
 %DEFINE THE NUMBER OF BASIS FUNCTIONS
 numBasis = out.basis;
 %SET SELF TERMINATE OPTION FOR RBFS
-pos_str={'No Self-Termination','Validation Error Self-Terminate','Prediction Interval Self-Terminate','VIF + Prediction Interval Self-Terminate'}; %Possible self-termination options
+pos_str={'No Early Termination','Validation Error Termination','Prediction Interval Termination','VIF + Prediction Interval Termination'}; %Possible self-termination options
 match=strcmp(pos_str,out.selfTerm_str);
 FLAGS.valid_selfTerm=match(2);
 FLAGS.PI_selfTerm=match(3);
