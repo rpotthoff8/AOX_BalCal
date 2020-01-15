@@ -1,4 +1,18 @@
 function [leftColumn, topRow]=customMatrix_labels(loadlist,voltagelist,dimFlag,model,combined_terms,numRBF)
+%Function generates text labels for terms used in model.  Labels are used
+%in annotating ANOVA outputs for properties on each coefficient
+
+%INPUTS:
+%  loadlist = Labels for each load channel
+%  voltagelist = Labels for each voltage channel
+%  dimFlag = Number of data channels
+%  model = Model type selected (Full, Truncated, Linear, Custom)
+%  combined_terms = Character array for which term type is algebraicly combined (voltage or loads)
+%  numRBF = Number of RBFs placed (if any)
+
+%OUTPUTS:
+%  leftColumn = Labels for combined terms
+%  topRow = Labels for target terms
 
 %Determine what terms should be combined: voltages or loads;
 if strcmp(combined_terms,{'voltages'})==1

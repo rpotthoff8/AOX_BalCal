@@ -1,4 +1,6 @@
-% Version 11: Last modified on 6/11/18
+%GUI created by Matlab 'GUIDE' program.  Called by main AOX_approx.m for
+%user inputs
+
 function varargout = AOX_Approx_GUI(varargin)
 % AOX_Approx_GUI MATLAB code for AOX_Approx_GUI.fig
 %      AOX_Approx_GUI, by itself, creates a new AOX_Approx_GUI or raises the existing

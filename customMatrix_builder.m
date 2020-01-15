@@ -1,4 +1,16 @@
 function customMatrix=customMatrix_builder(dimFlag,termInclude)
+%Function creates a custom matrix for which algebraic terms should be
+%included in the model.  This matrix of 1s and 0s denotes the terms
+%selected.  The possible algebraic terms are listed in order below.
+%Function works for any data dimension (any # of channels)
+
+%INPUTS:
+%  dimFlag = Number of data channels
+%  termInclude = Boolean 1x10 vector for which algebraic term combinations should be included in model
+
+%OUTPUTS:
+%  customMatrix = Custom Equation Matrix for calculations
+
 %First determine the index numbers for each term in the full equation set
 termIndex=cell(10,1);
 %Terms are listed in following order:

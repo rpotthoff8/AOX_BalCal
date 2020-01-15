@@ -1,3 +1,6 @@
+%GUI created by Matlab 'GUIDE' program.  GUI generated is a popup window
+%used for custom term selection.  Called by main AOX_GUI.m
+
 function varargout = termSelect_GUI(varargin)
 % TERMSELECT_GUI MATLAB code for termSelect_GUI.fig
 %      TERMSELECT_GUI, by itself, creates a new TERMSELECT_GUI or raises the existing

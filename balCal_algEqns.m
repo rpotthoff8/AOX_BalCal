@@ -1,13 +1,25 @@
-% Copyright �2017 Andrew Meade, Javier Villarreal.  All Rights Reserved.
 function [in_comb,high,high_CELL] = balCal_algEqns(model_FLAG,in,series,intercept_FLAG,voltagelist,normFLAG)
+%Function creates matrix of predictor variables for algebraic model by
+%combining measured variables (voltages).  Combined terms are determined by
+%the model selected
+
+%INPUTS:
+%  model_FLAG = Flag for model selected: 3=linear, 2=Trunctated, 1=Full, 4= Custom (assembled same as full)
+%  in  =  Matrix of measured voltages.  Each row is observation, columns are channels
+%  series  =  Series labels for each point
+%  intercept_FLAG  =  Flag if series intercepts should be included. Included for calibration, not validation
+%  voltagelist  =  Chanel labels for voltages
+%  normFlag  =  Flag for if predictor variables should be normalized
+
+%OUTPUTS:
+%  in_comb = Maxtrix of predictor variables. Each row is an observation, each column is predictor variable
+%  high = Matrix of term hierarchy
+%  high_CELL = Matrix of term hierarchy with labels, mainly for debugging purposes
+
 %'high' is matrix of term hierarchy.  To find terms needed for a variable
 %to be supported: Find variable in row, go accross row to find '1' in
 %columns
 %'high_CELL' includes labels, mainly for debugging purposes
-
-%validation_FLAG==1 if producing in_comb for the validation section.  The
-%only difference is the series intercept terms are not included for
-%validation
 
 if nargin <6
     normFLAG = 0;
@@ -140,6 +152,16 @@ in_comb = interceptTerms(in_comb,series,intercept_FLAG);
 end
 
 function in_comb = interceptTerms(in_comb,series,intercept_FLAG)
+%Function creates series specific intercept terms for calculating tares
+
+%INPUTS:
+%  in_comb = Maxtrix of predictor variables. Each row is an observation, each column is predictor variable
+%  series  =  Series labels for each point
+%  intercept_FLAG  =  Flag if series intercepts should be included. Included for calibration, not validation
+
+%OUTPUTS:
+%  in_comb = Maxtrix of predictor variables. Each row is an observation, each column is predictor variable
+
 n = size(in_comb,1);
 [~,s_1st,s_id] = unique(series);
 nseries = length(s_1st);

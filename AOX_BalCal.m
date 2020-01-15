@@ -1,19 +1,39 @@
-%requires "balCal_meritFunction.m" to run
+% Main Driving AOX_BalCal program
+% Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh, Javier Villarreal and John Potthoff.  All Rights Reserved.
+%
+% Required files to run:
+%   anova.m
+%   AOX_approx_funct.m
+%   AOX_GUI.m
+%   balCal_algEqns.m
+%   balCal_meritFunction2.m
+%   calc_PI.m
+%   calc_xcalib.m
+%   correlationPlot.m
+%   create_comIN_RBF.m
+%   customMatrix_builder.m
+%   customMatrix_labels.m
+%   ID_outliers.m
+%   load_and_PI_file_output.m
+%   meantare.m
+%   output.m
+%   plotResPages.m
+%   print_approxcsv.m
+%   print_dlmwrite.m
+%   termSelect_GUI.m
+%   AOX_GUI.fig
+%   termSelect_GUI.fig
+%   vif_dl.m
+%   nasa.png
+%   rice.png
 
-%%
+
 %initialize the workspace
 clc;
 clearvars;
 close all;
-% workspace;
+
 fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh, Javier Villarreal, and John Potthoff.  All Rights Reserved.\n')
-% Because of measurement noise in the voltage the APPROXIMATION tare is computed
-% by post-processing. The average and stddev is taken of all channels per section.
-% If the stddev is less than 0.25% of the capacity for any station the tare
-% is equal to the average for that channel. If the stddev is greater than 0.25%
-% then the approximation at the local zero is taken as the tare for that channel
-% and section. The global approximation is left alone but the tare is subtracted
-% from the values to make the local loads.
 %
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       USER INPUT SECTION
@@ -267,7 +287,7 @@ if FLAGS.balOut == 1
     fprintf('\n Identifying Outliers....')
     
     %Identify outliers based on residuals
-    [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut] = ID_outliers(targetRes,loadCapacities,numpts0,dimFlag,numSTD,FLAGS);
+    [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut] = ID_outliers(targetRes,numpts0,numSTD,FLAGS);
     
     %Store outlier specific variables for output
     newStruct = struct('num_outliers',num_outliers,...

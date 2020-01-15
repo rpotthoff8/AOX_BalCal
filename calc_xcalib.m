@@ -2,33 +2,42 @@ function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,di
 %Function calculates coefficient matrix (xcalib)
 % calc_channel is used as a flag to determine if coefficients in that
 % channel should be calculated, used for RBF self termination
-if exist('calc_channel','var')==0
-    calc_channel=ones(1,dimFlag);
+
+%INPUTS:
+%  comIN = Matrix of predictor variables. Each row is observation, each column is predictor variable
+%  targetMatrix = Matrix of target values (loads)
+%  series = Series labels for each point
+%  nterms = Number of predictor terms in regression model
+%  nseries0 = Number of series
+%  dimFlag = Dimension (# of Channels) for data
+%  FLAGS = Structure containing flags for user preferences
+%  customMatrix = Matrix of 1's and 0's for which predictor variables should be included in regression model for each channel
+%  anova_pct = Percent confidence level for ANOVA calculations
+%  labels = Load labels for each channel
+%  method = String for current section (ALG or RBF)
+%  calc_channel = Boolean vector for which channels coefficients should be solved for
+
+%OUTPUTS:
+%  xcalib = Coefficient Matrix
+%  ANOVA = Results of ANOVA calculations 
+
+if exist('calc_channel','var')==0 %If no variable provided for which channels to calculate
+    calc_channel=ones(1,dimFlag); %Calculate all channels
 end
 
-%Orders data by series (needed for bootstrap)
+%Orders data by series
 [series,sortI]=sort(series);
 comIN=comIN(sortI,:);
+targetMatrix=targetMatrix(sortI,:);
 
 % Normalize the data for a better conditioned matrix
 scale = max(abs(comIN));
 scale(scale==0)=1; %To avoid NaN for channels where RBFs have self-terminated
 comIN = comIN./scale;
 
-targetMatrix=targetMatrix(sortI,:);
-
 % Characterizes the series in the subsamples
 [~,s_1st,~] = unique(series);
 nseries = length(s_1st);
-
-% Indirect approach uses the modeled voltage
-%     if approach_FLAG == 1
-%         if balCal_FLAG == 2
-%             excessVec0 = qtaprxINminGZ2 + globalZerosAllPoints;
-%         else
-%             excessVec0 = qtaprxINminGZ + globalZerosAllPoints;
-%         end
-%     end
 
 xcalib = zeros(nterms+nseries0,dimFlag);
 % Solves for the coefficient one column at a time.
@@ -84,10 +93,10 @@ for k = 1:dimFlag
 end
 % fprintf('\n')
 
-if FLAGS.anova==0 || all(~calc_channel)
+if FLAGS.anova==0 || all(~calc_channel) %If ANOVA was not calculated or no channels were calculated
     ANOVA='ANOVA NOT PERFORMED';
 else
-    if FLAGS.model==4 && any(calc_channel) %If custom equation, expand ANOVA statistics to standard 96 term matrix
+    if FLAGS.model==4 && any(calc_channel) %If custom equation, expand ANOVA statistics to standard full term matrix
         ANOVA_exp=ANOVA;
         ExpandList=["beta","beta_CI","T","p_T","VIF","sig"]; %List of ANOVA structure elements that should be expanded
         for i=1:size(ExpandList,2)
@@ -98,7 +107,7 @@ else
                 end
             end
         end
-        %Expand to 96x96 matrix for invXtX
+        %Expand to full matrix for invXtX
         for j=1:dimFlag
             if calc_channel(j)==1
                 ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);

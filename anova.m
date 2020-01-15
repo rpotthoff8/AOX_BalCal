@@ -1,17 +1,23 @@
-function ANOVA = anova(X,y,nseries,test_FLAG,pct)
+function ANOVA = anova(X,y,nseries,noVIF_FLAG,pct)
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not
 % really even functions, but scripts that hold different statistical
 % analysis equations.
 
+%INPUTS:
+%  X = Matrix of predictor variables. Each row is different observation, each column is different predictor
+%  y  =  Target variable for regression.  Each row is observation
+%  nseries  =  Number of series in dataset
+%  noVIF_FLAG  =  Flag to turn off VIF calculations. (noVIF_FLAG==0 then calculate VIF) 
+%  pct  =  Percent confidence level for ANOVA calculations
+
+%OUTPUTS:
+% ANOVA = Structure containing ANOVA outputs
+
 %% Check if testing
-% if test_FLAG is true, then the code checks the vif's for the new paramter
-% before continuing statistical analysis. If the maximum VIF is => 4, then
-% the data is becoming too collinear and that term should be "banned" from
-% testing. Otherwise, resume ANOVA.
 if nargin < 4
-    test_FLAG = 0;
+    noVIF_FLAG = 0;
     pct = 95;
 elseif nargin < 5
     pct = 95;
@@ -47,11 +53,10 @@ end
 % calculations.
 %VIF calculations performed if test_FLAG=0: Do not perform during iterated
 %recommended equation solving for time saving
-if test_FLAG==0
+if noVIF_FLAG==0
     VIF = vif(X);
     
     VIF_dl=vif_dl(X)';
-    VIF_dl2=vif_dl2(X);
     
     if any(VIF>=10)
         warning('VIF calculation indicates strong multicollinearity. Analysis of Variance results cannot be trusted.')
@@ -217,9 +222,8 @@ ANOVA.beta_CI  = beta_CI;  % Coefficient Confidence Intervals
 ANOVA.T = T;               % T-statistic of coefficients
 ANOVA.p_T = p_T;           % P-value of coefficients
 ANOVA.VIF = VIF;           % Variance Inflation Factors
-if test_FLAG==0
+if noVIF_FLAG==0
     ANOVA.VIF_dl=VIF_dl;
-    ANOVA.VIF_dl2=VIF_dl2;
 end
 ANOVA.sig = sig;            %If term is significant
 

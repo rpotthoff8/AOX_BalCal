@@ -7,8 +7,13 @@
 %   AOX_approx_funct.m
 %   balCal_algEqns.m
 %   calc_PI.m
-%   print_approxcsv.m
 %   create_comIN_RBF.m
+%   customMatrix_labels.m
+%   load_and_PI_file_output.m
+%   print_approxcsv.m
+%   nasa.png
+%   rice.png
+
 
 %%
 %initialize the workspace

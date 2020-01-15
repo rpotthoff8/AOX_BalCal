@@ -1,5 +1,10 @@
 function [comIN_RBF]=create_comIN_RBF(dainputs,epsHist,center_daHist,h_GRBF)
-%Function places a single GRBF for the validation or approximation section.
+%Function places all for the validation or approximation section. comIN_RBF
+%is a 'n'x'p' matrix where 'n' is the number of observations (datapoints) and
+%'p' is the number of RBFs.  Each column is the value of the a respective
+%RBF at each datapoint location.  comIN_RBF is combined with the algebraic
+%term combinations and multiplied by all coefficients (RBF and Algebraic)
+%to product the model approximation for each datapoint
 
 %INPUTS:
 %  dainputs  = Current Section (voltage - (global zeros) )

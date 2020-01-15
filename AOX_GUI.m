@@ -1,4 +1,6 @@
-% Version 11: Last modified on 6/11/18
+%GUI created by Matlab 'GUIDE' program.  Called by main AOX_BalCal.m for
+%user inputs
+
 function varargout = AOX_GUI(varargin)
 % AOX_GUI MATLAB code for AOX_GUI.fig
 %      AOX_GUI, by itself, creates a new AOX_GUI or raises the existing
@@ -267,7 +269,7 @@ switch calext
         outStruct.cal_create=1; %track if .cal file was created
     case '.cal'
         outStruct.savePathcal = cal.Path;
-
+        
         if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
             [newLocation,~,~]=fileparts(outStruct.output_location); %new output location
             try
@@ -304,7 +306,7 @@ if outStruct.valid == 1
             val.CSV(5,:) = a12rc(get(handles.v51,'String'));
             outStruct.savePathval = loadCSV(val,outStruct.output_location);
             outStruct.val_create=1; %track if .val file was created
-
+            
         case '.val'
             outStruct.savePathval = val.Path;
             
@@ -345,7 +347,7 @@ if outStruct.approx == 1
             outStruct.app_create=1; %track if .app file was created
         case '.app'
             outStruct.savePathapp = app.Path;
-
+            
             if outStruct.input_save_FLAG==1 %Option to copy intput file to output location
                 try
                     [newLocation,~,~]=fileparts(outStruct.output_location); %new output location
@@ -369,7 +371,7 @@ if outStruct.input_save_FLAG==1 %Option to save run settings
     [savePath,~,~]=fileparts(outStruct.output_location); %new output location
     saveSettings(handles,'runSettings',savePath,outStruct.REPORT_NO);
 end
- 
+
 outStruct.cancel = 0;
 
 handles.output = outStruct;
@@ -1550,7 +1552,7 @@ switch cva.type
         [~,valName,~] = fileparts(val.Path);
         fileNamevalid = [valName,'.val'];
         savePathvalid=fullfile(output_location,fileNamevalid);
-
+        
         clear cva valName CurrentPath
         save(savePathvalid);
         savePath = savePathvalid;
@@ -1597,7 +1599,7 @@ switch cva.type
         [~,appName,~] = fileparts(app.Path);
         fileNameapprox = [appName,'.app'];
         savePathapprox=fullfile(output_location,fileNameapprox);
-
+        
         clear cva appName CurrentPath
         save(savePathapprox);
         savePath = savePathapprox;
@@ -2152,14 +2154,14 @@ if handles.anova_FLAGcheck.Value==1 %If ANOVA is turned on
     str_include(4)=1;
 end
 %Retrieve current popup state
-cur_str=handles.selfTerm_pop.String; 
+cur_str=handles.selfTerm_pop.String;
 cur_val=handles.selfTerm_pop.Value;
 
 if ischar(cur_str) %If currently only 1 option for popup
     new_val=1;
 else
     match=strcmp(cur_str(cur_val),pos_str(str_include)); %Find if current selected string matches any of new possible options
-    if any(match) 
+    if any(match)
         new_val=find(match); %Set new value to maintain selection
     else
         new_val=1; %No longer option
@@ -2264,6 +2266,9 @@ fullfileName = [filePath,filesep,fileName,'.ini'];
 save(fullfileName,'default');
 
 function []=loadSettings(handles, fullfileName, eventdata)
+%Function loads and sets GUI settings from .ini file.
+%Used to load default settings or settings from previous run
+
 [~,fileName,~]=fileparts(fullfileName);
 
 if exist(fullfileName,'file')
@@ -2311,7 +2316,7 @@ if exist(fullfileName,'file')
         set(handles.v42,'String',default.valRange{4,2});
         set(handles.v51,'String',default.valRange{5,1});
         set(handles.v52,'String',default.valRange{5,2});
-       
+        
         
         set(handles.approximate,'Value',default.approximate);
         set(handles.appPath,'String',default.appPath);
@@ -2351,7 +2356,7 @@ if exist(fullfileName,'file')
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
         
         set(handles.anova_FLAGcheck,'Value',default.anova);
-                
+        
         set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
         set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
         set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
@@ -2373,7 +2378,7 @@ if exist(fullfileName,'file')
         disp(['Unable to fully load settings. ',fileName,'.ini may be outdated or incompatible with GUI.']);
     end
 end
-    
+
 
 % --- Executes on button press in load_settings_button.
 function load_settings_button_Callback(hObject, eventdata, handles)
