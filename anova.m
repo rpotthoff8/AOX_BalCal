@@ -254,22 +254,39 @@ ANOVA.PI.dof_e=dof_e;
 
 function VIF = vif(X)
 
-[~,k] = size(X);
-VIF = zeros(k,1);
-for j = 1:k
-    y = X(:,j);
-    X_j = X; X_j(:,j) = []; %x_vif = [ones(n_data,1),x_vif];
-    H = X_j*inv(X_j'*X_j)*X_j';
+% LEGACY VIF CALCULATION
+% This code iterated through each input term and regressed it against the
+% remaining terms to determine whether there was a linear dependency. The
+% new method is much faster and accomplishes nearly identical results
+% without iterating through all the terms. The new method depends on a
+% matrix inversion, and because of the nature of the data, the inv()
+% function does give less reliable results, but pinv appears to be mroe
+% reliable. Due to the nature of large matrix inversions, the results are
+% still usually different as far as the tare VIF's (which are mostly
+% orthogonal by definition), but the difference has not proven to be
+% significant.
+% % [~,k] = size(X);
+% % VIF = zeros(k,1);
+% % for j = 1:k
+% %     y = X(:,j);
+% %     X_j = X; X_j(:,j) = []; %x_vif = [ones(n_data,1),x_vif];
+% %     H = X_j*inv(X_j'*X_j)*X_j';
+% % 
+% %     y_bar = mean(y);
+% %     y_hat = H*y;
+% % 
+% %     SSE = sum((y-y_hat).^2);
+% %     SST = sum((y-y_bar).^2);
+% % 
+% %     R_sq = 1 - SSE/SST;
+% %     VIF(j,1) = 1/(1-R_sq);
+% % end
 
-    y_bar = mean(y);
-    y_hat = H*y;
-
-    SSE = sum((y-y_hat).^2);
-    SST = sum((y-y_bar).^2);
-
-    R_sq = 1 - SSE/SST;
-    VIF(j,1) = 1/(1-R_sq);
-end
+% As a correction, VIF's less than one are subtituted to equal one, since
+% VIF<1 is theoretically nonsensical, it simply means that trying to find a
+% linear correlation yielded a model that was less accurate thannot having
+% a model at all -> totally linearly independent
+VIF = max(diag(pinv(corrcoef(X))),1);
 
 %% Turn warnings back on
 warning('on','all');
