@@ -542,14 +542,16 @@ header_bulk_cell=table2cell(header_bulk);
 
 i_comment=find(cellfun(@isempty,header_bulk{1,:}),1); %First first empty cell in first row to insert comment
 cTime=datestr(now,'yyyy-mmdd-HHMMSS'); 
+filePath = get(handles.filePath,'String');
 split_string=handles.split_type.String(handles.split_type.Value);
-comment_str=strcat('Data Split:'," ", cTime, '. Split using:'," ", split_string, '. Calibration data percentage= ', handles.pEdit.String, '%'); %Comment describing split
+comment_str=strcat('Data Split:'," ", cTime, '. Split using:'," ", split_string, '. Calibration data percentage= ', handles.pEdit.String, '%. Original File:', " ", filePath); %Comment describing split
 header_bulk_cell{1,i_comment}=comment_str;
 
 cal_out{1}=[header_bulk_cell; leftCol(X_cal), pointID(X_cal), num2cell(s(X_cal)), series2(X_cal), num2cell(y(X_cal,:)), num2cell(x(X_cal,:))];
 val_out{1}=[header_bulk_cell; leftCol(X_val), pointID(X_val), num2cell(s(X_val)), series2(X_val), num2cell(y(X_val,:)), num2cell(x(X_val,:))];
-
+disp('Writing Calibration File...');
 writetable(cell2table(cal_out{1}),get(handles.saveCalPath,'String'),'writevariablenames',0); %write to csv
+disp('Writing Validation File... ');
 writetable(cell2table(val_out{1}),get(handles.saveValPath,'String'),'writevariablenames',0); %write to csv
 % csvwrite(get(handles.saveCalPath,'String'),[s(X_cal),y(X_cal,:),x(X_cal,:)]);
 % csvwrite(get(handles.saveValPath,'String'),[s(X_val),y(X_val,:),x(X_val,:)]);
