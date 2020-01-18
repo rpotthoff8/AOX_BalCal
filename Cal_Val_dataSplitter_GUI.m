@@ -19,38 +19,38 @@
 % description of the data splitting process is also included in the top row
 
 
-function varargout = dataSplitter_GUI(varargin)
-% dataSplitter_GUI MATLAB code for dataSplitter_GUI.fig
-%      dataSplitter_GUI, by itself, creates a new dataSplitter_GUI or raises the existing
+function varargout = Cal_Val_dataSplitter_GUI(varargin)
+% Cal_Val_dataSplitter_GUI MATLAB code for Cal_Val_dataSplitter_GUI.fig
+%      Cal_Val_dataSplitter_GUI, by itself, creates a new Cal_Val_dataSplitter_GUI or raises the existing
 %      singleton*.
 %
-%      H = dataSplitter_GUI returns the handle to a new dataSplitter_GUI or the handle to
+%      H = Cal_Val_dataSplitter_GUI returns the handle to a new Cal_Val_dataSplitter_GUI or the handle to
 %      the existing singleton*.
 %
-%      dataSplitter_GUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in dataSplitter_GUI.M with the given input arguments.
+%      Cal_Val_dataSplitter_GUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in Cal_Val_dataSplitter_GUI.M with the given input arguments.
 %
-%      dataSplitter_GUI('Property','Value',...) creates a new dataSplitter_GUI or raises the
+%      Cal_Val_dataSplitter_GUI('Property','Value',...) creates a new Cal_Val_dataSplitter_GUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before dataSplitter_GUI_OpeningFcn gets called.  An
+%      applied to the GUI before Cal_Val_dataSplitter_GUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to dataSplitter_GUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to Cal_Val_dataSplitter_GUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help dataSplitter_GUI
+% Edit the above text to modify the response to help Cal_Val_dataSplitter_GUI
 
-% Last Modified by GUIDE v2.5 17-Jan-2020 10:24:49
+% Last Modified by GUIDE v2.5 18-Jan-2020 17:40:37
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @dataSplitter_GUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @dataSplitter_GUI_OutputFcn, ...
+                   'gui_OpeningFcn', @Cal_Val_dataSplitter_GUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @Cal_Val_dataSplitter_GUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -65,15 +65,15 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before dataSplitter_GUI is made visible.
-function dataSplitter_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
+% --- Executes just before Cal_Val_dataSplitter_GUI is made visible.
+function Cal_Val_dataSplitter_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to dataSplitter_GUI (see VARARGIN)
+% varargin   command line arguments to Cal_Val_dataSplitter_GUI (see VARARGIN)
 
-% Choose default command line output for dataSplitter_GUI
+% Choose default command line output for Cal_Val_dataSplitter_GUI
 handles.output = hObject;
 
 % Update handles structure
@@ -97,12 +97,12 @@ if exist(stateFile)
     end
 end
 
-% UIWAIT makes dataSplitter_GUI wait for user response (see UIRESUME)
+% UIWAIT makes Cal_Val_dataSplitter_GUI wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = dataSplitter_GUI_OutputFcn(hObject, eventdata, handles) 
+function varargout = Cal_Val_dataSplitter_GUI_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -516,7 +516,7 @@ series_bookends=[i_s1st;n+1]; %starting point of each series, including next ser
 n_series=series_bookends(2:end)-series_bookends(1:end-1); %number of datapoints in each series
 
 n_cal_series=round(p*n_series); %Number of calibration datapoints in each series
-n_val_series=n_series-n_cal_series; %# Validation datapoints in each series
+n_val_series=n_series-n_cal_series; %Number Validation datapoints in each series
 
 LZ = XI(i_s1st); %same as XI ??
 
