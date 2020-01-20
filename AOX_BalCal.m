@@ -187,14 +187,26 @@ elseif FLAGS.model == 4
     customMatrix = [customMatrix; ones(nseries0,dimFlag)];
     algebraic_model={'CUSTOM'};
 else
-    customMatrix = 1;
-    if FLAGS.model == 1
-        algebraic_model={'FULL (BALANCE TYPE 2-D)'};
-    elseif FLAGS.model == 2
-        algebraic_model={'TRUNCATED (BALANCE TYPE 1-A)'};
-    elseif FLAGS.model == 3
+    %Standard Full, truncated, or linear model
+    %Select the terms to be included
+    %Terms are listed in following order:
+    % F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|
+    termInclude=zeros(10,1);
+    if FLAGS.model==3 %Linear eqn
+        termInclude(1)=1; %Include only linear terms
         algebraic_model={'LINEAR'};
+    elseif FLAGS.model==2 %Truncated Eqn type
+        termInclude([1,3,5])=1;
+        algebraic_model={'TRUNCATED (BALANCE TYPE 1-A)'};
+    elseif FLAGS.model==1 %Full Eqn type
+        termInclude(1:10)=1;
+        algebraic_model={'FULL (BALANCE TYPE 2-D)'};
     end
+    %Assemble custom matrix
+    customMatrix=customMatrix_builder(dimFlag,termInclude);
+    customMatrix = [customMatrix; ones(nseries0,dimFlag)];
+    %Proceed through code with custom equation
+    FLAGS.model = 4;
 end
 
 % Load data labels if present, otherwise use default values.
@@ -236,19 +248,23 @@ dainputs0 = excessVec0 - globalZeros;
 
 % Determines how many terms are in the algebraic model; this will help
 % determine the size of the calibration matrix
-switch FLAGS.model
-    case {1,4}
-        % Full Algebraic Model or Custom Algebraic Model
-        % The Custom model calculates all terms, and then excludes them in
-        % the calibration process as determined by the customMatrix.
-        nterms = 2*dimFlag*(dimFlag+2);
-    case 2
-        % Truncated Algebraic Model
-        nterms = dimFlag*(dimFlag+3)/2;
-    case 3
-        % Linear Algebraic Model
-        nterms = dimFlag;
-end
+% switch FLAGS.model
+%     case {1,4}
+%         % Full Algebraic Model or Custom Algebraic Model
+%         % The Custom model calculates all terms, and then excludes them in
+%         % the calibration process as determined by the customMatrix.
+%         nterms = 2*dimFlag*(dimFlag+2);
+%     case 2
+%         % Truncated Algebraic Model
+%         nterms = dimFlag*(dimFlag+3)/2;
+%     case 3
+%         % Linear Algebraic Model
+%         nterms = dimFlag;
+% end
+
+% The Custom model calculates all terms, and then excludes them in
+% the calibration process as determined by the customMatrix.
+nterms = 2*dimFlag*(dimFlag+2);
 
 %% Use SVD to test for permitted math model
 %User preferences
