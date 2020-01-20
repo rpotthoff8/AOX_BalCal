@@ -13,16 +13,17 @@ function correlationPlot(ind_var,dep_var,ind_label,dep_label)
 %  coefficients with algebraic comIN to determine load value
 
 
-n_dim = size(ind_var,2); %Dimesion of data (# channels)
+ind_n_dim = size(ind_var,2); %Dimesion of independent data (# channels)
+dep_n_dim= size(dep_var,2); %Dimension of dependent variable (# channels)
 
 %Loop through variables and generate subplots for correlation between
 %independent and dependent variables
-ccmat = zeros(n_dim,n_dim);
-for j = 1:n_dim 
-    for k = 1:n_dim
-        it_in = (j-1)*n_dim + k;
+ccmat = zeros(ind_n_dim,dep_n_dim);
+for j = 1:ind_n_dim 
+    for k = 1:dep_n_dim
+        it_in = (j-1)*dep_n_dim + k;
         cc = corrcoef(ind_var(:,j),dep_var(:,k));
-        subplot(n_dim,n_dim,it_in)
+        subplot(ind_n_dim,dep_n_dim,it_in)
         plot(ind_var(:,j),dep_var(:,k),'.')
         title(cc(2))
         xlabel(ind_label{j}); ylabel(dep_label{k});

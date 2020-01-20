@@ -42,7 +42,7 @@ loadlist(1:d)=num2cell(1:d);
 if nargin <5
     voltagelist(1:d)=num2cell(1:d);
 end
-[term_labels, ~]=customMatrix_labels(loadlist,voltagelist,d,model_FLAG,'voltages');
+[term_labels, ~]=customMatrix_labels(loadlist,voltagelist,d,d,model_FLAG,'voltages');
 %FOR HIERARCHY OF TERMS: TO FIND TERMS NEEDED FOR VARIABLE TO BE SUPPORTED:
 %FIND VARIABLE IN ROW, GO ACCROSS ROW TO FIND '1' IN COLUMNS
 
