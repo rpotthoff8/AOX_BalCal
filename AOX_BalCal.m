@@ -27,7 +27,6 @@
 %   nasa.png
 %   rice.png
 
-
 %initialize the workspace
 clc;
 clearvars;
@@ -251,6 +250,65 @@ switch FLAGS.model
         nterms = dimFlag;
 end
 
+%% Use SVD to test for permitted math model
+%User preferences
+FLAGS.svd=1; %Flag from performing svd
+zero_threshold=0.1; %In Balfit: MATH MODEL SELECTION THRESHOLD IN % OF CAPACITY. This variable is used in performing SVD. Datapoints where the gage output (voltage) is less
+%... then the threshold as a percentage of gage capacity are set to zero
+%for constructing comIN and performing SVD
+
+if FLAGS.svd==1
+    %Perform linear regression to solve for gage capacities
+    gageCapacities=zeros(1,dimFlag); %initialize
+    for i=1:dimFlag
+        A=[ones(numpts0,1),dainputs0(:,i)]; %Predictor variables are just channel voltage and intercept
+        B=[targetMatrix0(:,i)]; %Target is loads from channel
+        X_lin=A\B; %coefficients for linear model
+        gageCapacities(i)=(loadCapacities(i)-X_lin(1))/X_lin(2); %Find gage capacity from load capacity and linear regression model
+    end
+    
+    %Set voltages below threshold to zero:
+    volt_theshold=zero_threshold*gageCapacities; %Zero threshold in gage output limits
+    dainputs_svd=dainputs0; %Initialize as dainputs
+    dainputs_svd(abs(dainputs0)<volt_theshold)=0; %Set voltages less than threshold to 0
+    
+    %Construct comIN with thresholded voltages
+    comIN_svd = balCal_algEqns(FLAGS.model,dainputs_svd,series0,1,voltagelist); %Matrix of predictor variables from thresholded voltages
+    % Normalize the data for a better conditioned matrix
+    scale = max(abs(comIN_svd),[],1);
+    scale(scale==0)=1; %To avoid NaN
+    comIN_svd = comIN_svd./scale;
+    
+    identical_custom=all(~diff(customMatrix,1,2),'all'); %Check if customMatrix is identical for all channels
+    if identical_custom==1 %If custom equation identical for each channel
+        calcThrough=1; %only 1 run through SVD necessary
+    else
+        calcThrough=dimFlag; %Necessary to calculate for each channel seperate
+    end
+    
+    svd_include=zeros(nterms,dimFlag); %Initialize vector for tracking which terms are supported
+    svd_include(1,:)=1; %Initialize first term is included
+    for j=1:calcThrough
+        for i=2:nterms %Loop through all possible terms
+            if customMatrix(i,j)==1 %If term is included according to customMatrix for eqn
+                svd_include_test=svd_include(:,j); %Initialize test variable for iteration
+                svd_include_test(i)=1; %Include new term for this iteration
+                rankIter=rank(comIN_svd(:,boolean(svd_include_test))); %Using rank command (SVD) find rank of predictor variable matrix
+                if rankIter==sum(svd_include(:,j))+1 %If rank is equal to number of terms
+                    svd_include(i,j)=1; %Add term to supported terms
+                end
+            end
+        end
+    end
+    
+    if identical_custom==1 %If custom equation identical for each channel
+        svd_include(:,2:dimFlag)=repmat(svd_include(:,1),1,dimFlag-1); %Duplicate for each column
+    end
+    customMatrix_permitted = [svd_include; ones(nseries0,dimFlag)]; %customMatrix for permitted eqn set.  Always include intercepts
+    customMatrix_orig=customMatrix; %Store original customMatrix
+    customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
+end
+%% Resume calibration
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
 [comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,1,voltagelist);
