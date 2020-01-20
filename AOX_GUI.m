@@ -79,7 +79,6 @@ guidata(hObject, handles);
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default.ini'];
 
-actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
 handles.termInclude=zeros(10,1); %Initialize for sub gui
 
 loadSettings(handles, fileName, eventdata);
@@ -93,7 +92,7 @@ anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
 output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
 
 modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles);
-
+actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
 uiwait(handles.figure1);
 
 
@@ -1086,7 +1085,7 @@ set(handles.calPath, 'Enable', 'on');
 set(handles.calFind, 'Enable', 'on');
 selfTerm_strSet(handles);
 
-if (hObject == handles.calibrate)
+if (handles.calibrate.Value == 1)
     set(handles.valPath, 'Enable', 'off');
     set(handles.valFind, 'Enable', 'off');
     %set(handles.valSave, 'Enable', 'off');
@@ -1113,7 +1112,7 @@ if (hObject == handles.calibrate)
     set(handles.a41, 'Enable', 'off');
     set(handles.a42, 'Enable', 'off');
     %set(handles.zeroed_FLAGcheck,'Enable','off');
-elseif hObject == handles.validate
+elseif handles.validate.Value==1
     set(handles.valPath, 'Enable', 'on');
     set(handles.valFind, 'Enable', 'on');
     %set(handles.valSave, 'Enable', 'on');
@@ -1142,7 +1141,7 @@ elseif hObject == handles.validate
     set(handles.a42, 'Enable', 'off');
     %set(handles.zeroed_FLAGcheck,'Enable','off');
     
-elseif hObject == handles.approximate
+elseif handles.approximate.Value==1
     set(handles.valPath, 'Enable', 'off');
     set(handles.valFind, 'Enable', 'off');
     %set(handles.valSave, 'Enable', 'off');
