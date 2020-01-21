@@ -1,4 +1,4 @@
-function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,dimFlag,FLAGS,customMatrix, anova_pct, labels,method,calc_channel)
+function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,loaddimFlag,FLAGS,customMatrix, anova_pct, labels,method,calc_channel)
 %Function calculates coefficient matrix (xcalib)
 % calc_channel is used as a flag to determine if coefficients in that
 % channel should be calculated, used for RBF self termination
@@ -9,7 +9,7 @@ function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,di
 %  series = Series labels for each point
 %  nterms = Number of predictor terms in regression model
 %  nseries0 = Number of series
-%  dimFlag = Dimension (# of Channels) for data
+%  loaddimFlag = Dimension (# of Channels) for load data
 %  FLAGS = Structure containing flags for user preferences
 %  customMatrix = Matrix of 1's and 0's for which predictor variables should be included in regression model for each channel
 %  anova_pct = Percent confidence level for ANOVA calculations
@@ -22,7 +22,7 @@ function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,di
 %  ANOVA = Results of ANOVA calculations 
 
 if exist('calc_channel','var')==0 %If no variable provided for which channels to calculate
-    calc_channel=ones(1,dimFlag); %Calculate all channels
+    calc_channel=ones(1,loaddimFlag); %Calculate all channels
 end
 
 %Orders data by series
@@ -39,11 +39,11 @@ comIN = comIN./scale;
 [~,s_1st,~] = unique(series);
 nseries = length(s_1st);
 
-xcalib = zeros(nterms+nseries0,dimFlag);
+xcalib = zeros(nterms+nseries0,loaddimFlag);
 % Solves for the coefficient one column at a time.
 % This is to account for Custom Models, where the terms may be
 % different depending on the channel.
-for k = 1:dimFlag
+for k = 1:loaddimFlag
     if calc_channel(k)==1
         comIN_k = comIN;
         scale_k = scale;
@@ -100,7 +100,7 @@ else
         ANOVA_exp=ANOVA;
         ExpandList=["beta","beta_CI","T","p_T","VIF","sig"]; %List of ANOVA structure elements that should be expanded
         for i=1:size(ExpandList,2)
-            for j=1:dimFlag
+            for j=1:loaddimFlag
                 if calc_channel(j)==1
                     eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'=zeros(size(xcalib,1),1);')); %initialize zeros
                     eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'(customMatrix(:,j)==1,:)=ANOVA(',num2str(j),').',ExpandList(i),';')); %fill with ANOVA statistics
@@ -108,7 +108,7 @@ else
             end
         end
         %Expand to full matrix for invXtX
-        for j=1:dimFlag
+        for j=1:loaddimFlag
             if calc_channel(j)==1
                 ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);
                 ANOVA_exp(j).PI.invXtX(customMatrix((1:nterms),j)==1,customMatrix((1:nterms),j)==1)=ANOVA(j).PI.invXtX;
