@@ -67,23 +67,30 @@ fprintf('\nCalculating Permitted Eqn Set with SVD....')
     end
 
     svd_include=zeros(nterms,loaddimFlag); %Initialize vector for tracking which terms are supported
-    svd_include(1,:)=1; %Initialize first term is included
-    for j=1:calcThrough
-        for i=2:nterms %Loop through all possible terms
+    init_include=eye(loaddimFlag); %Initial terms that will always be included in permitted eqn is linear voltage from respective channel
+    svd_include(1:loaddimFlag,:)=init_include; %Initialize first term is included
+    j=1; %Initialize counter
+    while j<= calcThrough
+        for i=1:nterms %Loop through all possible terms
             if customMatrix(i,j)==1 %If term is included according to customMatrix for eqn
                 svd_include_test=svd_include(:,j); %Initialize test variable for iteration
                 svd_include_test(i)=1; %Include new term for this iteration
                 rankIter=rank(comIN_svd(:,boolean(svd_include_test))); %Using rank command (SVD) find rank of predictor variable matrix
-                if rankIter==sum(svd_include(:,j))+1 %If rank is equal to number of terms
+                if rankIter==sum(svd_include_test) %If rank is equal to number of terms
                     svd_include(i,j)=1; %Add term to supported terms
+                else %New matrix is rank deficient
+                    if calcThrough~=loaddimFlag && i<= loaddimFlag %If calculating not full number of channels (for time savings) but found linear dependancy between linear voltages
+                       calcThrough=loaddimFlag; %Now necessary to calculate for each channel seperate
+                    end
                 end
             end
         end
+        j=j+1;
     end
 
-    if identical_custom==1 %If custom equation identical for each channel
+    if calcThrough==1 %If custom equation identical for each channel
         svd_include(:,2:loaddimFlag)=repmat(svd_include(:,1),1,loaddimFlag-1); %Duplicate for each column
     end
-    customMatrix_permitted = [svd_include; ones(nseries0,loaddimFlag)]; %customMatrix for permitted eqn set.  Always include intercepts
+    customMatrix_permitted = [svd_include; ones(nseries0,loaddimFlag)]; %customMatrix for permitted eqn set.  Always include tare intercepts
     fprintf(' Complete. \n')
 end
