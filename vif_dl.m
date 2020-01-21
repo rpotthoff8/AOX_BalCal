@@ -17,7 +17,10 @@ function [V]=vif_dl(X)
 orig_state=warning; %Save warning state
 warning('off','all'); %Temp turn off warnings
 
-R0 = corrcoef(X); % correlation matrix
-V=diag(inv(R0))';
+X_center=X-mean(X,1); %Center terms
+X_scale=X_center./sqrt(sum(X_center.^2,1)); %Scale terms
+
+R0 = corrcoef(X_scale); % correlation matrix
+V=diag(pinv(R0))';
 
 warning(orig_state); %Restore warning state
