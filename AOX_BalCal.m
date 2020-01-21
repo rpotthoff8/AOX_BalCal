@@ -273,19 +273,6 @@ dainputs0 = excessVec0 - globalZeros;
 % the calibration process as determined by the customMatrix.
 nterms = 2*voltdimFlag*(voltdimFlag+2);
 
-%% Use SVD to test for permitted math model
-%User preferences
-FLAGS.svd=1; %Flag from performing svd
-zero_threshold=0.1; %In Balfit: MATH MODEL SELECTION THRESHOLD IN % OF CAPACITY. This variable is used in performing SVD. Datapoints where the gage output (voltage) is less
-%... then the threshold as a percentage of gage capacity are set to zero
-%for constructing comIN and performing SVD
-
-if FLAGS.svd==1
-    customMatrix_permitted=SVD_permittedEqn(customMatrix, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities, nterms, nseries0); %Call function to determine permitted eqn
-    customMatrix_orig=customMatrix; %Store original customMatrix
-    customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
-end
-%% Resume calibration
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
 [comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,1,voltagelist);
@@ -301,6 +288,20 @@ series = series0;
 targetMatrix = targetMatrix0;
 comIN = comIN0;
 
+%% Use SVD to test for permitted math model
+%User preferences
+FLAGS.svd=1; %Flag from performing svd
+zero_threshold=0.1; %In Balfit: MATH MODEL SELECTION THRESHOLD IN % OF CAPACITY. This variable is used in performing SVD. Datapoints where the gage output (voltage) is less
+%... then the threshold as a percentage of gage capacity are set to zero
+%for constructing comIN and performing SVD
+
+if FLAGS.svd==1
+    customMatrix_permitted=SVD_permittedEqn(customMatrix, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities, nterms, nseries0); %Call function to determine permitted eqn
+    customMatrix_orig=customMatrix; %Store original customMatrix
+    customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
+end
+
+%% Resume calibration
 %Calculate xcalib (coefficients)
 [xcalib, ANOVA] = calc_xcalib(comIN       ,targetMatrix       ,series,...
     nterms,nseries0,loaddimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
