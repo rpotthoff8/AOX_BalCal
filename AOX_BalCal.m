@@ -271,7 +271,7 @@ dainputs0 = excessVec0 - globalZeros;
 
 % The Custom model calculates all terms, and then excludes them in
 % the calibration process as determined by the customMatrix.
-nterms = 2*dimFlag*(dimFlag+2);
+nterms = 2*voltdimFlag*(voltdimFlag+2);
 
 %% Use SVD to test for permitted math model
 %User preferences
@@ -282,12 +282,15 @@ zero_threshold=0.1; %In Balfit: MATH MODEL SELECTION THRESHOLD IN % OF CAPACITY.
 
 if FLAGS.svd==1
     %Perform linear regression to solve for gage capacities
-    gageCapacities=zeros(1,dimFlag); %initialize
-    for i=1:dimFlag
+    gageCapacities=zeros(1,voltdimFlag); %initialize
+    for i=1:loaddimFlag
         A=[ones(numpts0,1),dainputs0(:,i)]; %Predictor variables are just channel voltage and intercept
         B=[targetMatrix0(:,i)]; %Target is loads from channel
         X_lin=A\B; %coefficients for linear model
         gageCapacities(i)=(loadCapacities(i)-X_lin(1))/X_lin(2); %Find gage capacity from load capacity and linear regression model
+    end
+    if voltdimFlag>loaddimFlag %If greater number of voltage channels than load channels
+        gageCapacities(i+1:end)=max(abs(dainputs0(:,i+1:end)),[],1); %In remaining channels where linear regression not possible, set gage capacity as max absolute value gage output
     end
 
     %Set voltages below threshold to zero:
@@ -306,10 +309,10 @@ if FLAGS.svd==1
     if identical_custom==1 %If custom equation identical for each channel
         calcThrough=1; %only 1 run through SVD necessary
     else
-        calcThrough=dimFlag; %Necessary to calculate for each channel seperate
+        calcThrough=loaddimFlag; %Necessary to calculate for each channel seperate
     end
 
-    svd_include=zeros(nterms,dimFlag); %Initialize vector for tracking which terms are supported
+    svd_include=zeros(nterms,loaddimFlag); %Initialize vector for tracking which terms are supported
     svd_include(1,:)=1; %Initialize first term is included
     for j=1:calcThrough
         for i=2:nterms %Loop through all possible terms
@@ -325,9 +328,9 @@ if FLAGS.svd==1
     end
 
     if identical_custom==1 %If custom equation identical for each channel
-        svd_include(:,2:dimFlag)=repmat(svd_include(:,1),1,dimFlag-1); %Duplicate for each column
+        svd_include(:,2:loaddimFlag)=repmat(svd_include(:,1),1,loaddimFlag-1); %Duplicate for each column
     end
-    customMatrix_permitted = [svd_include; ones(nseries0,dimFlag)]; %customMatrix for permitted eqn set.  Always include intercepts
+    customMatrix_permitted = [svd_include; ones(nseries0,loaddimFlag)]; %customMatrix for permitted eqn set.  Always include intercepts
     customMatrix_orig=customMatrix; %Store original customMatrix
     customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
 end
