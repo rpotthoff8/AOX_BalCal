@@ -301,6 +301,16 @@ if FLAGS.svd==1
     customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
 end
 
+%% Find recommended Eqn using 'backward elimination' method
+%User preferences
+FLAGS.recEqn=1; %Flag from performing search for recommended equation
+FLAGS.high_con=0; %Flag for enforcing term hierarchy constraint
+VIFthresh=10; %Threshold for max allowed VIF
+
+if FLAGS.recEqn==1
+    customMatrix_rec=modelOpt_backward(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS.high_con);
+    customMatrix=customMatrix_rec;
+end
 %% Resume calibration
 %Calculate xcalib (coefficients)
 [xcalib, ANOVA] = calc_xcalib(comIN       ,targetMatrix       ,series,...

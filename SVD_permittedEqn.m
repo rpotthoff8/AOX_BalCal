@@ -88,7 +88,7 @@ fprintf('\nCalculating Permitted Eqn Set with SVD....')
         j=j+1;
     end
 
-    if calcThrough==1 %If custom equation identical for each channel
+    if calcThrough==1 %If permitted equation identical for each channel
         svd_include(:,2:loaddimFlag)=repmat(svd_include(:,1),1,loaddimFlag-1); %Duplicate for each column
     end
     customMatrix_permitted = [svd_include; ones(nseries0,loaddimFlag)]; %customMatrix for permitted eqn set.  Always include tare intercepts
