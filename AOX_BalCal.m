@@ -301,14 +301,48 @@ if FLAGS.svd==1
     customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
 end
 
-%% Find recommended Eqn using 'backward elimination' method
+%% Find suggested Eqn using Reference Balfit B29 method
 %User preferences
-FLAGS.recEqn=1; %Flag from performing search for recommended equation
+FLAGS.sugEqnLeg=0; %Flag from performing search for recommended equation
 FLAGS.high_con=0; %Flag for enforcing term hierarchy constraint
 VIFthresh=10; %Threshold for max allowed VIF
 
-if FLAGS.recEqn==1
-    customMatrix_rec=modelOpt_backward(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS.high_con);
+if FLAGS.sugEqnLeg==1
+    customMatrix_sug=modelOpt_suggested(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS.high_con);
+    customMatrix=customMatrix_sug;
+end
+
+%% Find suggested Eqn using new method
+%User preferences
+FLAGS.sugEqnNew=0; %Flag from performing search for recommended equation
+
+if FLAGS.sugEqnNew==1
+    customMatrix_sug=modelOpt_suggestedNew(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS.high_con);
+    customMatrix=customMatrix_sug;
+end
+%% Find recommended Eqn using 'backward elimination' method
+%User preferences
+FLAGS.back_recEqn=0; %Flag from performing search for recommended equation
+FLAGS.search_metric=1;
+
+if FLAGS.back_recEqn==1
+    customMatrix_rec=modelOpt_backward(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
+    customMatrix=customMatrix_rec;
+end
+
+%% Find recommended Eqn using 'forward selection' method
+%User preferences
+FLAGS.forward_recEqn=0; %Flag from performing search for recommended equation
+FLAGS.VIF_stop=1;
+
+if FLAGS.forward_recEqn==1
+    customMatrix_rec=modelOpt_forward(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
+    customMatrix=customMatrix_rec;
+end
+
+FLAGS.matlabOpt_recEqn=1;
+if FLAGS.matlabOpt_recEqn==1
+    customMatrix_rec=modelOpt_matlabOpt_test(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
     customMatrix=customMatrix_rec;
 end
 %% Resume calibration

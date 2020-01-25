@@ -1,10 +1,13 @@
-function [customMatrix_rec]= modelOpt_backward(VIFthresh, customMatrix_permit, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS)
+function [customMatrix_rec]= modelOpt_forward(VIFthresh, customMatrix_permit, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS)
 % Function searches for the 'recommended equation' using the approach
-% Balfit reference B16 describes as "Backward Elimination".
+% Balfit reference B16 describes as "Forward Selection".
 % Function determines optimal combination of terms to include between
 % possible upper and lower bounds.
 % Upper Bounds: provided current permitted customMatrix
 % Lower Bounds: Linear voltage from channel and tares
+
+%See Balfit reference B9 for more complete explanation.
+%Flowchart on page 10/21
 
 %INPUTS:
 %  VIFthresh = Threshold for max allowed VIF (Balfit Search constraint 2)
@@ -29,10 +32,9 @@ function [customMatrix_rec]= modelOpt_backward(VIFthresh, customMatrix_permit, l
 
 high_con=FLAGS.high_con;
 search_metric_flag=FLAGS.search_metric;
-VIF_stop_flag=0;
-VIFthresh_elev=max([50,VIFthresh]);
+VIF_stop_flag=FLAGS.VIF_stop;
 
-fprintf('\nCalculating Recommended Eqn Set with Backward Elimination Method....')
+fprintf('\nCalculating Recommended Eqn Set with Forward Selection Method....')
 
 optChannel=ones(1,loaddimFlag); %Flag for if each channel should be optimized
 
@@ -50,8 +52,8 @@ customMatrix_req(1:loaddimFlag,1:loaddimFlag)=eye(loaddimFlag); %Must include li
 %Define number of series included:
 nseries=size(customMatrix_permit,1)-nterms;
 
-%Initialize optimized math model as permitted (upper end)
-customMatrix_opt=customMatrix_permit;
+%Initialize optimized math model as required (lower end)
+customMatrix_opt=customMatrix_req;
 
 num_permit=sum(customMatrix_permit); %Max number of terms
 num_req=sum(customMatrix_req); %Min number of terms
@@ -60,92 +62,85 @@ num_test=(num_permit-num_req)+1; %Number of models to find. 1 for every number o
 
 %Initialize variables
 VIF_met=false(max(num_test),loaddimFlag); %Matrix for storing if all terms meet VIF constraint
-VIF_elev_met=false(max(num_test),loaddimFlag); %Matrix for storing if all terms meet elevated VIF constraint
 VIF_max=zeros(max(num_test),loaddimFlag); %Initialize variable for storing max VIF at each # terms
 sig_all=false(max(num_test),loaddimFlag); %Matrix for storing if all terms are sig at each # terms
 P_max=zeros(max(num_test),loaddimFlag); %Matrix for storing max coefficeint p_value at each # terms
 search_metric=zeros(max(num_test), loaddimFlag); %Matrix for storing seach metric value at each # terms
-% if VIF_stop_flag==1
-%     VIF_blacklist=zeros(size(customMatrix_opt)); %Matrix for tracking terms that violate VIF limit
-% end
+if VIF_stop_flag==1
+    VIF_blacklist=zeros(size(customMatrix_opt)); %Matrix for tracking terms that violate VIF limit
+end
 
 for i=1:loaddimFlag %Loop through all channels
     if optChannel(i)==1 %If optimization is turned on
         %Check initial (required) math model
         [VIF_met(1,i),VIF_max(1,i),sig_all(1,i),P_max(1,i),search_metric(1,i)]=test_combo(comIN0(:,boolean(customMatrix_opt(:,i))), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, search_metric_flag, VIF_stop_flag);
-        VIF_elev_met(1,i)=VIF_max(1,i)<=VIFthresh_elev; %Check if model meets elevated VIF threshold
         
         customMatrix_hist=zeros(size(customMatrix_opt,1),num_test(i)); %Matrix for storing custom matrix used
         customMatrix_hist(:,1)=customMatrix_opt(:,1); %First model is required model
         for j=2:num_test(i) %Loop through each # terms from current number to max number
+            %Possible terms to be added are those not in current model that are in permitted model
+            pos_add=zeros(size(customMatrix_opt,1),1); %Initialize as zeros
+            pos_add(~boolean(customMatrix_opt(:,i)))=customMatrix_permit(~boolean(customMatrix_opt(:,i)),i); %Vector of terms that can be added
             
-            %Possible terms to be subtracted are those in current model that are not in permitted model
-            pos_sub=zeros(size(customMatrix_opt,1),1); %Initialize as zeros
-            pos_sub(~boolean(customMatrix_req(:,i)))=customMatrix_opt(~boolean(customMatrix_req(:,i)),i); %Vector of terms that can be subtracted
+            if VIF_stop_flag==1 %If terminating search based on VIF limit
+                pos_add(boolean(VIF_blacklist(:,i)))=0; %Don't add terms that are on 'blacklist' for exceeding VIF threshold
+            end
             
-%             if VIF_stop_flag==1 %If terminating search based on VIF limit
-%                 pos_sub(boolean(VIF_blacklist(:,i)))=0; %Don't add terms that are on 'blacklist' for exceeding VIF threshold
-%             end
-            
-            
+            pos_add_idx=find(pos_add); %Index of possible terms for adding to model
             if high_con==2 %If enforcing hierarchy constraint during search
-                %Terms are only possible for subtraction if they are not
-                %supporting any other term
-                sup_Terms_mat=high(boolean(customMatrix_opt(1:nterms,i)),:); %Matrix of terms that are needed to support current terms
-%                 sup_diff=sup_Terms-customMatrix_opt(1:nterms,i)';
-                sup_Terms_vec=any(sup_Terms_mat,1); %Find terms that are supporting any other terms
-                pos_sub(boolean(sup_Terms_vec))=0; %Remove terms that are supporting from possibilities to subtract
-            end
-            pos_sub_idx=find(pos_sub); %Index of possible terms for subtracting from model
-            
-            if isempty(pos_sub_idx) %If no possible terms to subtract
-                break; %Exit for loop testing decreasing # of math models
+                %Terms are only possible for addition if they are supported
+                sup_Terms=high(boolean(pos_add),:); %Matrix of terms that are needed to support each term
+                sup_diff=sup_Terms-customMatrix_opt(1:nterms,i)';
+                unsup_rows=any(sup_diff==1,2); %Find terms that are not supported
+                pos_add_idx(boolean(unsup_rows))=[]; %Remove terms that are unsupported from possibilities to add
             end
             
-            num_pos_sub=numel(pos_sub_idx); %Count of terms to be tested for subtracting from model
+            if isempty(pos_add_idx) %If no possible terms to add
+                break; %Exit for loop testing increasing # of math models
+            end
+            
+            num_pos_add=numel(pos_add_idx); %Count of terms to be tested for adding to model
             
             %Initialize
-            VIF_met_temp=false(num_pos_sub,1); %Matrix for storing if all terms meet VIF constraint
-            VIF_elev_met_temp=false(num_pos_sub,1); %Matrix for storing if all terms meet elevated VIF constraint
-            VIF_max_temp=zeros(num_pos_sub,1); %Initialize variable for storing max VIF at each # terms
-            sig_all_temp=false(num_pos_sub,1); %Matrix for storing if all terms are sig at each # terms
-            P_max_temp=zeros(num_pos_sub,1); %Matrix for storing max coefficeint p_value at each # terms
-            search_metric_temp=zeros(num_pos_sub, 1); %Matrix for storing seach metric value at each # terms
+            VIF_met_temp=false(num_pos_add,1); %Matrix for storing if all terms meet VIF constraint
+            VIF_max_temp=zeros(num_pos_add,1); %Initialize variable for storing max VIF at each # terms
+            sig_all_temp=false(num_pos_add,1); %Matrix for storing if all terms are sig at each # terms
+            P_max_temp=zeros(num_pos_add,1); %Matrix for storing max coefficeint p_value at each # terms
+            search_metric_temp=zeros(num_pos_add, 1); %Matrix for storing seach metric value at each # terms
             
-            for k=1:num_pos_sub %Loop through, testing each possible term to add
+            for k=1:num_pos_add %Loop through, testing each possible term to add
                 customMatrix_opt_temp=customMatrix_opt(:,i); %Initialize as current custom matrix
-                customMatrix_opt_temp(pos_sub_idx(k))=0; %Subtract term for test
-                %Test math model with new term subtracted
+                customMatrix_opt_temp(pos_add_idx(k))=1; %Add term for test
+                %Test math model with new term added
                 [VIF_met_temp(k),VIF_max_temp(k),sig_all_temp(k),P_max_temp(k),search_metric_temp(k)]=test_combo(comIN0(:,boolean(customMatrix_opt_temp)), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, search_metric_flag, VIF_stop_flag);
-                VIF_elev_met_temp(k)=VIF_max_temp(k)<=VIFthresh_elev; %Check if model meets elevated VIF threshold
-
-                %                 if VIF_stop_flag==1 && VIF_met_temp(k)==0 %If adding term violates VIF limit
-                %                     VIF_blacklist(pos_sub_idx(k),i)=1; %Add term to blacklist.  Will not try to add again
-                %                 end
+                if VIF_stop_flag==1 && VIF_met_temp(k)==0 %If adding term violates VIF limit
+                    VIF_blacklist(pos_add_idx(k),i)=1; %Add term to blacklist.  Will not try to add again
+                end
             end
             
             cMeet_Idx=find(all([VIF_met_temp,sig_all_temp],2)); %Index of tests that met both VIF and significance constraint tests
-            c2Meet_Idx=find(all([sig_all_temp,VIF_elev_met_temp],2)); %Index of tests that met both significance constraint test and elevated VIF test
-            c3Meet_Idx=find(VIF_elev_met_temp); %Index of terms that meet elevated VIF test
             if ~isempty(cMeet_Idx) %If any tests met both constraints
                 [~,k_best]=min(search_metric_temp(cMeet_Idx)); %Index of best search metric out of those meeting constraints
                 Idx_best=cMeet_Idx(k_best); %Index of best search metric for all possible
-            elseif ~isempty(c2Meet_Idx) %If any tests met significance constraint and elevated VIF constraint
-                [~,k_best]=min(search_metric_temp(c2Meet_Idx)); %Index of best search metric out of those meeting constraints
-                Idx_best=c2Meet_Idx(k_best); %Index of best search metric for all possible
-            elseif ~isempty(c3Meet_Idx) %If any test met elevated VIF constraint
-                [~,k_best]=min(search_metric_temp(c3Meet_Idx)); %Index of best search metric out of those meeting constraints
-                Idx_best=c3Meet_Idx(k_best); %Index of best search metric for all possible
-            else %If no tests meet any constraints
-                [~,Idx_best]=min(search_metric_temp); %Just find minimum of search metric
+            else %If no tests meet both constraints
+                if VIF_stop_flag==1
+                    VIF_cMeet_Idx=find(VIF_met_temp); %Index of test that met VIF constraint
+                    if ~isempty(VIF_cMeet_Idx) %If any tests met both constraints
+                        [~,k_best]=min(search_metric_temp(VIF_cMeet_Idx)); %Index of best search metric out of those meeting constraints
+                        Idx_best=VIF_cMeet_Idx(k_best); %Index of best search metric for all possible
+                    else %No term combos satisfy VIF constraint
+                        break; %Exit loop that is testing adding terms to model 
+                    end
+                else
+                    [~,Idx_best]=min(search_metric_temp); %Just find minimum of search metric
+                end
             end
             
             %Pick best term to add to move forward
-            customMatrix_opt(pos_sub_idx(Idx_best),i)=0; %Remove term from customMatrix
+            customMatrix_opt(pos_add_idx(Idx_best),i)=1; %Add term to customMatrix
             %Store results
             customMatrix_hist(:,j)=customMatrix_opt(:,i); %Store custom matrix
             VIF_met(j,i)=VIF_met_temp(Idx_best);
-            VIF_elev_met(j,i)=VIF_elev_met_temp(Idx_best);
             VIF_max(j,i)=VIF_max_temp(Idx_best);
             sig_all(j,i)=sig_all_temp(Idx_best);
             P_max(j,i)=P_max_temp(Idx_best);
