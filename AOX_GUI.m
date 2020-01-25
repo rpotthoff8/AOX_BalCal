@@ -54,7 +54,9 @@ function AOX_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to AOX_GUI (see VARARGIN)
-set(handles.figure1, 'units', 'normalized', 'position', [0.15 0.1 0.5 0.8])
+set(handles.figure1, 'units', 'normalized', 'position', [0.1 0.1 0.8 0.8])
+% set(handles.figure1, 'units', 'normalized', 'outerposition', [0 0 .8 .8])
+
 set(handles.output_location,'String',pwd);
 global VERSION
 VERSION = 16;
@@ -107,15 +109,6 @@ function varargout = AOX_GUI_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 delete(handles.figure1);
-
-
-% --- Executes on button press in tares_FLAGcheck.
-function tares_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to tares_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of tares_FLAGcheck
 
 
 % --- Executes on button press in hist_FLAGcheck.
@@ -206,6 +199,8 @@ switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
         outStruct.termInclude(8)=contains(terms,termList{8});
         outStruct.termInclude(9)=contains(terms,termList{9});
         outStruct.termInclude(10)=contains(terms,termList{10});
+    case 'noAlg'
+        outStruct.model=0; 
 end
 
 outStruct.grbf = 1 + get(handles.grbf,'Value');
@@ -419,6 +414,14 @@ if (handles.termSelect.Value==1)
     set(handles.termSelectButton, 'Enable', 'on');
 else
     set(handles.termSelectButton, 'Enable', 'off');
+end
+if (handles.noAlg.Value==1)
+    set(handles.outlier_FLAGcheck,'Enable','off');
+    set(handles.outlier_FLAGcheck,'Value',0);
+    outlier_FLAGcheck_Callback(hObject, eventdata, handles);
+else
+    set(handles.outlier_FLAGcheck,'Enable','on');
+    outlier_FLAGcheck_Callback(hObject, eventdata, handles);
 end
 
 
@@ -1229,14 +1232,6 @@ alpha = char(c+65);
 num = int2str(r+1);
 a1 = [alpha, num];
 
-% --- Executes on button press in grbftares_FLAGcheck.
-function grbftares_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to grbftares_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of grbftares_FLAGcheck
-
 
 % --- Executes on button press in zeroed_FLAGcheck.
 function zeroed_FLAGcheck_Callback(hObject, eventdata, handles)
@@ -1254,7 +1249,7 @@ function outlier_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of outlier_FLAGcheck
-if get(hObject,'Value') == 1
+if handles.outlier_FLAGcheck.Value == 1
     set(handles.zeroed_FLAGcheck,'Enable','on');
     set(handles.numSTD,'Enable','on');
     set(handles.std_text,'Enable','on');
@@ -2238,6 +2233,7 @@ default.balanceType = get(handles.balanceType,'Value');
 default.balanceType_list=get(handles.balanceType_list, 'Value');
 default.termSelect=get(handles.termSelect,'Value');
 default.termInclude=handles.termSelectButton.Tooltip;
+default.noAlg=handles.noAlg.Value;
 default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
 default.selfTerm_pop_str= get(handles.selfTerm_pop,'String');
@@ -2344,6 +2340,7 @@ if exist(fullfileName,'file')
         set(handles.balanceType_list,'Value',default.balanceType_list);
         set(handles.termSelect,'Value',default.termSelect);
         set(handles.termSelectButton,'Tooltip',default.termInclude);
+        set(handles.noAlg,'Value',default.noAlg);
         
         set(handles.grbf,'Value',default.grbf);
         set(handles.numBasisIn,'String',default.basis);
