@@ -144,7 +144,7 @@ if FLAGS.model==6 %If user has selected a custom model
     
     %Proceed through code with custom equation
     FLAGS.model = 4;
-    algebraic_model={'CUSTOM'};
+    algebraic_model={'CUSTOM TERM SELECTION'};
 elseif FLAGS.model==5
     %Build bustom equation matrix based on the balance type selected
     balanceType=out.balanceEqn;
@@ -193,7 +193,7 @@ elseif FLAGS.model == 4
     % SEE: CustomEquationMatrixTemplate.csv
     customMatrix = out.customMatrix;
     customMatrix = [customMatrix; ones(nseries0,loaddimFlag)];
-    algebraic_model={'CUSTOM'};
+    algebraic_model={'CUSTOM INPUT FILE'};
 else
     %Standard Full, truncated, linear model, or no algebraic model
     %Select the terms to be included
