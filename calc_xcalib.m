@@ -43,6 +43,9 @@ xcalib = zeros(nterms+nseries0,loaddimFlag);
 % Solves for the coefficient one column at a time.
 % This is to account for Custom Models, where the terms may be
 % different depending on the channel.
+
+calc_channel(boolean(calc_channel))=any(customMatrix(1:nterms,boolean(calc_channel)),1); %Calculate channel only if terms are included
+
 for k = 1:loaddimFlag
     if calc_channel(k)==1
         comIN_k = comIN;
