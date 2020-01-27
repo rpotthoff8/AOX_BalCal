@@ -39,12 +39,13 @@ comIN = comIN./scale;
 [~,s_1st,~] = unique(series);
 nseries = length(s_1st);
 
-xcalib = zeros(nterms+nseries0,loaddimFlag);
+xcalib = zeros(size(comIN,2),loaddimFlag);
 % Solves for the coefficient one column at a time.
 % This is to account for Custom Models, where the terms may be
 % different depending on the channel.
 
-calc_channel(boolean(calc_channel))=any(customMatrix(1:nterms,boolean(calc_channel)),1); %Calculate channel only if terms are included
+calc_channel(boolean(calc_channel))=any(customMatrix(:,boolean(calc_channel)),1); %Calculate channel only if terms are included
+anova_calc_channel=zeros(size(calc_channel));
 
 for k = 1:loaddimFlag
     if calc_channel(k)==1
@@ -55,6 +56,8 @@ for k = 1:loaddimFlag
             comIN_k(:,customMatrix(:,k)==0) = [];
             scale_k(customMatrix(:,k)==0) = [];
         end
+        
+        nterms_k= sum(customMatrix(1:nterms,k));
         
         % SOLUTION
         xcalib_k = comIN_k\targetMatrix(:,k);
@@ -69,7 +72,8 @@ for k = 1:loaddimFlag
         end
         
         %Call Anova
-        if FLAGS.anova==1
+        if FLAGS.anova==1 && any(customMatrix(2:nterms,k),1) %Calculate ANOVA if turned on and more than intercept term selected
+
             %test_FLAG used to 'turn off' VIF when iterating to recommended
             %equation for time saving
             if isfield(FLAGS,'test_FLAG')==0
@@ -78,7 +82,7 @@ for k = 1:loaddimFlag
             if FLAGS.test_FLAG==0
                 fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
             end
-            ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nseries0,FLAGS.test_FLAG,anova_pct);
+            ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nterms_k,FLAGS.test_FLAG,anova_pct);
             
             % There are several ANOVA metrics that also must be denormalized
             ANOVA(k).beta    = ANOVA(k).beta./scale_k';
@@ -86,25 +90,26 @@ for k = 1:loaddimFlag
             
             % Prediction interval calculation does not include tares, so scale
             % vector has to be truncated
-            scale_PI = scale_k(1:end-nseries);
+            scale_PI = scale_k(1:nterms_k);
             ANOVA(k).PI.invXtX = ANOVA(k).PI.invXtX./(scale_PI'*scale_PI);
             if FLAGS.test_FLAG==0
                 fprintf('Complete\n')
             end
+            anova_calc_channel(k)=1;
         end
     end
 end
 % fprintf('\n')
 
-if FLAGS.anova==0 || all(~calc_channel) %If ANOVA was not calculated or no channels were calculated
+if FLAGS.anova==0 || all(~anova_calc_channel) %If ANOVA was not calculated or no channels were calculated
     ANOVA='ANOVA NOT PERFORMED';
 else
-    if FLAGS.model==4 && any(calc_channel) %If custom equation, expand ANOVA statistics to standard full term matrix
+    if FLAGS.model==4 && any(anova_calc_channel) %If custom equation, expand ANOVA statistics to standard full term matrix
         ANOVA_exp=ANOVA;
         ExpandList=["beta","beta_CI","T","p_T","VIF","sig"]; %List of ANOVA structure elements that should be expanded
         for i=1:size(ExpandList,2)
             for j=1:loaddimFlag
-                if calc_channel(j)==1
+                if anova_calc_channel(j)==1
                     eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'=zeros(size(xcalib,1),1);')); %initialize zeros
                     eval(strcat('ANOVA_exp(',num2str(j),').',ExpandList(i),'(customMatrix(:,j)==1,:)=ANOVA(',num2str(j),').',ExpandList(i),';')); %fill with ANOVA statistics
                 end
@@ -112,7 +117,7 @@ else
         end
         %Expand to full matrix for invXtX
         for j=1:loaddimFlag
-            if calc_channel(j)==1
+            if anova_calc_channel(j)==1
                 ANOVA_exp(j).PI.invXtX=zeros(nterms,nterms);
                 ANOVA_exp(j).PI.invXtX(customMatrix((1:nterms),j)==1,customMatrix((1:nterms),j)==1)=ANOVA(j).PI.invXtX;
             end

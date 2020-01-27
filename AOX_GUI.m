@@ -25,7 +25,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 14-Jan-2020 13:50:17
+% Last Modified by GUIDE v2.5 27-Jan-2020 12:04:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -206,6 +206,7 @@ end
 outStruct.grbf = 1 + get(handles.grbf,'Value');
 outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 outStruct.selfTerm_str=handles.selfTerm_pop.String(handles.selfTerm_pop.Value);
+outStruct.intercept=handles.intercept_pop.Value;
 
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 outStruct.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
@@ -2238,6 +2239,8 @@ default.grbf = get(handles.grbf,'Value');
 default.basis = get(handles.numBasisIn,'String');
 default.selfTerm_pop_str= get(handles.selfTerm_pop,'String');
 default.selfTerm_pop_val= get(handles.selfTerm_pop,'Value');
+default.intercept_pop_val=handles.intercept_pop.Value;
+
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
 
@@ -2346,7 +2349,7 @@ if exist(fullfileName,'file')
         set(handles.numBasisIn,'String',default.basis);
         set(handles.selfTerm_pop,'String',default.selfTerm_pop_str);
         set(handles.selfTerm_pop,'Value',default.selfTerm_pop_val);
-        
+        set(handles.intercept_pop,'Value',default.intercept_pop_val);
         
         %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
@@ -2387,3 +2390,26 @@ if ~isequal(set_name,0)
     loadSettings(handles, fileName, eventdata);
 end
 
+
+
+% --- Executes on selection change in intercept_pop.
+function intercept_pop_Callback(hObject, eventdata, handles)
+% hObject    handle to intercept_pop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns intercept_pop contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from intercept_pop
+
+
+% --- Executes during object creation, after setting all properties.
+function intercept_pop_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to intercept_pop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

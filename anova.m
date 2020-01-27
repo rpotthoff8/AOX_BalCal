@@ -1,4 +1,4 @@
-function ANOVA = anova(X,y,nseries,noVIF_FLAG,pct)
+function ANOVA = anova(X,y,nterms,noVIF_FLAG,pct)
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not
@@ -56,7 +56,7 @@ end
 if noVIF_FLAG==0
     VIF = vif(X);
     
-    VIF_dl=vif_dl(X)';
+    VIF_dl=vif_dl(X(:,2:end))';
     
     if any(VIF>=10)
         warning('VIF calculation indicates strong multicollinearity. Analysis of Variance results cannot be trusted.')
@@ -232,7 +232,7 @@ ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
 % Saving variables to calculate prediction intervals live in approximation
 ANOVA.PI.T_cr = T_cr;
 ANOVA.PI.sigma_hat_sq = sigma_hat_sq;
-ANOVA.PI.invXtX = invXtX(1:(size(X,2)-nseries),1:(size(X,2)-nseries));
+ANOVA.PI.invXtX = invXtX(1:nterms,1:nterms);
 ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
 ANOVA.PI.dof_e=dof_e;
 %START TEST
@@ -286,7 +286,7 @@ function VIF = vif(X)
 % VIF<1 is theoretically nonsensical, it simply means that trying to find a
 % linear correlation yielded a model that was less accurate thannot having
 % a model at all -> totally linearly independent
-VIF = max(diag(pinv(corrcoef(X))),1);
-
+VIF = max(diag(pinv(corrcoef(X(:,2:end)))),1);
+VIF=[1;VIF];
 %% Turn warnings back on
 warning('on','all');

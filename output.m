@@ -345,7 +345,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
     %%% ANOVA Stats AJM 6_12_19
     if FLAGS.anova==1
         
-        RECOMM_ALG_EQN=anova_output(ANOVA,nterms,nseries0,numpts,loaddimFlag,'CALIB ALG',output_location,Term_Names,loadlist,tR2,gee);
+        RECOMM_ALG_EQN=anova_output(ANOVA,nterms,numpts,loaddimFlag,'CALIB ALG',output_location,Term_Names,loadlist,tR2,gee);
         
         %Output recommended custom equation
         if FLAGS.Rec_Model==1
@@ -389,7 +389,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
     
     if FLAGS.calc_balfit==1
         %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-        totalnum = nterms+nseries0;
+        totalnum = size(balfitxcalib,1);
         totalnumcoeffs = [1:totalnum];
         totalnumcoeffs2 = [2:totalnum+1];
         dsof = numpts-nterms-1;
@@ -626,7 +626,7 @@ if strcmp(section,{'Calibration GRBF'})==1
     
     %%% ANOVA Stats AJM 6_12_19
     if FLAGS.anova==1
-        anova_output(ANOVA_GRBF,nterms,nseries0,numpts,loaddimFlag,'CALIB GRBF',output_location,Term_Names,loadlist,tR2,gee);
+        anova_output(ANOVA_GRBF,nterms,numpts,loaddimFlag,'CALIB GRBF',output_location,Term_Names,loadlist,tR2,gee);
     end
     %%% ANOVA Stats AJM 6_8_19
 end
@@ -666,7 +666,7 @@ if strcmp(section,{'Validation GRBF'})==1
 end
 end
 
-function [RECOMM_ALG_EQN]=anova_output(ANOVA,nterms,nseries0,numpts,loaddimFlag,section,output_location,Term_Names,loadlist,tR2,gee)
+function [RECOMM_ALG_EQN]=anova_output(ANOVA,nterms,numpts,loaddimFlag,section,output_location,Term_Names,loadlist,tR2,gee)
 %Function creates all the outputs for ANOVA results
 
 %INPUTS:
@@ -687,7 +687,7 @@ function [RECOMM_ALG_EQN]=anova_output(ANOVA,nterms,nseries0,numpts,loaddimFlag,
 
 %Output ANOVA results
 
-totalnum = nterms+nseries0;
+totalnum = size(ANOVA(1).sig,1);
 totalnumcoeffs = [1:totalnum];
 totalnumcoeffs2 = [2:totalnum+1];
 dsof = numpts-nterms-1;

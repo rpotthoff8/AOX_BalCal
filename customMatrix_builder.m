@@ -1,12 +1,14 @@
-function customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag)
+function customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag, interceptFlag)
 %Function creates a custom matrix for which algebraic terms should be
 %included in the model.  This matrix of 1s and 0s denotes the terms
 %selected.  The possible algebraic terms are listed in order below.
 %Function works for any data dimension (any # of channels)
 
 %INPUTS:
-%  dimFlag = Number of data channels
+%  voltdimFlag = Number of voltage data channels
 %  termInclude = Boolean 1x10 vector for which algebraic term combinations should be included in model
+%  loaddimFlag = Number of load data channels
+%  interceptFlag = Flag for if global intercept should be included in model 
 
 %OUTPUTS:
 %  customMatrix = Custom Equation Matrix for calculations
@@ -31,4 +33,11 @@ termIndex{10}=(1:voltdimFlag)'+max(termIndex{9}); % |F*F*F|
 customMatrix=zeros(2*voltdimFlag*(voltdimFlag+2),loaddimFlag);
 customMatrix(cell2mat(termIndex(boolean(termInclude))),:)=1;
 
+%Add intercept flag to customMatrix
+if interceptFlag==1
+    intercept=ones(1,loaddimFlag);
+else
+    intercept=zeros(1,loaddimFlag);
+end
+customMatrix=[intercept; customMatrix];
 end
