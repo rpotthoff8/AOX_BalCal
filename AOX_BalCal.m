@@ -703,7 +703,7 @@ if FLAGS.balCal == 2
                     
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-                    rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
+%                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
                     
                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
                         comIN0_RBF_VIFtest(:,end)=rbfINminGZ_temp; %Define input matrix ('X') with new RBF, algebraic terms, and previous RBFs
