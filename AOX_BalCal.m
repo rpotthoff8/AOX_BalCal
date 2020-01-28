@@ -628,8 +628,10 @@ if FLAGS.balCal == 2
     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
     h_GRBF=sqrt(max(min(R_square_find))); %Point spacing parameter
-    eps_min=0.1; %Fasshauer pg 234, large epsilon= 'spiky'
-    eps_max=1.0;
+    %     eps_min=0.1; %Fasshauer pg 234, large epsilon= 'spiky'
+    %     eps_max=1.0;
+    eps_min=0.07; %Fasshauer pg 234, large epsilon= 'spiky'
+    eps_max=.1;
     
     max_mult=5; %CHANGE
     maxPer=ceil(max_mult*numBasis/size(dainputs0,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
@@ -649,7 +651,11 @@ if FLAGS.balCal == 2
         calib_PI_rms_Hist=zeros(numBasis,loaddimFlag); %History of prediction interval RMS vs RBF number
         period_change=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
         period_length=max([10,0.1*numBasis]); %CHANGE?: Length of period for self termination
+        if out.model~=0  
         [loadPI_ALG]=calc_PI(ANOVA,anova_pct,comIN0(:,1:nterms),aprxIN); %Calculate prediction interval for loads with algebraic model
+        else
+            loadPI_ALG=Inf(size(targetMatrix0));
+        end
         calib_ALG_PI_rms=sqrt(sum((loadPI_ALG).^2,1)/numpts0); %RMS for calibration PI
     end
     
@@ -659,7 +665,12 @@ if FLAGS.balCal == 2
         VIF_lim=9.95; %Limit for acceptable VIF
         
         for i=1:loaddimFlag %Check Algebraic model max VIF in each channel
-            if max(ANOVA(i).VIF)>VIF_lim %If Algebraic model already exceeds max VIF
+            if out.model~=0  
+                max_VIF_alg=max(ANOVA(i).VIF);
+            else
+                max_VIF_alg=1;
+            end
+            if max_VIF_alg>VIF_lim %If Algebraic model already exceeds max VIF
                 self_Terminate(i)=1; %Terminate channel initially
                 fprintf(strcat('\n Channel'," ", string(i), ' Reached VIF termination criteria with Algebraic Model, no RBFs will be added in Channel'," ",string(i))); %Output message
             end
