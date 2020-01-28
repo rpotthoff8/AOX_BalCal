@@ -76,5 +76,5 @@ if nargin>=7
         leftColumn=[leftColumn;rbf_leftColumn];
     end
 end
-
+leftColumn=[cellstr('INTERCEPT');leftColumn];
 end

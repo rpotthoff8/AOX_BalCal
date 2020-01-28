@@ -104,6 +104,17 @@ anova_pct=out.anova_pct;
 FLAGS.approx_and_PI_print=out.approx_and_PI_print;
 FLAGS.custom_eqn_iter=out.stableRec_FLAGcheck;
 
+if out.intercept==1 %Include series intercepts
+    FLAGS.glob_intercept=0;
+    FLAGS.tare_intercept=1;
+elseif out.intercept==2 %Include global intercept
+    FLAGS.glob_intercept=1;
+    FLAGS.tare_intercept=0;
+elseif out.intercept==3 %Include no intercepts
+    FLAGS.glob_intercept=0;
+    FLAGS.tare_intercept=0;
+end
+
 REPORT_NO=out.REPORT_NO;
 file_output_location=out.output_location;
 
@@ -138,12 +149,11 @@ end
 if FLAGS.model==6 %If user has selected a custom model
     termInclude=out.termInclude;
     %Assemble custom matrix
-    customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag);
-    customMatrix = [customMatrix; ones(nseries0,loaddimFlag)];
+    customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag,FLAGS.glob_intercept);
 
     %Proceed through code with custom equation
     FLAGS.model = 4;
-    algebraic_model={'CUSTOM'};
+    algebraic_model={'CUSTOM TERM SELECTION'};
 elseif FLAGS.model==5
     %Build bustom equation matrix based on the balance type selected
     balanceType=out.balanceEqn;
@@ -183,18 +193,16 @@ elseif FLAGS.model==5
         algebraic_model={'BALANCE TYPE 2-F'};
     end
     %Assemble custom matrix
-    customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag);
-    customMatrix = [customMatrix; ones(nseries0,loaddimFlag)];
+    customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag,FLAGS.glob_intercept);
     %Proceed through code with custom equation
     FLAGS.model = 4;
 elseif FLAGS.model == 4
     % Load the custom equation matrix if using a custom algebraic model
     % SEE: CustomEquationMatrixTemplate.csv
     customMatrix = out.customMatrix;
-    customMatrix = [customMatrix; ones(nseries0,loaddimFlag)];
-    algebraic_model={'CUSTOM'};
+    algebraic_model={'CUSTOM INPUT FILE'};
 else
-    %Standard Full, truncated, or linear model
+    %Standard Full, truncated, linear model, or no algebraic model
     %Select the terms to be included
     %Terms are listed in following order:
     % F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|
@@ -208,12 +216,17 @@ else
     elseif FLAGS.model==1 %Full Eqn type
         termInclude(1:10)=1;
         algebraic_model={'FULL (BALANCE TYPE 2-D)'};
+    elseif FLAGS.model==0 %No Algebraic Model
+        algebraic_model={'NO ALGEBRAIC MODEL'};
     end
     %Assemble custom matrix
-    customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag);
-    customMatrix = [customMatrix; ones(nseries0,loaddimFlag)];
+    customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag,FLAGS.glob_intercept);
     %Proceed through code with custom equation
     FLAGS.model = 4;
+end
+
+if FLAGS.tare_intercept==1
+    customMatrix = [customMatrix; ones(nseries0,loaddimFlag)];
 end
 
 % Load data labels if present, otherwise use default values.
@@ -255,6 +268,7 @@ dainputs0 = excessVec0 - globalZeros;
 
 % Determines how many terms are in the algebraic model; this will help
 % determine the size of the calibration matrix
+
 % switch FLAGS.model
 %     case {1,4}
 %         % Full Algebraic Model or Custom Algebraic Model
@@ -271,16 +285,17 @@ dainputs0 = excessVec0 - globalZeros;
 
 % The Custom model calculates all terms, and then excludes them in
 % the calibration process as determined by the customMatrix.
-nterms = 2*voltdimFlag*(voltdimFlag+2);
+nterms = 2*voltdimFlag*(voltdimFlag+2)+1;
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
-[comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,1,voltagelist);
+[comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,FLAGS.tare_intercept,voltagelist);
 
 %%% Balfit Stats and Regression Coeff Matrix
 balfitdainputs0 = targetMatrix0;
 balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
-balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,1);
+balfittargetMatrix0=balfittargetMatrix0(:,2:end);
+balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,FLAGS.tare_intercept);
 %%% Balfit Stats and Regression Coeff Matrix
 
 %Creates vectors that will not have outliers removed for balfit
@@ -458,13 +473,22 @@ end %END ITERATIONS FOR STABLE CUSTOM EQUATION
 
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
 coeff = xcalib(1:nterms,:);
-tares = -xcalib(nterms+1:end,:);
+if FLAGS.tare_intercept==1 %If tare loads were included in regression
+    tares = -xcalib(nterms+1:end,:);
+else
+    tares=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
+end
 intercepts=-tares;
 taretal=tares(series0,:);
 aprxINminGZ=aprxIN+taretal; %Approximation that does not include intercept terms
 
 %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
-[~,tares_STDDEV_all] = meantare(series0,aprxINminGZ-targetMatrix0);
+if FLAGS.tare_intercept==1
+    [~,tares_STDDEV_all] = meantare(series0,aprxINminGZ-targetMatrix0);
+else
+    tares_STDDEV_all=zeros(size(targetMatrix0));
+end
+
 tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 
 if FLAGS.calc_balfit==1
@@ -477,36 +501,39 @@ if FLAGS.calc_balfit==1
     %%% Balfit Stats and Matrix
 end
 
-%OUTPUT FUNCTION
-%Function creates all outputs for calibration, algebraic section
-section={'Calibration Algebraic'};
-newStruct=struct('aprxIN',aprxIN,...
-    'coeff',coeff,...
-    'nterms',nterms,...
-    'ANOVA',ANOVA,...
-    'targetMatrix0',targetMatrix0,...
-    'loadunits',{loadunits(:)},...
-    'voltunits',{voltunits(:)},...
-    'balance_type',balance_type,...
-    'description',description);
-uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-    [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-
-if FLAGS.calc_balfit==1
-    newStruct=struct('balfitcomIN',balfitcomIN0,...
-        'balfitxcalib',balfitxcalib,...
-        'balfittargetMatrix',balfittargetMatrix0,...
-        'balfitANOVA',balfitANOVA,...
-        'balfit_regress_matrix',balfit_regress_matrix);
+if out.model~=0 %If any algebraic terms included
+    %OUTPUT FUNCTION
+    %Function creates all outputs for calibration, algebraic section
+    section={'Calibration Algebraic'};
+    newStruct=struct('aprxIN',aprxIN,...
+        'coeff',coeff,...
+        'nterms',nterms,...
+        'ANOVA',ANOVA,...
+        'targetMatrix0',targetMatrix0,...
+        'loadunits',{loadunits(:)},...
+        'voltunits',{voltunits(:)},...
+        'balance_type',balance_type,...
+        'description',description);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+
+    if FLAGS.calc_balfit==1
+        newStruct=struct('balfitcomIN',balfitcomIN0,...
+            'balfitxcalib',balfitxcalib,...
+            'balfittargetMatrix',balfittargetMatrix0,...
+            'balfitANOVA',balfitANOVA,...
+            'balfit_regress_matrix',balfit_regress_matrix);
+        uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+    end
+
+    %Output results from calibration algebraic section
+    output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,...
+        tares,tares_STDDEV,loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
+        reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
+else
+    fprintf('   NO ALGEBRAIC MODEL INCLUDED \n');
 end
-
-%Output results from calibration algebraic section
-output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,...
-    tares,tares_STDDEV,loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
-    reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
-
 %END CALIBRATION ALGEBRAIC SECTION
 
 %%
@@ -569,8 +596,14 @@ if FLAGS.balVal == 1
     aprxINminGZvalid = aprxINvalid;
     checkitvalid = aprxINminGZvalid-targetMatrixvalid;
 
-    % SOLVE FOR TARES BY TAKING THE MEAN
-    [taresAllPointsvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
+    if FLAGS.tare_intercept==1 %If including Tare loads
+        % SOLVE FOR TARES BY TAKING THE MEAN
+        [taresAllPointsvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
+    else
+        taresAllPointsvalid=zeros(size(checkitvalid));
+        taretalstdvalid=zeros(size(checkitvalid));
+    end
+
     taresvalid     = taresAllPointsvalid(s_1stV,:);
     tares_STDEV_valid = taretalstdvalid(s_1stV,:);
 
@@ -581,26 +614,29 @@ if FLAGS.balVal == 1
     targetResvalid = targetMatrixvalid-aprxINminTAREvalid;
     std_targetResvalid=std(targetResvalid);
 
-    %CALCULATE PREDICTION INTERVAL FOR POINTS
-    if FLAGS.loadPI==1
-        [loadPI_valid]=calc_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
+    if out.model~=0 %If any algebraic terms included
+        %CALCULATE PREDICTION INTERVAL FOR POINTS
+        if FLAGS.loadPI==1
+            [loadPI_valid]=calc_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
 
-        %Save variables for output
-        newStruct=struct('loadPI_valid',loadPI_valid);
+            %Save variables for output
+            newStruct=struct('loadPI_valid',loadPI_valid);
+            uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+                [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        end
+
+        %OUTPUT FUNCTION
+        %Function creates all outputs for validation, algebraic section
+        newStruct=struct('aprxINminTAREvalid',aprxINminTAREvalid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        section={'Validation Algebraic'};
+        output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
+            taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,voltdimFlag,loaddimFlag,voltagelist,...
+            reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
+    else
+        fprintf('   NO ALGEBRAIC MODEL INCLUDED \n');
     end
-
-    %OUTPUT FUNCTION
-    %Function creates all outputs for validation, algebraic section
-    newStruct=struct('aprxINminTAREvalid',aprxINminTAREvalid);
-    uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-    section={'Validation Algebraic'};
-    output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
-        taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,voltdimFlag,loaddimFlag,voltagelist,...
-        reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
-
 end
 %END VALIDATION ALGEBRAIC SECTION
 
@@ -649,8 +685,10 @@ if FLAGS.balCal == 2
     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
     h_GRBF=sqrt(max(min(R_square_find))); %Point spacing parameter
-    eps_min=0.1; %Fasshauer pg 234, large epsilon= 'spiky'
-    eps_max=1.0;
+    %     eps_min=0.1; %Fasshauer pg 234, large epsilon= 'spiky'
+    %     eps_max=1.0;
+    eps_min=0.07; %Fasshauer pg 234, large epsilon= 'spiky'
+    eps_max=.1;
 
     max_mult=5; %CHANGE
     maxPer=ceil(max_mult*numBasis/size(dainputs0,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
@@ -670,7 +708,11 @@ if FLAGS.balCal == 2
         calib_PI_rms_Hist=zeros(numBasis,loaddimFlag); %History of prediction interval RMS vs RBF number
         period_change=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
         period_length=max([10,0.1*numBasis]); %CHANGE?: Length of period for self termination
+        if out.model~=0
         [loadPI_ALG]=calc_PI(ANOVA,anova_pct,comIN0(:,1:nterms),aprxIN); %Calculate prediction interval for loads with algebraic model
+        else
+            loadPI_ALG=Inf(size(targetMatrix0));
+        end
         calib_ALG_PI_rms=sqrt(sum((loadPI_ALG).^2,1)/numpts0); %RMS for calibration PI
     end
 
@@ -680,7 +722,12 @@ if FLAGS.balCal == 2
         VIF_lim=9.95; %Limit for acceptable VIF
 
         for i=1:loaddimFlag %Check Algebraic model max VIF in each channel
-            if max(ANOVA(i).VIF)>VIF_lim %If Algebraic model already exceeds max VIF
+            if out.model~=0
+                max_VIF_alg=max(ANOVA(i).VIF);
+            else
+                max_VIF_alg=1;
+            end
+            if max_VIF_alg>VIF_lim %If Algebraic model already exceeds max VIF
                 self_Terminate(i)=1; %Terminate channel initially
                 fprintf(strcat('\n Channel'," ", string(i), ' Reached VIF termination criteria with Algebraic Model, no RBFs will be added in Channel'," ",string(i))); %Output message
             end
@@ -724,7 +771,7 @@ if FLAGS.balCal == 2
 
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-                    rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
+%                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
 
                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
                         comIN0_RBF_VIFtest(:,end)=rbfINminGZ_temp; %Define input matrix ('X') with new RBF, algebraic terms, and previous RBFs
@@ -837,13 +884,21 @@ if FLAGS.balCal == 2
         aprxIN2_Hist{u} = aprxIN2;
 
         %Store tares
-        taresGRBF = -xcalib_RBF(nterms+u*loaddimFlag+1:end,:);
+        if FLAGS.tare_intercept==1 %If tare loads were included in regression
+            taresGRBF = -xcalib_RBF(nterms+u*loaddimFlag+1:end,:);
+        else
+            taresGRBF=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
+        end
         taretalRBF=taresGRBF(series0,:);
         aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
         tareGRBFHist{u} = taresGRBF;
 
         %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
-        [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
+        if FLAGS.tare_intercept==1 %If tare loads were included in regression
+            [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
+        else
+            taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
+        end
         taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
 
         %Calculate tare corrected load approximation
@@ -867,8 +922,12 @@ if FLAGS.balCal == 2
 
             % SOLVE FOR TARES BY TAKING THE MEAN
             [~,s_1st,~] = unique(seriesvalid);
-            [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid);
-
+            if FLAGS.tare_intercept==1 %If tare loads were included in regression
+                [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid);
+            else
+                taresAllPointsvalid2=zeros(size(targetMatrixvalid));
+                taretalstdvalid2 = zeros(size(targetMatrixvalid));
+            end
             %Calculate tare corrected load approximation
             aprxINminTARE2valid=aprxINminGZ2valid-taresAllPointsvalid2;
 
@@ -1035,14 +1094,21 @@ if FLAGS.balCal == 2
         %update the approximation
         aprxIN2=comIN0_RBF*xcalib_RBF;
         aprxIN2_Hist{u+1} = aprxIN2;
-
-        taresGRBF = -xcalib_RBF(nterms_RBF+1:end,:);
+        if FLAGS.tare_intercept==1 %If tare loads were included in regression
+            taresGRBF = -xcalib_RBF(nterms_RBF+1:end,:);
+        else
+            taresGRBF=zeros(nseries0,loaddimFlag);
+        end
         taretalRBF=taresGRBF(series0,:);
         aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
         tareGRBFHist{u+1} = taresGRBF;
 
         %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
-        [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
+        if FLAGS.tare_intercept==1 %If tare loads were included in regression
+            [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
+        else
+            taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
+        end
         taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
 
         %Calculate tare corrected load approximation
@@ -1099,7 +1165,12 @@ if FLAGS.balCal == 2
 
         % SOLVE FOR TARES BY TAKING THE MEAN
         [~,s_1st,~] = unique(seriesvalid);
-        [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid);
+        if FLAGS.tare_intercept==1 %If tare loads were included in regression
+            [taresAllPointsvalid2,taretalstdvalid2] = meantare(seriesvalid,aprxINminGZ2valid-targetMatrixvalid);
+        else
+            taresAllPointsvalid2=zeros(size(targetMatrixvalid));
+            taretalstdvalid2=zeros(size(targetMatrixvalid));
+        end
         taresGRBFvalid = taresAllPointsvalid2(s_1st,:);
         taresGRBFSTDEVvalid = taretalstdvalid2(s_1st,:);
 
