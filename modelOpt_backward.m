@@ -29,7 +29,9 @@ function [customMatrix_rec]= modelOpt_backward(VIFthresh, customMatrix_permit, l
 
 high_con=FLAGS.high_con;
 search_metric_flag=FLAGS.search_metric;
-VIF_stop_flag=0;
+quick_search_flag=0;
+
+FLAGS.VIF_stop=0;
 VIFthresh_elev=max([50,VIFthresh]);
 
 fprintf('\nCalculating Recommended Eqn Set with Backward Elimination Method....')
@@ -72,7 +74,7 @@ search_metric=zeros(max(num_test), loaddimFlag); %Matrix for storing seach metri
 for i=1:loaddimFlag %Loop through all channels
     if optChannel(i)==1 %If optimization is turned on
         %Check initial (required) math model
-        [VIF_met(1,i),VIF_max(1,i),sig_all(1,i),P_max(1,i),search_metric(1,i)]=test_combo(comIN0(:,boolean(customMatrix_opt(:,i))), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, search_metric_flag, VIF_stop_flag);
+        [VIF_met(1,i),VIF_max(1,i),sig_all(1,i),P_max(1,i),search_metric(1,i)]=test_combo(comIN0(:,boolean(customMatrix_opt(:,i))), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, FLAGS);
         VIF_elev_met(1,i)=VIF_max(1,i)<=VIFthresh_elev; %Check if model meets elevated VIF threshold
         
         customMatrix_hist=zeros(size(customMatrix_opt,1),num_test(i)); %Matrix for storing custom matrix used
@@ -116,7 +118,7 @@ for i=1:loaddimFlag %Loop through all channels
                 customMatrix_opt_temp=customMatrix_opt(:,i); %Initialize as current custom matrix
                 customMatrix_opt_temp(pos_sub_idx(k))=0; %Subtract term for test
                 %Test math model with new term subtracted
-                [VIF_met_temp(k),VIF_max_temp(k),sig_all_temp(k),P_max_temp(k),search_metric_temp(k)]=test_combo(comIN0(:,boolean(customMatrix_opt_temp)), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, search_metric_flag, VIF_stop_flag);
+                [VIF_met_temp(k),VIF_max_temp(k),sig_all_temp(k),P_max_temp(k),search_metric_temp(k)]=test_combo(comIN0(:,boolean(customMatrix_opt_temp)), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, FLAGS);
                 VIF_elev_met_temp(k)=VIF_max_temp(k)<=VIFthresh_elev; %Check if model meets elevated VIF threshold
 
                 %                 if VIF_stop_flag==1 && VIF_met_temp(k)==0 %If adding term violates VIF limit

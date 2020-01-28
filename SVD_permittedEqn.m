@@ -1,4 +1,4 @@
-function customMatrix_permitted=SVD_permittedEqn(customMatrix, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities, nterms, nseries0)
+function customMatrix_permitted=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities, nterms, nseries0)
 % Method uses SVD to determine the "permitted" set of terms for math model
 % by enforcing the constraint that no terms (columns of predictor variable matrix)
 % are linearly dependant. Mirrors approach used by BalFit to ensure a
@@ -16,6 +16,7 @@ function customMatrix_permitted=SVD_permittedEqn(customMatrix, voltdimFlag, load
 
 %INPUTS:
 %  customMatrix = Current matrix of what terms should be included in Eqn Set. 
+%  customMatrix_req = Minimum terms that must be included in Eqn Set.
 %  voltdimFlag = Dimension of voltage data (# channels)
 %  loaddimFlag = Dimension of load data (# channels)
 %  dainputs0 = Matrix of voltage outputs
@@ -35,6 +36,8 @@ function customMatrix_permitted=SVD_permittedEqn(customMatrix, voltdimFlag, load
 
 fprintf('\nCalculating Permitted Eqn Set with SVD....')
 
+calc_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calculate
+
 %Perform linear regression to solve for gage capacities
     gageCapacities=zeros(1,voltdimFlag); %initialize
     for i=1:loaddimFlag
@@ -53,34 +56,46 @@ fprintf('\nCalculating Permitted Eqn Set with SVD....')
     dainputs_svd(abs(dainputs0)<volt_theshold)=0; %Set voltages less than threshold to 0
 
     %Construct comIN with thresholded voltages
-    comIN_svd = balCal_algEqns(FLAGS.model,dainputs_svd,series0,1,voltagelist); %Matrix of predictor variables from thresholded voltages
+    comIN_svd = balCal_algEqns(FLAGS.model,dainputs_svd,series0,FLAGS.tare_intercept,voltagelist); %Matrix of predictor variables from thresholded voltages
     % Normalize the data for a better conditioned matrix
     scale = max(abs(comIN_svd),[],1);
     scale(scale==0)=1; %To avoid NaN
     comIN_svd = comIN_svd./scale;
 
     identical_custom=all(~diff(customMatrix,1,2),'all'); %Check if customMatrix is identical for all channels
-    if identical_custom==1 %If custom equation identical for each channel
+    identical_custom_req=all(~diff(customMatrix_req,1,2),'all'); %Check if required customMatrix is identical for all channels
+    if identical_custom==1 && identical_custom_req==1 %If custom equation identical for each channel
         calcThrough=1; %only 1 run through SVD necessary
     else
         calcThrough=loaddimFlag; %Necessary to calculate for each channel seperate
     end
 
-    svd_include=zeros(nterms,loaddimFlag); %Initialize vector for tracking which terms are supported
-    init_include=eye(loaddimFlag); %Initial terms that will always be included in permitted eqn is linear voltage from respective channel
-    svd_include(1:loaddimFlag,:)=init_include; %Initialize first term is included
+    svd_include=customMatrix_req; %Initialize vector for tracking which terms are supported, start with required matrix
+    
+    %Test if required terms are supported
+    for i=1:loaddimFlag
+        rankIter=rank(comIN_svd(:,boolean(svd_include(:,i)))); %Using rank command (SVD) find rank of predictor variable matrix
+                if rankIter~=sum(svd_include(:,i)) %If required matrix is rank deficient
+                    calc_channel(i)=0; %Do not proceed further with channel
+                    fprintf('\n  Error calculating permitted math model for load channel '); fprintf(num2str(i)); fprintf('. Required math model terms are not supported.\n');
+                    calcThrough=loaddimFlag;
+                end
+    end
+    
     j=1; %Initialize counter
     while j<= calcThrough
-        for i=1:nterms %Loop through all possible terms
-            if customMatrix(i,j)==1 %If term is included according to customMatrix for eqn
-                svd_include_test=svd_include(:,j); %Initialize test variable for iteration
-                svd_include_test(i)=1; %Include new term for this iteration
-                rankIter=rank(comIN_svd(:,boolean(svd_include_test))); %Using rank command (SVD) find rank of predictor variable matrix
-                if rankIter==sum(svd_include_test) %If rank is equal to number of terms
-                    svd_include(i,j)=1; %Add term to supported terms
-                else %New matrix is rank deficient
-                    if calcThrough~=loaddimFlag && i<= loaddimFlag %If calculating not full number of channels (for time savings) but found linear dependancy between linear voltages
-                       calcThrough=loaddimFlag; %Now necessary to calculate for each channel seperate
+        if calc_channel(j)==1 %
+            for i=1:size(customMatrix,1) %Loop through all possible terms
+                if customMatrix(i,j)==1 %If term is included according to customMatrix for eqn
+                    svd_include_test=svd_include(:,j); %Initialize test variable for iteration
+                    svd_include_test(i)=1; %Include new term for this iteration
+                    rankIter=rank(comIN_svd(:,boolean(svd_include_test))); %Using rank command (SVD) find rank of predictor variable matrix
+                    if rankIter==sum(svd_include_test) %If rank is equal to number of terms
+                        svd_include(i,j)=1; %Add term to supported terms
+                    else %New matrix is rank deficient
+                        if calcThrough~=loaddimFlag && any(customMatrix_req(i,:)) %If calculating not full number of channels (for time savings) but found linear dependancy between linear voltages
+                            calcThrough=loaddimFlag; %Now necessary to calculate for each channel seperate
+                        end
                     end
                 end
             end
@@ -91,6 +106,6 @@ fprintf('\nCalculating Permitted Eqn Set with SVD....')
     if calcThrough==1 %If permitted equation identical for each channel
         svd_include(:,2:loaddimFlag)=repmat(svd_include(:,1),1,loaddimFlag-1); %Duplicate for each column
     end
-    customMatrix_permitted = [svd_include; ones(nseries0,loaddimFlag)]; %customMatrix for permitted eqn set.  Always include tare intercepts
+    customMatrix_permitted = svd_include; %customMatrix for permitted eqn set.
     fprintf(' Complete. \n')
 end

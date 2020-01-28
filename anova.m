@@ -1,4 +1,4 @@
-function ANOVA = anova(X,y,nterms,noVIF_FLAG,pct)
+function ANOVA = anova(X,y,nterms,noVIF_FLAG,pct,FLAGS)
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not
@@ -11,6 +11,7 @@ function ANOVA = anova(X,y,nterms,noVIF_FLAG,pct)
 %  nseries  =  Number of series in dataset
 %  noVIF_FLAG  =  Flag to turn off VIF calculations. (noVIF_FLAG==0 then calculate VIF) 
 %  pct  =  Percent confidence level for ANOVA calculations
+%  FLAGS = Global structure containing flags for options
 
 %OUTPUTS:
 % ANOVA = Structure containing ANOVA outputs
@@ -56,7 +57,7 @@ end
 if noVIF_FLAG==0
     VIF = vif(X);
     
-    VIF_dl=vif_dl(X(:,2:end))';
+%     VIF_dl=vif_dl(X(:,2:end))';
     
     if any(VIF>=10)
         warning('VIF calculation indicates strong multicollinearity. Analysis of Variance results cannot be trusted.')
@@ -223,7 +224,7 @@ ANOVA.T = T;               % T-statistic of coefficients
 ANOVA.p_T = p_T;           % P-value of coefficients
 ANOVA.VIF = VIF;           % Variance Inflation Factors
 if noVIF_FLAG==0
-    ANOVA.VIF_dl=VIF_dl;
+%     ANOVA.VIF_dl=VIF_dl;
 end
 ANOVA.sig = sig;            %If term is significant
 
@@ -286,7 +287,11 @@ function VIF = vif(X)
 % VIF<1 is theoretically nonsensical, it simply means that trying to find a
 % linear correlation yielded a model that was less accurate thannot having
 % a model at all -> totally linearly independent
-VIF = max(diag(pinv(corrcoef(X(:,2:end)))),1);
-VIF=[1;VIF];
+if FLAGS.glob_intercept==1
+    VIF = max(diag(pinv(corrcoef(X(:,2:end)))),1);
+    VIF=[1;VIF];
+else
+    VIF = max(diag(pinv(corrcoef(X))),1);
+end
 %% Turn warnings back on
 warning('on','all');

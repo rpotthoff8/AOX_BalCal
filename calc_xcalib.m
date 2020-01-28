@@ -82,7 +82,7 @@ for k = 1:loaddimFlag
             if FLAGS.test_FLAG==0
                 fprintf(['\nCalculating ', method,' ANOVA statistics for channel ', num2str(k), ' (',labels{k},')....\n'])
             end
-            ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nterms_k,FLAGS.test_FLAG,anova_pct);
+            ANOVA(k)=anova(comIN_k,targetMatrix(:,k),nterms_k,FLAGS.test_FLAG,anova_pct,FLAGS);
             
             % There are several ANOVA metrics that also must be denormalized
             ANOVA(k).beta    = ANOVA(k).beta./scale_k';

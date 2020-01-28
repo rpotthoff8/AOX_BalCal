@@ -291,6 +291,24 @@ nterms = 2*voltdimFlag*(voltdimFlag+2)+1;
 % Also creates intercept terms; a different intercept for each series.
 [comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,FLAGS.tare_intercept,voltagelist);
 
+%Define 'required' custom Matrix: minimum terms that must be included
+customMatrix_req=zeros(size(comIN0,2),loaddimFlag);
+lin_ind=sub2ind(size(customMatrix_req),1+(1:loaddimFlag),1:loaddimFlag); %Indices for linear voltage terms in each channel
+customMatrix_req(lin_ind)=customMatrix(lin_ind); %Must include linear voltage from channel if included in provided terms
+if FLAGS.glob_intercept==1 %If global intercept term is used
+    %Custom Matrix must include linear voltage from each respective
+    %channel, and global intercept term
+    customMatrix_req(1,:)=1; %Must include global intercept term
+elseif FLAGS.tare_intercept==1
+    %Custom Matrix must include linear voltage from each respective
+    %channel, and all series intercepts (for tares)
+    customMatrix_req(nterms+1:end,:)=1; %Must include series intercepts
+else
+    %Custom Matrix must include only linear voltage from each respective
+    %channel
+    
+end
+
 %%% Balfit Stats and Regression Coeff Matrix
 balfitdainputs0 = targetMatrix0;
 balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
@@ -311,7 +329,7 @@ zero_threshold=0.1; %In Balfit: MATH MODEL SELECTION THRESHOLD IN % OF CAPACITY.
 %for constructing comIN and performing SVD
 
 if FLAGS.svd==1
-    customMatrix_permitted=SVD_permittedEqn(customMatrix, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities, nterms, nseries0); %Call function to determine permitted eqn
+    customMatrix_permitted=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities, nterms, nseries0); %Call function to determine permitted eqn
     customMatrix_orig=customMatrix; %Store original customMatrix
     customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
 end
@@ -355,11 +373,6 @@ if FLAGS.forward_recEqn==1
     customMatrix=customMatrix_rec;
 end
 
-FLAGS.matlabOpt_recEqn=1;
-if FLAGS.matlabOpt_recEqn==1
-    customMatrix_rec=modelOpt_matlabOpt_test(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
-    customMatrix=customMatrix_rec;
-end
 %% Resume calibration
 %Calculate xcalib (coefficients)
 [xcalib, ANOVA] = calc_xcalib(comIN       ,targetMatrix       ,series,...

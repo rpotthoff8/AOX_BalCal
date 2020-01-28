@@ -73,7 +73,7 @@ end
 for i=1:loaddimFlag %Loop through all channels
     if optChannel(i)==1 %If optimization is turned on
         %Check initial (required) math model
-        [VIF_met(1,i),VIF_max(1,i),sig_all(1,i),P_max(1,i),search_metric(1,i)]=test_combo(comIN0(:,boolean(customMatrix_opt(:,i))), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, search_metric_flag, VIF_stop_flag);
+        [VIF_met(1,i),VIF_max(1,i),sig_all(1,i),P_max(1,i),search_metric(1,i)]=test_combo(comIN0(:,boolean(customMatrix_opt(:,i))), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, FLAGS);
         
         customMatrix_hist=zeros(size(customMatrix_opt,1),num_test(i)); %Matrix for storing custom matrix used
         customMatrix_hist(:,1)=customMatrix_opt(:,1); %First model is required model
@@ -112,7 +112,7 @@ for i=1:loaddimFlag %Loop through all channels
                 customMatrix_opt_temp=customMatrix_opt(:,i); %Initialize as current custom matrix
                 customMatrix_opt_temp(pos_add_idx(k))=1; %Add term for test
                 %Test math model with new term added
-                [VIF_met_temp(k),VIF_max_temp(k),sig_all_temp(k),P_max_temp(k),search_metric_temp(k)]=test_combo(comIN0(:,boolean(customMatrix_opt_temp)), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, search_metric_flag, VIF_stop_flag);
+                [VIF_met_temp(k),VIF_max_temp(k),sig_all_temp(k),P_max_temp(k),search_metric_temp(k)]=test_combo(comIN0(:,boolean(customMatrix_opt_temp)), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, FLAGS);
                 if VIF_stop_flag==1 && VIF_met_temp(k)==0 %If adding term violates VIF limit
                     VIF_blacklist(pos_add_idx(k),i)=1; %Add term to blacklist.  Will not try to add again
                 end

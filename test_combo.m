@@ -1,4 +1,4 @@
-function [VIF_met, VIF_max, sig_all, P_max ,search_metric]=test_combo(X,y,pct, VIFthresh, nseries, search_metric_flag, VIF_stop_flag)
+function [VIF_met, VIF_max, sig_all, P_max ,search_metric,VIF,sig]=test_combo(X,y,pct, VIFthresh, nseries, FLAGS)
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not
@@ -23,10 +23,16 @@ function [VIF_met, VIF_max, sig_all, P_max ,search_metric]=test_combo(X,y,pct, V
 % P_max = Value of max coefficient P value
 % search_metric = Return value for search metric
 
-
+search_metric_flag=FLAGS.search_metric;
+VIF_stop_flag=FLAGS.VIF_stop;
 
 %% Multicollinearity detection / VIF calcualtion
+if FLAGS.glob_intercept==0
 VIF=vif_dl(X);
+else
+    VIF=vif_dl(X(:,2:end));
+    VIF=[1;VIF];
+end
 
 VIF_max=max(VIF,[],'all');
 if VIF_max<=VIFthresh
@@ -37,6 +43,7 @@ else
         sig_all = false;
         P_max = 0;
         search_metric= Inf;
+        sig=0;
         return
     end
 end
