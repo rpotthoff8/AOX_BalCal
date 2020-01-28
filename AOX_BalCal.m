@@ -661,7 +661,7 @@ if FLAGS.balCal == 2
     
     if FLAGS.VIF_selfTerm==1 %Initialize variables for self terminating based on VIF
         max_VIF_hist=zeros(numBasis,loaddimFlag); %History variable of VIF as RBFs are added
-        comIN0_RBF=comIN0; %Initialize 'X' matrix for RBF predictor variables
+        comIN0_RBF=comIN0(:,1:nterms); %Initialize 'X' matrix for RBF predictor variables: NO SERIES INTERCEPTS
         VIF_lim=9.95; %Limit for acceptable VIF
         
         for i=1:loaddimFlag %Check Algebraic model max VIF in each channel
@@ -751,13 +751,13 @@ if FLAGS.balCal == 2
             RBF_custom(loaddimFlag*RBFs_added(i)+1:end,i)=0;
         end
         if FLAGS.model==4
-            customMatrix_RBF=[customMatrix(1:nterms,:);RBF_custom;customMatrix(nterms+1:end,:)];
+            customMatrix_RBF=[customMatrix(1:nterms,:);RBF_custom];
         else
-            customMatrix_RBF=[ones(nterms,loaddimFlag);RBF_custom;ones(nseries0,loaddimFlag)];
+            customMatrix_RBF=[ones(nterms,loaddimFlag);RBF_custom];
         end
         
         %Add RBFs to comIN0 variable to solve with alg coefficients
-        comIN0_RBF=[comIN0(:,1:nterms),zeros(size(comIN0,1),u*loaddimFlag),comIN0(:,nterms+1:end)];
+        comIN0_RBF=[comIN0(:,1:nterms),zeros(size(comIN0,1),u*loaddimFlag)];
         for i=1:u
             comIN0_RBF(:,nterms+1+loaddimFlag*(i-1):nterms+loaddimFlag*(i))=rbfINminGZ(:,i,:);
         end
@@ -825,23 +825,29 @@ if FLAGS.balCal == 2
         %update the approximation
         aprxIN2=comIN0_RBF*xcalib_RBF;
         aprxIN2_Hist{u} = aprxIN2;
-        
+        aprxINminGZ2=aprxIN2;
         %Store tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            taresGRBF = -xcalib_RBF(nterms+u*loaddimFlag+1:end,:);
+            [taretalRBF,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
+%             taresGRBF = -xcalib_RBF(nterms+u*loaddimFlag+1:end,:);
+            taresGRBF=taretalRBF(s_1st0,:);
         else
             taresGRBF=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
+            taretalRBF=taresGRBF(series0,:);
+            taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
+
+
         end
-        taretalRBF=taresGRBF(series0,:);
-        aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
+%         taretalRBF=taresGRBF(series0,:);
+%         aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
         tareGRBFHist{u} = taresGRBF;
         
         %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
-        if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
-        else
-            taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
-        end
+%         if FLAGS.tare_intercept==1 %If tare loads were included in regression
+%             [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
+%         else
+%             taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
+%         end
         taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
         
         %Calculate tare corrected load approximation
