@@ -37,6 +37,7 @@ function [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMa
 fprintf('\nCalculating Permitted Eqn Set with SVD....')
 
 opt_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calculate
+all_support=1; %Variable for tracking if any terms have been eliminated 
 
 %Perform linear regression to solve for gage capacities
     gageCapacities=zeros(1,voltdimFlag); %initialize
@@ -80,6 +81,7 @@ opt_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calcul
                 if rankIter~=sum(svd_include(:,i)) %If required matrix is rank deficient
                     opt_channel(i)=0; %Do not proceed further with channel
                     fprintf('\n  Error calculating permitted math model for load channel '); fprintf(num2str(i)); fprintf('. Required math model terms are not supported.\n');
+                    all_support=0;
                     calcThrough=loaddimFlag;
                 end
     end
@@ -95,6 +97,7 @@ opt_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calcul
                     if rankIter==sum(svd_include_test) %If rank is equal to number of terms
                         svd_include(i,j)=1; %Add term to supported terms
                     else %New matrix is rank deficient
+                        all_support=0;
                         if calcThrough~=loaddimFlag && any(customMatrix_req(i,:)) %If calculating not full number of channels (for time savings) but found linear dependancy between linear voltages
                             calcThrough=loaddimFlag; %Now necessary to calculate for each channel seperate
                         end
@@ -111,4 +114,11 @@ opt_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calcul
     customMatrix_permitted = svd_include; %customMatrix for permitted eqn set.
     FLAGS.opt_channel=opt_channel; %Output tracker of what channels were able to calculate permitted equation
     fprintf(' Complete. \n')
+    
+    if all_support==1
+        fprintf('   All tested predictor variable terms are supported by data. No terms eliminated. \n');
+    else
+        fprintf('   Linear dependence found between predictor variable terms. Terms eliminated to ensure non-singularity.\n');
+    end
+    
 end
