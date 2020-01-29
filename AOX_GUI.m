@@ -25,7 +25,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 27-Jan-2020 12:04:22
+% Last Modified by GUIDE v2.5 29-Jan-2020 11:52:54
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -85,16 +85,9 @@ handles.termInclude=zeros(10,1); %Initialize for sub gui
 
 loadSettings(handles, fileName, eventdata);
 
-outlier_FLAGcheck_Callback(handles.outlier_FLAGcheck, eventdata, handles);
-calPath_Callback(handles.calPath, eventdata, handles);
-valPath_Callback(handles.valPath, eventdata, handles);
-appPath_Callback(handles.appPath, eventdata, handles);
-grbf_Callback(handles.grbf, eventdata, handles);
-anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles)
-output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
 
-modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles);
-actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles)
+
+
 uiwait(handles.figure1);
 
 
@@ -200,7 +193,7 @@ switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
         outStruct.termInclude(9)=contains(terms,termList{9});
         outStruct.termInclude(10)=contains(terms,termList{10});
     case 'noAlg'
-        outStruct.model=0; 
+        outStruct.model=0;
 end
 
 outStruct.grbf = 1 + get(handles.grbf,'Value');
@@ -219,6 +212,14 @@ outStruct.output_location=get(handles.output_location,'String');
 outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 outStruct.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
 outStruct.input_save_FLAG=get(handles.input_save_FLAG,'Value');
+
+%Alg Model Refinement Options
+outStruct.AlgModel_opt=handles.AlgModel_opt_pop.Value;
+outStruct.VIF_thresh=str2num(handles.VIF_thresh.String);
+outStruct.high_con=handles.termHigh_pop.Value-1;
+outStruct.search_metric=handles.optMet_pop.Value;
+outStruct.zero_threshold=str2num(handles.SVDZero_thresh.String)/100;
+outStruct.sig_pct=str2num(handles.termSig_pct.String);
 
 %Make new subfolder if selected as option
 %Default output location to current directory if empty
@@ -418,10 +419,17 @@ end
 if (handles.noAlg.Value==1)
     set(handles.outlier_FLAGcheck,'Enable','off');
     set(handles.outlier_FLAGcheck,'Value',0);
+    set(handles.AlgModel_opt_pop,'Enable','off');
+    set(handles.AlgModel_opt_pop,'Value',1);
+    
+    AlgModel_opt_pop_Callback(hObject, eventdata, handles);
     outlier_FLAGcheck_Callback(hObject, eventdata, handles);
 else
     set(handles.outlier_FLAGcheck,'Enable','on');
+    set(handles.AlgModel_opt_pop,'Enable','on');
     outlier_FLAGcheck_Callback(hObject, eventdata, handles);
+    AlgModel_opt_pop_Callback(hObject, eventdata, handles);
+
 end
 
 
@@ -2238,6 +2246,15 @@ default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 default.anova_pct = get(handles.anova_pct,'String');
 default.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
 
+%ALG Model Refinement Options
+default.AlgModel_opt=handles.AlgModel_opt_pop.Value;
+default.VIF_thresh=handles.VIF_thresh.String;
+default.high_con=handles.termHigh_pop.Value;
+default.search_metric=handles.optMet_pop.Value;
+default.zero_threshold=handles.SVDZero_thresh.String;
+default.sig_pct=handles.termSig_pct.String;
+
+
 default.output_location=get(handles.output_location,'String');
 default.output_to_calib_FLAG=get(handles.output_to_calib_FLAG,'Value');
 default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
@@ -2347,6 +2364,14 @@ if exist(fullfileName,'file')
         set(handles.anova_pct,'String',default.anova_pct);
         set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
         
+        %ALG Model Refinement Options
+        handles.AlgModel_opt_pop.Value=default.AlgModel_opt;
+        handles.VIF_thresh.String=default.VIF_thresh;
+        handles.termHigh_pop.Value=default.high_con;
+        handles.optMet_pop.Value=default.search_metric;
+        handles.SVDZero_thresh.String=default.zero_threshold;
+        handles.termSig_pct.String=default.sig_pct;
+        
         set(handles.output_to_calib_FLAG,'Value',default.output_to_calib_FLAG);
         set(handles.subfolder_FLAG,'Value',default.subfolder_FLAG);
         set(handles.output_location,'String',default.output_location);
@@ -2360,6 +2385,18 @@ if exist(fullfileName,'file')
     catch
         disp(['Unable to fully load settings. ',fileName,'.ini may be outdated or incompatible with GUI.']);
     end
+    
+    modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles);
+    actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles);
+    outlier_FLAGcheck_Callback(handles.outlier_FLAGcheck, eventdata, handles);
+    calPath_Callback(handles.calPath, eventdata, handles);
+    valPath_Callback(handles.valPath, eventdata, handles);
+    appPath_Callback(handles.appPath, eventdata, handles);
+    grbf_Callback(handles.grbf, eventdata, handles);
+    anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles);
+    output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles);
+    
+    AlgModel_opt_pop_Callback(handles.AlgModel_opt_pop,eventdata,handles);
 end
 
 
@@ -2393,6 +2430,175 @@ function intercept_pop_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 
 % Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in AlgModel_opt_pop.
+function AlgModel_opt_pop_Callback(hObject, eventdata, handles)
+% hObject    handle to AlgModel_opt_pop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns AlgModel_opt_pop contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from AlgModel_opt_pop
+
+if handles.AlgModel_opt_pop.Value>1
+    handles.SVDZero_text.Enable='on';
+    handles.SVDZero_thresh.Enable='on';
+else
+    handles.SVDZero_text.Enable='off';
+    handles.SVDZero_thresh.Enable='off';
+end
+
+if handles.AlgModel_opt_pop.Value>2
+    handles.VIF_thresh_text.Enable='on';
+    handles.VIF_thresh.Enable='on';
+    handles.termSig_text.Enable='on';
+    handles.termSig_pct.Enable='on';
+    handles.termHigh_text.Enable='on';
+    handles.termHigh_pop.Enable='on';
+else
+    handles.VIF_thresh_text.Enable='off';
+    handles.VIF_thresh.Enable='off';
+    handles.termSig_text.Enable='off';
+    handles.termSig_pct.Enable='off';
+    handles.termHigh_text.Enable='off';
+    handles.termHigh_pop.Enable='off';
+end
+
+if handles.AlgModel_opt_pop.Value>4
+    handles.optMet_text.Enable='on';
+    handles.optMet_pop.Enable='on';
+else
+    handles.optMet_text.Enable='off';
+    handles.optMet_pop.Enable='off';
+end
+
+% --- Executes during object creation, after setting all properties.
+function AlgModel_opt_pop_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AlgModel_opt_pop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function VIF_thresh_Callback(hObject, eventdata, handles)
+% hObject    handle to VIF_thresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of VIF_thresh as text
+%        str2double(get(hObject,'String')) returns contents of VIF_thresh as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function VIF_thresh_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to VIF_thresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in termHigh_pop.
+function termHigh_pop_Callback(hObject, eventdata, handles)
+% hObject    handle to termHigh_pop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns termHigh_pop contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from termHigh_pop
+
+
+% --- Executes during object creation, after setting all properties.
+function termHigh_pop_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to termHigh_pop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in optMet_pop.
+function optMet_pop_Callback(hObject, eventdata, handles)
+% hObject    handle to optMet_pop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns optMet_pop contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from optMet_pop
+
+
+% --- Executes during object creation, after setting all properties.
+function optMet_pop_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to optMet_pop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function termSig_pct_Callback(hObject, eventdata, handles)
+% hObject    handle to termSig_pct (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of termSig_pct as text
+%        str2double(get(hObject,'String')) returns contents of termSig_pct as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function termSig_pct_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to termSig_pct (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function SVDZero_thresh_Callback(hObject, eventdata, handles)
+% hObject    handle to SVDZero_thresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of SVDZero_thresh as text
+%        str2double(get(hObject,'String')) returns contents of SVDZero_thresh as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function SVDZero_thresh_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to SVDZero_thresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');

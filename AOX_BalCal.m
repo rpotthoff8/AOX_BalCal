@@ -103,6 +103,38 @@ FLAGS.Rec_Model=out.Rec_Model;
 anova_pct=out.anova_pct;
 FLAGS.approx_and_PI_print=out.approx_and_PI_print;
 
+%ALG Model Refinement Options
+zero_threshold=out.zero_threshold; %In Balfit: MATH MODEL SELECTION THRESHOLD IN % OF CAPACITY. This variable is used in performing SVD. Datapoints where the gage output (voltage) is less
+%... then the threshold as a percentage of gage capacity are set to zero
+%for constructing comIN and performing SVD
+FLAGS.high_con=out.high_con; %Flag for enforcing term hierarchy constraint
+VIFthresh=out.VIF_thresh; %Threshold for max allowed VIF
+FLAGS.search_metric=out.search_metric; %Search metric for recommended math model optimization
+sig_pct=out.sig_pct; %Percent confidence for designating terms as significant
+
+FLAGS.svd=0; %Flag for performing SVD for permitted math model
+FLAGS.sugEqnLeg=0; %Flag from performing search for legacy suggested equation
+FLAGS.sugEqnNew=0; %Flag from performing search for updated suggested equation
+FLAGS.back_recEqn=0; %Flag from performing search for recommended equation
+FLAGS.forward_recEqn=0; %Flag from performing search for recommended equation
+if out.AlgModel_opt>1
+    FLAGS.svd=1;
+end
+if out.AlgModel_opt==3
+    FLAGS.sugEqnLeg=1;
+elseif out.AlgModel_opt==4
+    FLAGS.sugEqnNew=1;
+elseif out.AlgModel_opt==5
+    FLAGS.forward_recEqn=1;
+elseif out.AlgModel_opt==6
+    FLAGS.back_recEqn=1;
+end
+
+if out.AlgModel_opt<3
+    FLAGS.high_con=0; %Not in mode where hierarchy is enforced
+end
+
+%Intercept Options
 if out.intercept==1 %Include series intercepts
     FLAGS.glob_intercept=0;
     FLAGS.tare_intercept=1;
@@ -321,54 +353,49 @@ targetMatrix = targetMatrix0;
 comIN = comIN0;
 
 %% Use SVD to test for permitted math model
-%User preferences
-FLAGS.svd=1; %Flag from performing svd
-zero_threshold=0.1; %In Balfit: MATH MODEL SELECTION THRESHOLD IN % OF CAPACITY. This variable is used in performing SVD. Datapoints where the gage output (voltage) is less
-%... then the threshold as a percentage of gage capacity are set to zero
-%for constructing comIN and performing SVD
-
 if FLAGS.svd==1
     [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities); %Call function to determine permitted eqn
     customMatrix_orig=customMatrix; %Store original customMatrix
     customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
 end
 
-%% Find suggested Eqn using Reference Balfit B29 method
-%User preferences
-FLAGS.sugEqnLeg=0; %Flag from performing search for recommended equation
-FLAGS.high_con=0; %Flag for enforcing term hierarchy constraint
-VIFthresh=10; %Threshold for max allowed VIF
+%Check for if permitted math model is hierarchically supported.  If not,
+%unable to enforce hierarchy constraint in further model optimization
+if FLAGS.high_con>0 %If enforcing hierarchy constraint
+    for i=1:loaddimFlag
+        incTerms=customMatrix(1:nterms,i); %Terms included in permitted model
+        supTerms=any(high(boolean(customMatrix(1:nterms,i)),:),1); %Terms needed for variable support
+        
+        if any(~incTerms(boolean(supTerms))) %If any terms needed for support are not included in the permitted model
+            FLAGS.high_con=0; %Cannot enforce hierarchy constraint
+            warning('Permitted Math Model is not hierarchically supported. Unable to enforce hierarchy constraint in ALG Model Refinement.');
+            break
+        end
+    end
 
+end
+%% Find suggested Eqn using Reference Balfit B29 method
 if FLAGS.sugEqnLeg==1
-    [customMatrix_sug, FLAGS]=modelOpt_suggested(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
+    [customMatrix_sug, FLAGS]=modelOpt_suggested(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, sig_pct, targetMatrix0, high, FLAGS);
     customMatrix=customMatrix_sug;
 end
 
 %% Find suggested Eqn using new method
-%User preferences
-FLAGS.sugEqnNew=0; %Flag from performing search for recommended equation
-
 if FLAGS.sugEqnNew==1
-    [customMatrix_sug, FLAGS]=modelOpt_suggestedNew(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
+    [customMatrix_sug, FLAGS]=modelOpt_suggestedNew(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, sig_pct, targetMatrix0, high, FLAGS);
     customMatrix=customMatrix_sug;
 end
 %% Find recommended Eqn using 'backward elimination' method
-%User preferences
-FLAGS.back_recEqn=0; %Flag from performing search for recommended equation
-FLAGS.search_metric=1;
-
 if FLAGS.back_recEqn==1
-    [customMatrix_rec,FLAGS]=modelOpt_backward(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
+    [customMatrix_rec,FLAGS]=modelOpt_backward(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, sig_pct, targetMatrix0, high, FLAGS);
     customMatrix=customMatrix_rec;
 end
 
 %% Find recommended Eqn using 'forward selection' method
 %User preferences
-FLAGS.forward_recEqn=1; %Flag from performing search for recommended equation
-FLAGS.VIF_stop=1;
-
+FLAGS.VIF_stop=1; %Terminate search once VIF threshold is exceeded
 if FLAGS.forward_recEqn==1
-    [customMatrix_rec,FLAGS]=modelOpt_forward(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
+    [customMatrix_rec,FLAGS]=modelOpt_forward(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, sig_pct, targetMatrix0, high, FLAGS);
     customMatrix=customMatrix_rec;
 end
 

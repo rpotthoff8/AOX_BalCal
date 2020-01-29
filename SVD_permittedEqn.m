@@ -40,14 +40,16 @@ opt_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calcul
 
 %Perform linear regression to solve for gage capacities
     gageCapacities=zeros(1,voltdimFlag); %initialize
-    for i=1:loaddimFlag
-        A=[ones(size(dainputs0,1),1),dainputs0(:,i)]; %Predictor variables are just channel voltage and intercept
-        B=[targetMatrix0(:,i)]; %Target is loads from channel
-        X_lin=A\B; %coefficients for linear model
-        gageCapacities(i)=(loadCapacities(i)-X_lin(1))/X_lin(2); %Find gage capacity from load capacity and linear regression model
-    end
-    if voltdimFlag>loaddimFlag %If greater number of voltage channels than load channels
-        gageCapacities(i+1:end)=max(abs(dainputs0(:,i+1:end)),[],1); %In remaining channels where linear regression not possible, set gage capacity as max absolute value gage output
+    if zero_threshold>0 %If zero_threshold==0, unnecessary to calculate capacities
+        for i=1:loaddimFlag
+            A=[ones(size(dainputs0,1),1),dainputs0(:,i)]; %Predictor variables are just channel voltage and intercept
+            B=[targetMatrix0(:,i)]; %Target is loads from channel
+            X_lin=A\B; %coefficients for linear model
+            gageCapacities(i)=(loadCapacities(i)-X_lin(1))/X_lin(2); %Find gage capacity from load capacity and linear regression model
+        end
+        if voltdimFlag>loaddimFlag %If greater number of voltage channels than load channels
+            gageCapacities(i+1:end)=max(abs(dainputs0(:,i+1:end)),[],1); %In remaining channels where linear regression not possible, set gage capacity as max absolute value gage output
+        end
     end
 
     %Set voltages below threshold to zero:
