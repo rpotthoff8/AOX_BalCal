@@ -30,7 +30,6 @@ function [customMatrix_rec, FLAGS]= modelOpt_backward(VIFthresh, customMatrix_pe
 % FLAGS = Structure containing flags for user preferences
 
 high_con=FLAGS.high_con;
-search_metric_flag=FLAGS.search_metric;
 quick_search_flag=0;
 opt_channel=FLAGS.opt_channel; %Output tracker of what channels were able to calculate permitted equation
 

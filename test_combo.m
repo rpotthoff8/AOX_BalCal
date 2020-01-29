@@ -242,10 +242,10 @@ end
 
 
 P_max=max(p_T);
-if all(sig(1:size(sig,1)-nseries))
-    sig_all=true;
+if FLAGS.tare_intercept==1
+    sig_all=all(sig(1:size(sig,1)-nseries)); %Check if all terms are significant, excluding tare intercepts
 else
-    sig_all=false;
+    sig_all=all(sig); %Check if all terms are significant
 end
 
 

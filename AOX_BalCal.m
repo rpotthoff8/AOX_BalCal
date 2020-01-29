@@ -369,7 +369,7 @@ FLAGS.forward_recEqn=0; %Flag from performing search for recommended equation
 FLAGS.VIF_stop=1;
 
 if FLAGS.forward_recEqn==1
-    customMatrix_rec=modelOpt_forward(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
+    [customMatrix_rec,FLAGS]=modelOpt_forward(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
     customMatrix=customMatrix_rec;
 end
 
