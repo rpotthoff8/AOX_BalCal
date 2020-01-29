@@ -347,7 +347,7 @@ end
 
 %% Find suggested Eqn using new method
 %User preferences
-FLAGS.sugEqnNew=1; %Flag from performing search for recommended equation
+FLAGS.sugEqnNew=0; %Flag from performing search for recommended equation
 
 if FLAGS.sugEqnNew==1
     [customMatrix_sug, FLAGS]=modelOpt_suggestedNew(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
@@ -355,11 +355,11 @@ if FLAGS.sugEqnNew==1
 end
 %% Find recommended Eqn using 'backward elimination' method
 %User preferences
-FLAGS.back_recEqn=0; %Flag from performing search for recommended equation
+FLAGS.back_recEqn=1; %Flag from performing search for recommended equation
 FLAGS.search_metric=1;
 
 if FLAGS.back_recEqn==1
-    customMatrix_rec=modelOpt_backward(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
+    [customMatrix_rec,FLAGS]=modelOpt_backward(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
     customMatrix=customMatrix_rec;
 end
 

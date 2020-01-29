@@ -1,4 +1,4 @@
-function [customMatrix_rec]= modelOpt_backward(VIFthresh, customMatrix_permit, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS)
+function [customMatrix_rec, FLAGS]= modelOpt_backward(VIFthresh, customMatrix_permit, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS)
 % Function searches for the 'recommended equation' using the approach
 % Balfit reference B16 describes as "Backward Elimination".
 % Function determines optimal combination of terms to include between
@@ -9,6 +9,7 @@ function [customMatrix_rec]= modelOpt_backward(VIFthresh, customMatrix_permit, l
 %INPUTS:
 %  VIFthresh = Threshold for max allowed VIF (Balfit Search constraint 2)
 %  customMatrix = Current matrix of what terms should be included in Eqn Set.
+%  customMatrix_req = Minimum terms that must be included in Eqn Set.
 %  loaddimFlag = Dimension of load data (# channels)
 %  nterms = Number of predictor terms in regression model
 %  comIN0 = Matrix of predictor variables
@@ -26,28 +27,23 @@ function [customMatrix_rec]= modelOpt_backward(VIFthresh, customMatrix_permit, l
 
 %OUTPUTS:
 %  customMatrix_rec = Optimized recommended custom matrix
+% FLAGS = Structure containing flags for user preferences
 
 high_con=FLAGS.high_con;
 search_metric_flag=FLAGS.search_metric;
 quick_search_flag=0;
+opt_channel=FLAGS.opt_channel; %Output tracker of what channels were able to calculate permitted equation
 
 FLAGS.VIF_stop=0;
 VIFthresh_elev=max([50,VIFthresh]);
 
 fprintf('\nCalculating Recommended Eqn Set with Backward Elimination Method....')
 
-optChannel=ones(1,loaddimFlag); %Flag for if each channel should be optimized
-
 % Normalize the data for a better conditioned matrix (Copy of what is done
 % in calc_xcalib.m)
 scale = max(abs(comIN0));
 scale(scale==0)=1; %To avoid NaN for channels where RBFs have self-terminated
 comIN0 = comIN0./scale;
-
-%Set lower bound of search (Required Math Model)
-customMatrix_req=zeros(size(customMatrix_permit));
-customMatrix_req(nterms+1:end,:)=1; %Must include series intercepts
-customMatrix_req(1:loaddimFlag,1:loaddimFlag)=eye(loaddimFlag); %Must include linear voltage from channel
 
 %Define number of series included:
 nseries=size(customMatrix_permit,1)-nterms;
@@ -72,7 +68,7 @@ search_metric=zeros(max(num_test), loaddimFlag); %Matrix for storing seach metri
 % end
 
 for i=1:loaddimFlag %Loop through all channels
-    if optChannel(i)==1 %If optimization is turned on
+    if opt_channel(i)==1 %If optimization is turned on
         %Check initial (required) math model
         [VIF_met(1,i),VIF_max(1,i),sig_all(1,i),P_max(1,i),search_metric(1,i)]=test_combo(comIN0(:,boolean(customMatrix_opt(:,i))), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, FLAGS);
         VIF_elev_met(1,i)=VIF_max(1,i)<=VIFthresh_elev; %Check if model meets elevated VIF threshold
@@ -171,15 +167,16 @@ for i=1:loaddimFlag %Loop through all channels
             end
         else %No math models met both constraints: Return error message and do not optimize channel
             fprintf('\nERROR: Unable to find math model that meets constraints for channel '); fprintf(num2str(i)); fprintf('.\n');
-            optChannel(i)=0;
+            opt_channel(i)=0;
         end
         
     end
 end
 %Output final model:
 customMatrix_rec=customMatrix_permit; %Initialize recommended custom matrix as provided custom matrix
-customMatrix_rec(:,boolean(optChannel))=customMatrix_opt(:,boolean(optChannel)); %Set optimized channels to optimal Results
+customMatrix_rec(:,boolean(opt_channel))=customMatrix_opt(:,boolean(opt_channel)); %Set optimized channels to optimal Results
 
+FLAGS.opt_channel=opt_channel;
 fprintf('\nRecommended Equation Search Complete. \n ')
 end
 
