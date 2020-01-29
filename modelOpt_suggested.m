@@ -1,4 +1,4 @@
-function [customMatrix_rec]= modelOpt_suggested(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, high_con)
+function [customMatrix_rec, FLAGS]= modelOpt_suggested(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS)
 % Function searches for the 'suggested math model' using the approach
 % described in Balfit Reference B29.  This approach is a simplified and
 % faster search process than searching for the "recommended" math model.
@@ -24,6 +24,7 @@ function [customMatrix_rec]= modelOpt_suggested(VIFthresh, customMatrix, loaddim
 %INPUTS:
 %  VIFthresh = Threshold for max allowed VIF (Balfit Search constraint 2)
 %  customMatrix = Current matrix of what terms should be included in Eqn Set.
+%  customMatrix_req = custom matrix of minimum terms that must be included in model
 %  loaddimFlag = Dimension of load data (# channels)
 %  nterms = Number of predictor terms in regression model
 %  comIN0 = Matrix of predictor variables
@@ -37,12 +38,8 @@ function [customMatrix_rec]= modelOpt_suggested(VIFthresh, customMatrix, loaddim
 
 fprintf('\nCalculating Suggested Eqn Set with legacy efficient search method....')
 
-optChannel=ones(1,loaddimFlag); %Flag for if each channel should be optimized
-
-%Set Minimum equation (lower bound of search)
-min_eqn=zeros(size(customMatrix));
-min_eqn(nterms+1:end,:)=1; %Must include series intercepts
-min_eqn(1:loaddimFlag,1:loaddimFlag)=eye(loaddimFlag); %Must include linear voltage from channel
+high_con=FLAGS.high_con;
+opt_channel=FLAGS.opt_channel; %Flag for if each channel should be optimized
 
 % Normalize the data for a better conditioned matrix (Copy of what is done
 % in calc_xcalib.m)
@@ -55,7 +52,7 @@ comIN0 = comIN0./scale;
 %linear voltage from corresponding channel
 fprintf('\n     Starting Phase 1 of optimization.... \n')
 
-[customMatrix_P1, P1_maxVIF_hist, P1_maxVIF_init, optChannel] = VIF_constraint(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, optChannel, high_con, high, min_eqn); %Remove terms based on VIF constraint
+[customMatrix_P1, P1_maxVIF_hist, P1_maxVIF_init, opt_channel] = VIF_constraint(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, opt_channel, high_con, high, customMatrix_req, FLAGS); %Remove terms based on VIF constraint
 
 %% Phase 2: Apply 'Hierarchy Rule': Add missing lower order terms to customMatrix from Phase 1
 fprintf('\n     Starting Phase 2 of optimization.... \n')
@@ -71,7 +68,7 @@ if high_con==1 %If enforcing hierarchy constraint
     end
     
     for i=1:calcThrough %Loop through channels
-        if optChannel(i)==1 %Check if channel model should be optimized
+        if opt_channel(i)==1 %Check if channel model should be optimized
             %         inc_idx=find(customMatrix_P2(:,i)); %Find index of included terms for channel
             sup_terms_mat=high(boolean(customMatrix_P2(1:nterms,i)),:); %Rows from hierarchy matrix for included terms. columns with '1' are needed to support variable
             sup_terms=any(sup_terms_mat,1); %Row vector with 1s for terms needed to support included terms
@@ -86,9 +83,8 @@ end
 
 
 
-%% Phase 3: Remove all insignificant terms (not including tare intercepts).
-%Phase will never remove tare intercept terms or linear voltage from
-%corresponding channel. If tare intercept terms are not significant,
+%% Phase 3: Remove all insignificant terms (not required model terms).
+%Phase will never remove required term from a channel. If tare intercept terms are not significant,
 %warning will be provided. Never remove terms if they are needed to support
 %the model (if hierarchy selected)
 
@@ -105,7 +101,7 @@ customMatrix_P3=customMatrix_P2; %Initialize as result from phase 2
 sig=zeros(size(customMatrix_P3)); %initialize matrix for significance
 p_val=zeros(size(customMatrix_P3)); %initialize matrix for p-values
 for i=1:loaddimFlag
-    if optChannel(i)==1 %Check if channel model should be optimized
+    if opt_channel(i)==1 %Check if channel model should be optimized
         
         %Find significance of terms in phase 3 customMatrix
         [sig(boolean(customMatrix_P3(:,i)),i),p_val(boolean(customMatrix_P3(:,i)),i)]=sig_check(comIN0(:,boolean(customMatrix_P3(:,i))),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
@@ -121,7 +117,7 @@ for i=1:loaddimFlag
             customMatrix_iter=zeros(size(customMatrix_P3,1),1); %Initialize as zeros
             
             customMatrix_iter(boolean(sig(:,i)))=1; %Include significant terms
-            customMatrix_iter(boolean(min_eqn(:,i)))=1; %Include terms from minimum equation
+            customMatrix_iter(boolean(customMatrix_req(:,i)))=1; %Include terms from minimum equation
             
             customMatrix_P3(:,i)=customMatrix_iter; %Set new custom matrix for channel
             
@@ -140,25 +136,26 @@ for i=1:loaddimFlag
             
             if all(boolean(sig(boolean(customMatrix_P3(1:nterms,i)),i))) %Check if all included terms are significant
                 sig_all=1; %All included terms are significant, exit loop
-            elseif all(boolean(sig(boolean(customMatrix_P3(setdiff(1:nterms,min_eqn(1:nterms,i)),i)),i))) %Check if all included terms are significant except linear voltage from channel
+            elseif all(boolean(sig(boolean(customMatrix_P3(setdiff(1:nterms,customMatrix_req(1:nterms,i)),i)),i))) %Check if all included terms are significant except required terms from channel
                 fprintf('       Possible insignificant term from required equation in channel: '); fprintf(num2str(i)); fprintf('.\n'); %Display error message
                 sig_all=1; %Exit loop
             end
         end
         
-        if any(~boolean(sig(nterms+1:end,i))) %If any tare intercept terms are insignificant
+        if any(~boolean(sig(boolean(customMatrix_req(nterms+1:end,i)),i))) %If any tare intercept terms are insignificant
             fprintf('       Possible insignificant tare intercept in channel: '); fprintf(num2str(i)); fprintf('.\n'); %Display error message
         end
     end
 end
 
 customMatrix_rec=customMatrix; %Initialize recommended custom matrix as provided custom matrix
-customMatrix_rec(:,boolean(optChannel))=customMatrix_P3(:,boolean(optChannel)); %Set optimized channels to P4 Results
+customMatrix_rec(:,boolean(opt_channel))=customMatrix_P3(:,boolean(opt_channel)); %Set optimized channels to P4 Results
 
+FLAGS.opt_channel=opt_channel; %Output tracker of what channels were able to calculate suggested equation
 fprintf('Suggested Equation Search Complete. \n ')
 end
 
-function [customMatrix_Px, Px_maxVIF_hist, Px_maxVIF_init, optChannel] = VIF_constraint(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, optChannel, high_con, high, min_eqn)
+function [customMatrix_Px, Px_maxVIF_hist, Px_maxVIF_init, optChannel] = VIF_constraint(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, optChannel, high_con, high, min_eqn, FLAGS)
 %% Phase 1: Sequentially remove terms with highest VIF until max VIF is <
 %threshold. Sequence will never remove tare intercept terms or
 %linear voltage from corresponding channel
@@ -179,7 +176,9 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
         
         %Initial check on VIF
         vif_iter=zeros(size(customMatrix,1),1); %Initialize VIF vector
-        vif_iter(boolean(customMatrix_Px(:,i)))=vif_dl(comIN0(:,boolean(customMatrix_Px(:,i)))); %Calculate VIF for all initial included terms
+        vif_iter(boolean([0;customMatrix_Px(2:end,i)]))=vif_dl(comIN0(:,boolean([0;customMatrix_Px(2:end,i)]))); %Calculate VIF for all initial included terms except global intercept
+        vif_iter(1)=1; %Set VIF for intercept=1
+
         Px_maxVIF_init(i)=max(vif_iter); %Store initial max VIF
         if Px_maxVIF_init(i)>VIFthresh %If initial max VIF is over elevated threshold
             vifHigh=1; %Flag for if max VIF is too high
@@ -194,8 +193,8 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
             vif_iter_search(boolean(min_eqn(:,i)))=0; %Zero out corresponding minimum eqn so it will not be selected for removal
             [maxVIF_iter,maxI]=max(vif_iter_search); %Find index of max VIF out of allowable selections (not tare intercepts or linear voltages from corresponding channel)
             if maxVIF_iter<=VIFthresh %Check if all 'problem' terms have been removed
-                fprintf('       Check for linear dependence between minimum required equation for Channel: '); fprintf(num2str(i)); fprintf('.\n');
-                break
+%                 fprintf('       Check for linear dependence in minimum required equation for Channel: '); fprintf(num2str(i)); fprintf('.\n');
+%                 break
             elseif maxVIF_iter== 0 
                 fprintf('       Error occured in Phase 1.');
                 fprintf(' Check for severe linear dependence minimum required equation for Channel: '); fprintf(num2str(i)); fprintf('.\n');
@@ -208,7 +207,8 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
             %             end
             
             vif_iter=zeros(size(customMatrix,1),1); %Reset VIF vector
-            vif_iter(boolean(customMatrix_Px(:,i)))=vif_dl(comIN0(:,boolean(customMatrix_Px(:,i)))); %Calculate VIF for all new included terms
+            vif_iter(boolean([0;customMatrix_Px(2:end,i)]))=vif_dl(comIN0(:,boolean([0;customMatrix_Px(2:end,i)]))); %Calculate VIF for all new included terms except global intercept
+            vif_iter(1)=1; %Set VIF for global intercept = 1
             Px_maxVIF_hist(termOut_count,i)=max(vif_iter); %Store new max VIF
             
             if calcThrough~=loaddimFlag && any(min_eqn(maxI,:)) %If calculating not full number of channels (for time savings) but eliminated a linear voltage term

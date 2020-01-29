@@ -329,19 +329,19 @@ zero_threshold=0.1; %In Balfit: MATH MODEL SELECTION THRESHOLD IN % OF CAPACITY.
 %for constructing comIN and performing SVD
 
 if FLAGS.svd==1
-    customMatrix_permitted=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities, nterms, nseries0); %Call function to determine permitted eqn
+    [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities); %Call function to determine permitted eqn
     customMatrix_orig=customMatrix; %Store original customMatrix
     customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
 end
 
 %% Find suggested Eqn using Reference Balfit B29 method
 %User preferences
-FLAGS.sugEqnLeg=0; %Flag from performing search for recommended equation
+FLAGS.sugEqnLeg=1; %Flag from performing search for recommended equation
 FLAGS.high_con=0; %Flag for enforcing term hierarchy constraint
 VIFthresh=10; %Threshold for max allowed VIF
 
 if FLAGS.sugEqnLeg==1
-    customMatrix_sug=modelOpt_suggested(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS.high_con);
+    [customMatrix_sug, FLAGS]=modelOpt_suggested(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
     customMatrix=customMatrix_sug;
 end
 

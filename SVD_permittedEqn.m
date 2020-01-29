@@ -1,4 +1,4 @@
-function customMatrix_permitted=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities, nterms, nseries0)
+function [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities)
 % Method uses SVD to determine the "permitted" set of terms for math model
 % by enforcing the constraint that no terms (columns of predictor variable matrix)
 % are linearly dependant. Mirrors approach used by BalFit to ensure a
@@ -31,12 +31,12 @@ function customMatrix_permitted=SVD_permittedEqn(customMatrix, customMatrix_req,
 %  nseries0 = Number of series
 
 %OUTPUTS:
-% customMatrix_permitted = New custom Eqn matrix for which terms are
-% supported by the dataset
+% customMatrix_permitted = New custom Eqn matrix for which terms are supported by the dataset
+% FLAGS = Structure of global flags
 
 fprintf('\nCalculating Permitted Eqn Set with SVD....')
 
-calc_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calculate
+opt_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calculate
 
 %Perform linear regression to solve for gage capacities
     gageCapacities=zeros(1,voltdimFlag); %initialize
@@ -76,7 +76,7 @@ calc_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calcu
     for i=1:loaddimFlag
         rankIter=rank(comIN_svd(:,boolean(svd_include(:,i)))); %Using rank command (SVD) find rank of predictor variable matrix
                 if rankIter~=sum(svd_include(:,i)) %If required matrix is rank deficient
-                    calc_channel(i)=0; %Do not proceed further with channel
+                    opt_channel(i)=0; %Do not proceed further with channel
                     fprintf('\n  Error calculating permitted math model for load channel '); fprintf(num2str(i)); fprintf('. Required math model terms are not supported.\n');
                     calcThrough=loaddimFlag;
                 end
@@ -84,7 +84,7 @@ calc_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calcu
     
     j=1; %Initialize counter
     while j<= calcThrough
-        if calc_channel(j)==1 %
+        if opt_channel(j)==1 %
             for i=1:size(customMatrix,1) %Loop through all possible terms
                 if customMatrix(i,j)==1 %If term is included according to customMatrix for eqn
                     svd_include_test=svd_include(:,j); %Initialize test variable for iteration
@@ -107,5 +107,6 @@ calc_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calcu
         svd_include(:,2:loaddimFlag)=repmat(svd_include(:,1),1,loaddimFlag-1); %Duplicate for each column
     end
     customMatrix_permitted = svd_include; %customMatrix for permitted eqn set.
+    FLAGS.opt_channel=opt_channel; %Output tracker of what channels were able to calculate permitted equation
     fprintf(' Complete. \n')
 end
