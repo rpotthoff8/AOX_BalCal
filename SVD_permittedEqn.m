@@ -32,7 +32,7 @@ function [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMa
 
 %OUTPUTS:
 % customMatrix_permitted = New custom Eqn matrix for which terms are supported by the dataset
-% FLAGS = Structure of global flags
+% FLAGS = Structure containing flags for user preferences
 
 fprintf('\nCalculating Permitted Eqn Set with SVD....')
 

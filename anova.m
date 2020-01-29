@@ -55,7 +55,7 @@ end
 %VIF calculations performed if test_FLAG=0: Do not perform during iterated
 %recommended equation solving for time saving
 if noVIF_FLAG==0
-    VIF = vif(X);
+    VIF = vif(X, FLAGS);
     
 %     VIF_dl=vif_dl(X(:,2:end))';
     
@@ -253,7 +253,7 @@ ANOVA.PI.dof_e=dof_e;
 % matrix to obtain the estimates, beta, of the regression coefficients
 % using the equation for the F distribution.
 
-function VIF = vif(X)
+function VIF = vif(X, FLAGS)
 
 % LEGACY VIF CALCULATION
 % This code iterated through each input term and regressed it against the

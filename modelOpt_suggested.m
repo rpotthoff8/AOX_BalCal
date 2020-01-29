@@ -31,10 +31,11 @@ function [customMatrix_rec, FLAGS]= modelOpt_suggested(VIFthresh, customMatrix, 
 %  anova_pct = ANOVA percent confidence level for determining significance
 %  targetMatrix0 = Matrix of target load values
 %  high = Matrix of term hierarchy
-%  high_con = Flag for if term hierarchy constraint is enforced
+%  FLAGS = Structure containing flags for user preferences
 
 %OUTPUTS:
 %  customMatrix_rec = Optimized recommended custom matrix
+%  FLAGS = Structure containing flags for user preferences
 
 fprintf('\nCalculating Suggested Eqn Set with legacy efficient search method....')
 
@@ -197,7 +198,7 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
 %                 break
             elseif maxVIF_iter== 0 
                 fprintf('       Error occured in Phase 1.');
-                fprintf(' Check for severe linear dependence minimum required equation for Channel: '); fprintf(num2str(i)); fprintf('.\n');
+                fprintf(' Check for severe linear dependence in minimum required equation for Channel: '); fprintf(num2str(i)); fprintf('.\n');
                 optChannel(i)=0; %Mark unable to optimize for channel
                 break
             end

@@ -336,7 +336,7 @@ end
 
 %% Find suggested Eqn using Reference Balfit B29 method
 %User preferences
-FLAGS.sugEqnLeg=1; %Flag from performing search for recommended equation
+FLAGS.sugEqnLeg=0; %Flag from performing search for recommended equation
 FLAGS.high_con=0; %Flag for enforcing term hierarchy constraint
 VIFthresh=10; %Threshold for max allowed VIF
 
@@ -347,10 +347,10 @@ end
 
 %% Find suggested Eqn using new method
 %User preferences
-FLAGS.sugEqnNew=0; %Flag from performing search for recommended equation
+FLAGS.sugEqnNew=1; %Flag from performing search for recommended equation
 
 if FLAGS.sugEqnNew==1
-    customMatrix_sug=modelOpt_suggestedNew(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS.high_con);
+    [customMatrix_sug, FLAGS]=modelOpt_suggestedNew(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS);
     customMatrix=customMatrix_sug;
 end
 %% Find recommended Eqn using 'backward elimination' method

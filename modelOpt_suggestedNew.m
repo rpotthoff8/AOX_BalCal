@@ -1,4 +1,4 @@
-function [customMatrix_rec]= modelOpt_suggestedNew(VIFthresh, customMatrix, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, high_con)
+function [customMatrix_rec, FLAGS]= modelOpt_suggestedNew(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, anova_pct, targetMatrix0, high, FLAGS)
 % Searches for the 'suggested math model'.  This is an improved version of
 % the approach described in Balfit Reference B29.  The "suggested" math
 % model search is a faster search process than searching for the
@@ -46,25 +46,23 @@ function [customMatrix_rec]= modelOpt_suggestedNew(VIFthresh, customMatrix, load
 %INPUTS:
 %  VIFthresh = Threshold for max allowed VIF (Balfit Search constraint 2)
 %  customMatrix = Current matrix of what terms should be included in Eqn Set.
+%  customMatrix_req = custom matrix of minimum terms that must be included in model
 %  loaddimFlag = Dimension of load data (# channels)
 %  nterms = Number of predictor terms in regression model
 %  comIN0 = Matrix of predictor variables
 %  anova_pct = ANOVA percent confidence level for determining significance
 %  targetMatrix0 = Matrix of target load values
 %  high = Matrix of term hierarchy
-%  high_con = Flag for if term hierarchy constraint is enforced. 0==off, 1==after search, 2==during search
+%  FLAGS = Structure containing flags for user preferences
 
 %OUTPUTS:
 %  customMatrix_rec = Optimized recommended custom matrix
+%  FLAGS = Structure containing flags for user preferences
 
 fprintf('\nCalculating Suggested Eqn Set with updated efficient search method....')
 
-optChannel=ones(1,loaddimFlag); %Flag for if each channel should be optimized
-
-%Set Minimum equation (lower bound of search)
-min_eqn=zeros(size(customMatrix));
-min_eqn(nterms+1:end,:)=1; %Must include series intercepts
-min_eqn(1:loaddimFlag,1:loaddimFlag)=eye(loaddimFlag); %Must include linear voltage from channel
+high_con=FLAGS.high_con; %  high_con = Flag for if term hierarchy constraint is enforced. 0==off, 1==after search, 2==during search
+opt_channel=FLAGS.opt_channel; %Flag for if each channel should be optimized
 
 % Normalize the data for a better conditioned matrix (Copy of what is done
 % in calc_xcalib.m)
@@ -73,39 +71,37 @@ scale(scale==0)=1; %To avoid NaN for channels where RBFs have self-terminated
 comIN0 = comIN0./scale;
 
 %% Phase 1: Sequentially remove terms with highest VIF until max VIF is <
-%elevated threshold. Sequence will never remove tare intercept terms or
-%linear voltage from corresponding channel
+%elevated threshold. Sequence will never remove required terms from corresponding channel
 fprintf('\n     Starting Phase 1 of optimization.... \n')
 
 VIFthresh_elev=max([50, VIFthresh]); %Temporary elevated VIF threshold
-[customMatrix_P1, P1_maxVIF_hist, P1_maxVIF_init, optChannel] = VIF_constraint(VIFthresh_elev, customMatrix, loaddimFlag, nterms, comIN0, optChannel, high_con, high, min_eqn); %Remove terms based on VIF constraint
+[customMatrix_P1, P1_maxVIF_hist, P1_maxVIF_init, opt_channel] = VIF_constraint(VIFthresh_elev, customMatrix, loaddimFlag, nterms, comIN0, opt_channel, high_con, high, customMatrix_req); %Remove terms based on VIF constraint
 
 if high_con==1 %If enforcing hierarchy constraint after
-    [customMatrix_P1]= high_add(customMatrix_P1, high, optChannel, loaddimFlag, nterms); %Call function to add in missing terms
+    [customMatrix_P1]= high_add(customMatrix_P1, high, opt_channel, loaddimFlag, nterms); %Call function to add in missing terms
 end
 
 %% Phase 2: Sequentially remove insignificant terms until all terms (not necessarily including tare intercepts) are significant
-%Sequence will never remove tare intercept terms or linear voltage from
+%Sequence will never remove required math model terms from
 %corresponding channel. If tare intercept terms are not significant,
 %warning will be provided
 fprintf('\n     Starting Phase 2 of optimization.... \n')
 
 anova_pct_low=min([75, anova_pct]);
-[customMatrix_P2, P2_maxP_hist, optChannel] = sig_constraint(anova_pct_low, customMatrix_P1, loaddimFlag, nterms, comIN0, targetMatrix0, optChannel, high_con, high, min_eqn);
+[customMatrix_P2, P2_maxP_hist, opt_channel] = sig_constraint(anova_pct_low, customMatrix_P1, loaddimFlag, nterms, comIN0, targetMatrix0, opt_channel, high_con, high, customMatrix_req);
 
 if high_con==1 %If enforcing hierarchy constraint after
-    [customMatrix_P2]= high_add(customMatrix_P2, high, optChannel, loaddimFlag, nterms); %Call function to add in missing terms
+    [customMatrix_P2]= high_add(customMatrix_P2, high, opt_channel, loaddimFlag, nterms); %Call function to add in missing terms
 end
 
 %% Phase 3: Sequentially remove terms with highest VIF until max VIF is <
-% threshold. Sequence will never remove tare intercept terms or
-%linear voltage from corresponding channel
+% threshold. Sequence will never remove required terms from corresponding channel
 fprintf('\n     Starting Phase 3 of optimization.... \n')
 
-[customMatrix_P3, P3_maxVIF_hist, P3_maxVIF_init, optChannel] = VIF_constraint(VIFthresh, customMatrix_P2, loaddimFlag, nterms, comIN0, optChannel, high_con, high, min_eqn); %Remove terms based on VIF constraint
+[customMatrix_P3, P3_maxVIF_hist, P3_maxVIF_init, opt_channel] = VIF_constraint(VIFthresh, customMatrix_P2, loaddimFlag, nterms, comIN0, opt_channel, high_con, high, customMatrix_req); %Remove terms based on VIF constraint
 
 if high_con==1 %If enforcing hierarchy constraint after
-    [customMatrix_P3]= high_add(customMatrix_P3, high, optChannel, loaddimFlag, nterms); %Call function to add in missing terms
+    [customMatrix_P3]= high_add(customMatrix_P3, high, opt_channel, loaddimFlag, nterms); %Call function to add in missing terms
 end
 
 %% Phase 4: Sequentially remove insignificant terms until all terms (not necessarily including tare intercepts) are significant
@@ -114,15 +110,15 @@ end
 %warning will be provided
 fprintf('\n     Starting Phase 4 of optimization.... \n')
 
-[customMatrix_P4, P2_maxP_hist, optChannel] = sig_constraint(anova_pct, customMatrix_P3, loaddimFlag, nterms, comIN0, targetMatrix0, optChannel, high_con, high, min_eqn);
+[customMatrix_P4, P2_maxP_hist, opt_channel] = sig_constraint(anova_pct, customMatrix_P3, loaddimFlag, nterms, comIN0, targetMatrix0, opt_channel, high_con, high, customMatrix_req);
 
 if high_con==1 %If enforcing hierarchy constraint after
-    [customMatrix_P4]= high_add(customMatrix_P4, high, optChannel, loaddimFlag, nterms); %Call function to add in missing terms
+    [customMatrix_P4]= high_add(customMatrix_P4, high, opt_channel, loaddimFlag, nterms); %Call function to add in missing terms
 end
 
 customMatrix_rec=customMatrix; %Initialize recommended custom matrix as provided custom matrix
-customMatrix_rec(:,boolean(optChannel))=customMatrix_P4(:,boolean(optChannel)); %Set optimized channels to P4 Results
-
+customMatrix_rec(:,boolean(opt_channel))=customMatrix_P4(:,boolean(opt_channel)); %Set optimized channels to P4 Results
+FLAGS.opt_channel=opt_channel; %Flag for if each channel should be optimized
 fprintf('Suggested Equation Search Complete. \n ')
 end
 
@@ -146,7 +142,9 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
         
         %Initial check on VIF
         vif_iter=zeros(size(customMatrix,1),1); %Initialize VIF vector
-        vif_iter(boolean(customMatrix_Px(:,i)))=vif_dl(comIN0(:,boolean(customMatrix_Px(:,i)))); %Calculate VIF for all initial included terms
+        vif_iter(boolean([0;customMatrix_Px(2:end,i)]))=vif_dl(comIN0(:,boolean([0;customMatrix_Px(2:end,i)]))); %Calculate VIF for all initial included terms except global intercept
+        vif_iter(1)=1; %Set VIF for intercept=1
+        
         Px_maxVIF_init(i)=max(vif_iter); %Store initial max VIF
         if Px_maxVIF_init(i)>VIFthresh %If initial max VIF is over elevated threshold
             vifHigh=1; %Flag for if max VIF is too high
@@ -162,11 +160,11 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
             [maxVIF_iter,maxI]=max(vif_iter_search); %Find index of max VIF out of allowable selections (not tare intercepts or linear voltages from corresponding channel)
             
             if maxVIF_iter<=VIFthresh %Check if all 'problem' terms have been removed
-                fprintf('       Check for linear dependence between minimum required equation for Channel: '); fprintf(num2str(i)); fprintf('.\n');
-                break
+%                 fprintf('       Check for linear dependence between minimum required equation for Channel: '); fprintf(num2str(i)); fprintf('.\n');
+%                 break
             elseif maxVIF_iter== 0 
                 fprintf('       Error occured in Phase.');
-                fprintf(' Check for severe linear dependence minimum required equation for Channel: '); fprintf(num2str(i)); fprintf('.\n');
+                fprintf(' Check for severe linear dependence in minimum required equation for Channel: '); fprintf(num2str(i)); fprintf('.\n');
                 optChannel(i)=0; %Mark unable to optimize for channel
                 break
             end
@@ -176,7 +174,8 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
             end
             
             vif_iter=zeros(size(customMatrix,1),1); %Reset VIF vector
-            vif_iter(boolean(customMatrix_Px(:,i)))=vif_dl(comIN0(:,boolean(customMatrix_Px(:,i)))); %Calculate VIF for all new included terms
+            vif_iter(boolean([0;customMatrix_Px(2:end,i)]))=vif_dl(comIN0(:,boolean([0;customMatrix_Px(2:end,i)]))); %Calculate VIF for all new included terms except global intercept
+            vif_iter(1)=1; %Set VIF for global intercept=1
             Px_maxVIF_hist(termOut_count,i)=max(vif_iter); %Store new max VIF
             
             if calcThrough~=loaddimFlag && any(min_eqn(maxI,:)) %If calculating not full number of channels (for time savings) but eliminated a linear voltage term
