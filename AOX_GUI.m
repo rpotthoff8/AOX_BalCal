@@ -215,7 +215,6 @@ outStruct.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 outStruct.anova_pct= str2num(get(handles.anova_pct,'String'));
 outStruct.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
 
-outStruct.stableRec_FLAGcheck=get(handles.stableRec_FLAGcheck,'Value');
 outStruct.output_location=get(handles.output_location,'String');
 outStruct.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 outStruct.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
@@ -1884,14 +1883,12 @@ if get(hObject,'Value') == 0
     set(handles.Rec_Model_FLAGcheck,'Enable','off','Value',0);
     set(handles.anova_pct,'Enable','off');
     set(handles.anova_pct_text,'Enable','off');
-    set(handles.stableRec_FLAGcheck,'Enable','off','Value',0);
     set(handles.approx_and_PI_print,'Enable','off','Value',0);
 else
     set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','on');
     set(handles.Rec_Model_FLAGcheck,'Enable','on');
     set(handles.anova_pct,'Enable','on');
     set(handles.anova_pct_text,'Enable','on');
-    set(handles.stableRec_FLAGcheck,'Enable','on');
     set(handles.approx_and_PI_print,'Enable','on');
 end
 
@@ -2061,16 +2058,6 @@ function calib_model_save_FLAG_Callback(hObject, ~, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of calib_model_save_FLAG
-
-
-% --- Executes on button press in stableRec_FLAGcheck.
-function stableRec_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to stableRec_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of stableRec_FLAGcheck
-
 
 % --- Executes on button press in input_save_FLAG.
 function input_save_FLAG_Callback(hObject, eventdata, handles)
@@ -2257,8 +2244,6 @@ default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
 default.calib_model_save_FLAG=get(handles.calib_model_save_FLAG,'Value');
 default.input_save_FLAG=get(handles.input_save_FLAG,'Value');
 
-default.stableRec_FLAGcheck=get(handles.stableRec_FLAGcheck,'Value');
-
 % [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fullfileName = [filePath,filesep,fileName,'.ini'];
 save(fullfileName,'default');
@@ -2367,7 +2352,6 @@ if exist(fullfileName,'file')
         set(handles.output_location,'String',default.output_location);
         set(handles.calib_model_save_FLAG,'Value',default.calib_model_save_FLAG);
         set(handles.input_save_FLAG,'Value',default.input_save_FLAG);
-        set(handles.stableRec_FLAGcheck,'Value',default.stableRec_FLAGcheck);
         if isfield(default,'runID')
             disp(['Loaded Settings from Test: ',default.runID])
         else

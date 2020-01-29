@@ -102,7 +102,6 @@ FLAGS.BALFIT_ANOVA=out.BALFIT_ANOVA;
 FLAGS.Rec_Model=out.Rec_Model;
 anova_pct=out.anova_pct;
 FLAGS.approx_and_PI_print=out.approx_and_PI_print;
-FLAGS.custom_eqn_iter=out.stableRec_FLAGcheck;
 
 if out.intercept==1 %Include series intercepts
     FLAGS.glob_intercept=0;
@@ -355,7 +354,7 @@ if FLAGS.sugEqnNew==1
 end
 %% Find recommended Eqn using 'backward elimination' method
 %User preferences
-FLAGS.back_recEqn=1; %Flag from performing search for recommended equation
+FLAGS.back_recEqn=0; %Flag from performing search for recommended equation
 FLAGS.search_metric=1;
 
 if FLAGS.back_recEqn==1
@@ -365,7 +364,7 @@ end
 
 %% Find recommended Eqn using 'forward selection' method
 %User preferences
-FLAGS.forward_recEqn=0; %Flag from performing search for recommended equation
+FLAGS.forward_recEqn=1; %Flag from performing search for recommended equation
 FLAGS.VIF_stop=1;
 
 if FLAGS.forward_recEqn==1
@@ -447,42 +446,6 @@ if FLAGS.balOut == 1
         targetRes = targetMatrix0-aprxIN;
     end
 end
-
-%OPTIONAL: Iterate to find stable recommended equation
-if FLAGS.custom_eqn_iter==1
-    FLAGS_iter.anova=1;
-    FLAGS_iter.model=4;
-    FLAGS_iter.test_FLAG=1;
-    customMatrix_iter=[zeros(nterms,loaddimFlag);ones(nseries0,loaddimFlag)];
-    customMatrix_last=customMatrix_iter;
-    ANOVA_iter=ANOVA;
-    %Custom matrix for next iteration is defined by significant terms from ANOVA
-    for i=1:loaddimFlag
-        customMatrix_iter(1:nterms,i)=ANOVA_iter(i).sig(1:nterms);
-    end
-
-    samRec=0;
-    iter_count=0;
-    while samRec==0 %Iterate until no change in significant variables between iteration
-        iter_count=iter_count+1;
-        fprintf('\n Searching for stable recommended equation. Iteration '); fprintf(string(iter_count)); fprintf('\n');
-        customMatrix_last=customMatrix_iter; %Store custom matrix from previous iteration
-
-        [~,ANOVA_iter] = calc_xcalib(comIN0,targetMatrix0,series0,...
-            nterms,nseries0,loaddimFlag,FLAGS_iter,customMatrix_iter,anova_pct,loadlist,'Direct'); %Store ANOVA results with new model
-        %Custom matrix for next iteration is defined by significant terms from ANOVA
-        for i=1:loaddimFlag
-            customMatrix_iter(1:nterms,i)=ANOVA_iter(i).sig(1:nterms);
-        end
-
-        samRec=isequal(customMatrix_last,customMatrix_iter); %Check if no change between previous and current iteration
-    end
-    %Store variables for output
-    RECOMM_ALG_EQN_STABLE=customMatrix_iter(1:nterms,:);
-    newStruct = struct('RECOMM_ALG_EQN_STABLE',RECOMM_ALG_EQN_STABLE);
-    uniqueOut = cell2struct([struct2cell(uniqueOut);struct2cell(newStruct)],...
-        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-end %END ITERATIONS FOR STABLE CUSTOM EQUATION
 
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
 coeff = xcalib(1:nterms,:);

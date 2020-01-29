@@ -365,25 +365,7 @@ if strcmp(section,{'Calibration Algebraic'})==1
                 fprintf('\n')
             end
         end
-        
-        if FLAGS.custom_eqn_iter==1
-            filename = 'STABLE_DIRECT_RECOMM_EquationMatrix.csv';
-            fullpath=fullfile(output_location,filename);
-            [leftColumn,topRow]=customMatrix_labels(loadlist,voltagelist,voltdimFlag,loaddimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
-            recTable=array2table(RECOMM_ALG_EQN_STABLE,'VariableNames',topRow,'RowNames',leftColumn(:));
-            description='DIRECT METHOD ANOVA RECOMMENDED EQUATION MATRIX';
-            try
-                writetable(recTable,fullpath,'WriteRowNames',true);
-                fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
-            catch ME
-                fprintf('\nUNABLE TO PRINT '); fprintf('%s %s', upper(description),'FILE. ');
-                if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
-                    fprintf('ENSURE "'); fprintf(char(filename)); fprintf('" IS NOT OPEN AND TRY AGAIN')
-                end
-                fprintf('\n')
-            end
-        end
-        
+              
     end
     %%% ANOVA Stats AJM 6_8_19
     
