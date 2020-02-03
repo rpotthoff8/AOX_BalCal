@@ -25,7 +25,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 29-Jan-2020 11:52:54
+% Last Modified by GUIDE v2.5 29-Jan-2020 14:25:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -199,6 +199,9 @@ end
 outStruct.grbf = 1 + get(handles.grbf,'Value');
 outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 outStruct.selfTerm_str=handles.selfTerm_pop.String(handles.selfTerm_pop.Value);
+outStruct.min_eps=str2num(handles.min_eps.String);
+outStruct.max_eps=str2num(handles.max_eps.String);
+
 outStruct.intercept=handles.intercept_pop.Value;
 
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
@@ -610,6 +613,11 @@ if get(hObject,'Value') == 1
     set(handles.RBF_text,'Enable','on');
     selfTerm_strSet(handles);
     set(handles.selfTerm_pop,'Enable','on');
+    set(handles.GRBF_defaultEps,'Enable','on');
+    set(handles.eps_note,'Enable','on');
+    set(handles.eps_title,'Enable','on');
+        GRBF_defaultEps_Callback(handles.GRBF_defaultEps, eventdata, handles);
+
     %set(handles.loglog_FLAGcheck,'Enable','on');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','on');
     %set(handles.grbftares_FLAGcheck,'Enable','on');
@@ -617,10 +625,19 @@ else
     set(handles.numBasisIn,'Enable','off');
     set(handles.RBF_text,'Enable','off');
     set(handles.selfTerm_pop,'Enable','off');
+    set(handles.GRBF_defaultEps,'Enable','off');
+    set(handles.min_eps_text,'Enable','off');
+        set(handles.min_eps,'Enable','off');
+    set(handles.max_eps_text,'Enable','off');
+    set(handles.max_eps,'Enable','off');
+    set(handles.eps_note,'Enable','off');
+        set(handles.eps_title,'Enable','off');
+
     %set(handles.loglog_FLAGcheck,'Enable','off');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','off');
     %set(handles.grbftares_FLAGcheck,'Enable','off');
 end
+
 
 
 
@@ -749,7 +766,7 @@ function c12_Callback(hObject, eventdata, handles)
 
 
 % --- Executes during object creation, after setting all properties.
-function c12_CreateFcn(hObject, eventdata, handles)
+function c12_CreateFcn(hObject, eventdata, ~)
 % hObject    handle to c12 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
@@ -2230,11 +2247,16 @@ default.balanceType_list=get(handles.balanceType_list, 'Value');
 default.termSelect=get(handles.termSelect,'Value');
 default.termInclude=handles.termSelectButton.Tooltip;
 default.noAlg=handles.noAlg.Value;
-default.grbf = get(handles.grbf,'Value');
-default.basis = get(handles.numBasisIn,'String');
 default.selfTerm_pop_str= get(handles.selfTerm_pop,'String');
 default.selfTerm_pop_val= get(handles.selfTerm_pop,'Value');
 default.intercept_pop_val=handles.intercept_pop.Value;
+
+default.grbf = get(handles.grbf,'Value');
+default.basis = get(handles.numBasisIn,'String');
+default.GRBF_defaultEps=handles.GRBF_defaultEps.Value;
+default.min_eps=handles.min_eps.String;
+default.max_eps=handles.max_eps.String;
+
 
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
@@ -2351,7 +2373,12 @@ if exist(fullfileName,'file')
         set(handles.numBasisIn,'String',default.basis);
         set(handles.selfTerm_pop,'String',default.selfTerm_pop_str);
         set(handles.selfTerm_pop,'Value',default.selfTerm_pop_val);
+        set(handles.GRBF_defaultEps, 'Value', default.GRBF_defaultEps);
+        set(handles.min_eps,'String', default.min_eps);
+        set(handles.max_eps,'String', default.max_eps);
+        
         set(handles.intercept_pop,'Value',default.intercept_pop_val);
+        
         
         %set(handles.grbfcoeff_FLAGcheck,'Value',default.grbf_coeff);
         %set(handles.loglog_FLAGcheck,'Value',default.loglog);
@@ -2595,6 +2622,73 @@ function SVDZero_thresh_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function SVDZero_thresh_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to SVDZero_thresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in GRBF_defaultEps.
+function GRBF_defaultEps_Callback(hObject, eventdata, handles)
+% hObject    handle to GRBF_defaultEps (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of GRBF_defaultEps
+if handles.GRBF_defaultEps.Value==1
+    handles.min_eps.Enable='off';
+    handles.max_eps.Enable='off';
+    handles.min_eps.String='0.07';
+    handles.max_eps.String='0.1';
+    set(handles.min_eps_text,'Enable','off');
+    set(handles.max_eps_text,'Enable','off');
+else
+    handles.min_eps.Enable='on';
+    handles.max_eps.Enable='on';
+    set(handles.min_eps_text,'Enable','on');
+    set(handles.max_eps_text,'Enable','on');
+end
+
+
+function min_eps_Callback(hObject, eventdata, handles)
+% hObject    handle to min_eps (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of min_eps as text
+%        str2double(get(hObject,'String')) returns contents of min_eps as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function min_eps_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to min_eps (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function max_eps_Callback(hObject, eventdata, handles)
+% hObject    handle to max_eps (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of max_eps as text
+%        str2double(get(hObject,'String')) returns contents of max_eps as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function max_eps_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to max_eps (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

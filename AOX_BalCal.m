@@ -47,6 +47,9 @@ tic;
 FLAGS.balCal = out.grbf;
 %DEFINE THE NUMBER OF BASIS FUNCTIONS
 numBasis = out.basis;
+%GRBF EPSILON (WIDTH CONTROL)
+min_eps=out.min_eps; %Fasshauer pg 234, large epsilon= 'spiky'
+max_eps=out.max_eps;
 %SET SELF TERMINATE OPTION FOR RBFS
 pos_str={'No Early Termination','Validation Error Termination','Prediction Interval Termination','VIF + Prediction Interval Termination'}; %Possible self-termination options
 match=strcmp(pos_str,out.selfTerm_str);
@@ -690,8 +693,8 @@ if FLAGS.balCal == 2
     h_GRBF=sqrt(max(min(R_square_find))); %Point spacing parameter
     %     eps_min=0.1; %Fasshauer pg 234, large epsilon= 'spiky'
     %     eps_max=1.0;
-    eps_min=0.07; %Fasshauer pg 234, large epsilon= 'spiky'
-    eps_max=.1;
+%     min_eps=0.07; %Fasshauer pg 234, large epsilon= 'spiky'
+%     max_eps=.1;
 
     max_mult=5; %CHANGE
     maxPer=ceil(max_mult*numBasis/size(dainputs0,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
@@ -770,7 +773,7 @@ if FLAGS.balCal == 2
                     eta(:,s)=R_square(:,centerIndexLoop(s)); %Distance squared between RBF center and datapoints
 
                     %find widths 'w' by optimization routine
-                    eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,voltdimFlag),eps_min,eps_max );
+                    eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,voltdimFlag),min_eps,max_eps );
 
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
