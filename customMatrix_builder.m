@@ -32,7 +32,8 @@ termIndex{12}=(1:(factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3))
 
 %Build a custom equation matrix based on the terms selected and the data
 %dimension
-customMatrix=zeros(2*voltdimFlag*(voltdimFlag+2),loaddimFlag);
+nterms = 2*voltdimFlag*(voltdimFlag+2)+factorial(voltdimFlag)/factorial(voltdimFlag-2)+factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3));
+customMatrix=zeros(nterms,loaddimFlag);
 customMatrix(cell2mat(termIndex(boolean(termInclude))),:)=1;
 
 %Add intercept flag to customMatrix
