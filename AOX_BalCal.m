@@ -171,7 +171,8 @@ pointID0=pointID;
 nseries0 = length(s_1st0);
 [numpts0, voltdimFlag] = size(excessVec0); %Size of voltage input (input variables)
 loaddimFlag=size(targetMatrix0,2); %Dimension of load input (desired output variable)
-if loaddimFlag==voltdimFlag %If number of voltage channels is equal to load channels
+
+if loaddimFlag==voltdimFlag && FLAGS.BALFIT_Matrix==1 %If number of voltage channels is equal to load channels
     FLAGS.calc_balfit=1; %Possible to calculate balfit statistics
 else
     FLAGS.calc_balfit=0; %If mismatch, not possible
