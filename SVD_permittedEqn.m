@@ -52,7 +52,8 @@ all_support=1; %Variable for tracking if any terms have been eliminated
             gageCapacities(i+1:end)=max(abs(dainputs0(:,i+1:end)),[],1); %In remaining channels where linear regression not possible, set gage capacity as max absolute value gage output
         end
     end
-
+%     gageCapacities=max(abs(dainputs0),[],1); %In remaining channels where linear regression not possible, set gage capacity as max absolute value gage output
+    
     %Set voltages below threshold to zero:
     volt_theshold=zero_threshold*gageCapacities; %Zero threshold in gage output limits
     dainputs_svd=dainputs0; %Initialize as dainputs

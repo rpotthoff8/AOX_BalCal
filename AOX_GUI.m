@@ -181,7 +181,9 @@ switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
         outStruct.model=6;
         outStruct.termInclude=zeros(10,1);
         terms=handles.termSelectButton.Tooltip;
-        termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G|, ', ' |F|*G, ', ' F*F*F, ', ' |F*F*F| '};
+        %Terms are listed in following order:
+        %  F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|, F*G*G, F*G*H
+        termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G|, ', ' |F|*G, ', ' F*F*F, ', ' |F*F*F|, ',' F*G*G, ',' F*G*H '};
         outStruct.termInclude(1)=contains(terms,termList{1});
         outStruct.termInclude(2)=contains(terms,termList{2});
         outStruct.termInclude(3)=contains(terms,termList{3});
@@ -192,6 +194,8 @@ switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
         outStruct.termInclude(8)=contains(terms,termList{8});
         outStruct.termInclude(9)=contains(terms,termList{9});
         outStruct.termInclude(10)=contains(terms,termList{10});
+        outStruct.termInclude(11)=contains(terms,termList{11});
+        outStruct.termInclude(12)=contains(terms,termList{12});
     case 'noAlg'
         outStruct.model=0;
 end

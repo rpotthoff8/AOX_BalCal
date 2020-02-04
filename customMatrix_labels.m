@@ -27,46 +27,64 @@ else
     topRow=toplist(1:voltdimFlag)';
 end
 
-
+% Term order for full equation set:
+% (INTERCEPT), F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|, F*G*G, F*G*H
 
 %Initialize counter and empty variables
 count5=1;
-block1=cell(voltdimFlag,1);
+count13=1;
+block1=cellstr('INTERCEPT');
 block2=cell(voltdimFlag,1);
 block3=cell(voltdimFlag,1);
 block4=cell(voltdimFlag,1);
-block5=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
+block5=cell(voltdimFlag,1);
 block6=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
 block7=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
 block8=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
-block9=cell(voltdimFlag,1);
+block9=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
 block10=cell(voltdimFlag,1);
-
-%write text for variable names and combinations
+block11=cell(voltdimFlag,1);
+block13=cell(factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3)),1);
+%write text for variable names and combinations for terms 1:11, 13
 for i=1:voltdimFlag
-    block1(i)=leftlist(i);
-    block2(i)=strcat('|',leftlist(i),'|');
-    block3(i)=strcat(leftlist(i),'*',leftlist(i));
-    block4(i)=strcat(leftlist(i),'*|',leftlist(i),'|');
+    block2(i)=leftlist(i);
+    block3(i)=strcat('|',leftlist(i),'|');
+    block4(i)=strcat(leftlist(i),'*',leftlist(i));
+    block5(i)=strcat(leftlist(i),'*|',leftlist(i),'|');
     
     for j=i+1:voltdimFlag
-        block5(count5)=strcat(leftlist(i),'*',leftlist(j));
-        block6(count5)=strcat('|',leftlist(i),'*',leftlist(j),'|');
-        block7(count5)=strcat(leftlist(i),'*|',leftlist(j),'|');
-        block8(count5)=strcat('|',leftlist(i),'|*',leftlist(j));
+        block6(count5)=strcat(leftlist(i),'*',leftlist(j));
+        block7(count5)=strcat('|',leftlist(i),'*',leftlist(j),'|');
+        block8(count5)=strcat(leftlist(i),'*|',leftlist(j),'|');
+        block9(count5)=strcat('|',leftlist(i),'|*',leftlist(j));
         count5=count5+1;
+        for k=j+1:voltdimFlag
+            block13(count13)=strcat(leftlist(i),'*',leftlist(j),'*',leftlist(k));
+            count13=count13+1;
+        end
     end
-    block9(i)=strcat(leftlist(i),'*',leftlist(i),'*',leftlist(i));
-    block10(i)=strcat('|',leftlist(i),'*',leftlist(i),'*',leftlist(i),'|');
+    block10(i)=strcat(leftlist(i),'*',leftlist(i),'*',leftlist(i));
+    block11(i)=strcat('|',leftlist(i),'*',leftlist(i),'*',leftlist(i),'|');
+end
+
+%write text for variable names and combinations for term 12 (F*G*G)
+block12=cell(factorial(voltdimFlag)/factorial(voltdimFlag-2),1);
+count=1;
+for i=1:voltdimFlag
+    j_ind=setdiff([1:voltdimFlag],i); %Indices for inner loop
+    for j=1:length(j_ind)
+        block12(count)=strcat(leftlist(i),'*',leftlist(j_ind(j)),'*',leftlist(j_ind(j)));
+        count=count+1;
+    end
 end
 
 %Select Terms based on model type selected
 if model==3
-    leftColumn =block1;
+    leftColumn =[block1;block2];
 elseif model==2
-    leftColumn=[block1;block3;block5];
+    leftColumn=[block1;block2;block4;block6];
 else
-    leftColumn=[block1;block2;block3;block4;block5;block6;block7;block8;block9;block10];
+    leftColumn=[block1;block2;block3;block4;block5;block6;block7;block8;block9;block10;block11;block12;block13];
 end
 
 if nargin>=7
@@ -76,5 +94,4 @@ if nargin>=7
         leftColumn=[leftColumn;rbf_leftColumn];
     end
 end
-leftColumn=[cellstr('INTERCEPT');leftColumn];
 end

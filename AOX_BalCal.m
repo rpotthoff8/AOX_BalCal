@@ -193,8 +193,8 @@ elseif FLAGS.model==5
     balanceType=out.balanceEqn;
     %Select the terms to be included
     %Terms are listed in following order:
-    % F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|
-    termInclude=zeros(10,1);
+    % (INTERCEPT), F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|, F*G*G, F*G*H
+    termInclude=zeros(12,1); %Tracker for terms to be included, not including intercept
     if balanceType==1
         termInclude([1,3,5])=1;
         algebraic_model={'TRUNCATED (BALANCE TYPE 1-A)'};
@@ -239,8 +239,8 @@ else
     %Standard Full, truncated, linear model, or no algebraic model
     %Select the terms to be included
     %Terms are listed in following order:
-    % F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|
-    termInclude=zeros(10,1);
+    % (INTERCEPT), F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|, F*G*G, F*G*H
+    termInclude=zeros(12,1);
     if FLAGS.model==3 %Linear eqn
         termInclude(1)=1; %Include only linear terms
         algebraic_model={'LINEAR'};
@@ -319,7 +319,7 @@ dainputs0 = excessVec0 - globalZeros;
 
 % The Custom model calculates all terms, and then excludes them in
 % the calibration process as determined by the customMatrix.
-nterms = 2*voltdimFlag*(voltdimFlag+2)+1;
+nterms = 2*voltdimFlag*(voltdimFlag+2)+factorial(voltdimFlag)/factorial(voltdimFlag-2)+factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3))+1;
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.

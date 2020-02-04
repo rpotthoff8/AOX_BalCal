@@ -25,7 +25,7 @@ function varargout = termSelect_GUI(varargin)
 
 % Edit the above text to modify the response to help termSelect_GUI
 
-% Last Modified by GUIDE v2.5 07-Dec-2019 16:14:18
+% Last Modified by GUIDE v2.5 04-Feb-2020 13:50:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -64,8 +64,8 @@ handles.output = hObject;
 guidata(hObject, handles);
 
 %Terms are listed in following order:
-% F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|
-termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G|, ', ' |F|*G, ', ' F*F*F, ', ' |F*F*F| '};
+%  F, |F|, F*F, F*|F|, F*G, |F*G|, F*|G|, |F|*G, F*F*F, |F*F*F|, F*G*G, F*G*H
+termList={' F, ',' |F|, ', ' F*F, ', ' F*|F|, ', ' F*G, ', ' |F*G|, ', ' F*|G|, ', ' |F|*G, ', ' F*F*F, ', ' |F*F*F|, ',' F*G*G, ',' F*G*H '};
 % Update terms with defaults
 if isempty(varargin)==0
     defaultTerms=varargin{1};
@@ -79,6 +79,8 @@ if isempty(varargin)==0
     handles.T8.Value=contains(defaultTerms,termList{8});
     handles.T9.Value=contains(defaultTerms,termList{9});
     handles.T10.Value=contains(defaultTerms,termList{10});
+    handles.T11.Value=contains(defaultTerms,termList{11});
+    handles.T12.Value=contains(defaultTerms,termList{12});
 end
 
 % UIWAIT makes termSelect_GUI wait for user response (see UIRESUME)
@@ -103,7 +105,7 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-termList={" F, "," |F|, ", " F*F, ", " F*|F|, ", " F*G, ", " |F*G|, ", " F*|G|, ", " |F|*G, ", " F*F*F, ", " |F*F*F| "};
+termList={" F, "," |F|, ", " F*F, ", " F*|F|, ", " F*G, ", " |F*G|, ", " F*|G|, ", " |F|*G, ", " F*F*F, ", " |F*F*F|, "," F*G*G, "," F*G*H "};
 termInclude=zeros(10,1);
 termInclude(1)=handles.T1.Value;
 termInclude(2)=handles.T2.Value;
@@ -115,6 +117,8 @@ termInclude(7)=handles.T7.Value;
 termInclude(8)=handles.T8.Value;
 termInclude(9)=handles.T9.Value;
 termInclude(10)=handles.T10.Value;
+termInclude(11)=handles.T11.Value;
+termInclude(12)=handles.T12.Value;
 
 if any(termInclude)
     outStruct.termInclude = strcat(termList{boolean(termInclude)});  
@@ -222,3 +226,21 @@ function T10_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of T10
+
+
+% --- Executes on button press in T11.
+function T11_Callback(hObject, eventdata, handles)
+% hObject    handle to T11 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of T11
+
+
+% --- Executes on button press in T12.
+function T12_Callback(hObject, eventdata, handles)
+% hObject    handle to T12 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of T12
