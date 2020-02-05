@@ -12,7 +12,7 @@ coeff_true=[a;b;d];
 series=[repmat(1,20,1);repmat(2,20,1);repmat(3,20,1); repmat(4,20,1)];
 [~,s_1st,~] = unique(series);
 
-numpts=length(series);
+numpts=length(series); %total number of datapoints
 
 % V values are distributed across all 4 series:
 V_in=10*rand(numpts,1);
@@ -20,7 +20,7 @@ V_in=10*rand(numpts,1);
 %The input variables can be assembled in a matrix:
 comIN=[V_in,V_in.^2,V_in.^3];
 
-%The true F values can be solved:
+%The true F values can be calculated:
 F_true=comIN*coeff_true;
 
 %Plot this true relationship
@@ -43,7 +43,7 @@ pause();
 
 %The true tare values are:
 tares_true=[20;-2;-17;8]; 
-F_prime=F_true-tares_true(series);
+F_prime=F_true-tares_true(series); %Subtract tares from true global F for F'
 %Plot the reported data:
 subplot(3,2,2);
 scatter(V_in,F_prime,20,series,'filled');
@@ -61,6 +61,7 @@ pause();
 
 %% Our first approach is regressing for the coefficients, then taking the
 %mean of the difference in each series as the tare load:
+
 % Normalize the data for a better conditioned matrix
 scale1 = max(abs(comIN));
 scale1(scale1==0)=1; %To avoid NaN for channels where RBFs have self-terminated
@@ -113,7 +114,7 @@ comIN2_intercepts=zeros(numpts,max(series));
 for i=1:max(series)
     comIN2_intercepts(series==i,i)=1;
 end
-comIN_2=[comIN,comIN2_intercepts];
+comIN_2=[comIN,comIN2_intercepts]; %Our predictor variables for regression include the series specific tare intercepts
 
 % Normalize the data for a better conditioned matrix
 scale2 = max(abs(comIN_2));
@@ -160,7 +161,7 @@ disp('Press ENTER to continue.');
 fprintf('\n');
 pause()
 %% Our third approach is from the Tare formulation provided by Dr. Meade on 4 FEB 20
-%% Approach 3A: Calculate coefficients as in approach 1, talculate tares from mean inputs in each series and coefficients
+%% Approach 3A: Calculate coefficients as in approach 1, calculate tares from mean inputs (V) in each series and coefficients
 
 % Normalize the data for a better conditioned matrix
 scale3A = max(abs(comIN));
@@ -177,12 +178,9 @@ aprxIN3A = comIN*coeff_3A;
 %Determine mean value for each input variable in series for calculating Tares
 mean_Term_series=zeros(max(series),size(comIN,2));
 comIN_3A_tare=zeros(max(series),size(comIN,2));
-numpts_series=zeros(max(series),1);
 for i=1:max(series)
     mean_Term_series(i,:)=mean(comIN(series==i,:),1); %Determine mean for each input variable in series
-    numpts_series(i)=sum(series==i); %Count number of datapoints in series
-    comIN_3A_tare(i,:)=mean_Term_series(i,:)/numpts_series(i);
-%     comIN_3A_tare(i,:)=mean_Term_series(i,:);
+    comIN_3A_tare(i,:)=mean_Term_series(i,:);
 end
 
 %Calculate tares using coefficients and mean input values
@@ -219,19 +217,15 @@ disp('Press ENTER to continue.');
 fprintf('\n');
 pause();
 
-%% Approach 3B: Calculate coefficients using formulation subtracting mean of input in each series, talculate tares from mean inputs in each series and coefficients
+%% Approach 3B: Calculate coefficients using formulation subtracting mean of input in each series (zero mean each series), calculate tares from mean inputs in each series and coefficients
 %Determine mean value for each input variable in series for calculating Tares
 mean_Term_series=zeros(max(series),size(comIN,2));
 comIN_3B_tare=zeros(max(series),size(comIN,2));
-numpts_series=zeros(max(series),1);
 for i=1:max(series)
     mean_Term_series(i,:)=mean(comIN(series==i,:),1); %Determine mean for each input variable in series
-    numpts_series(i)=sum(series==i); %Count number of datapoints in series
-    comIN_3B_tare(i,:)=mean_Term_series(i,:)/numpts_series(i);
-%     comIN_3B_tare(i,:)=mean_Term_series(i,:);
+    comIN_3B_tare(i,:)=mean_Term_series(i,:);
 end
-comIN_3B_tare_tal=comIN_3B_tare(series,:);
-comIN_3B=comIN-comIN_3B_tare_tal; %Calculate coefficients using comIN corrected with mean voltages
+comIN_3B=comIN-mean_Term_series(series,:); %Calculate coefficients using comIN corrected with mean voltages
 
 % Normalize the data for a better conditioned matrix
 scale3B = max(abs(comIN_3B));
@@ -270,7 +264,7 @@ xlabel('V');
 ylabel('F approx');
 title('Tare subracted (F prime) Approximation 3B');
 
-disp('Approach 3A calculates coefficients without intercepts using comIN corrected with mean inputs in each series, then calculates tares using mean input in each series and coefficients')
+disp('Approach 3B calculates coefficients without intercepts using comIN corrected with mean inputs in each series, then calculates tares using mean input in each series and coefficients')
 fprintf('RMS between global approximation and true global load: '); fprintf(num2str(RMS3B_true)); fprintf('\n');
 fprintf('RMS between tare corrected approximation and F_prime: '); fprintf(num2str(RMS3B_tareC)); fprintf('\n');
 fprintf('RMS between calculated and true tares: '); fprintf(num2str(tare_RMS3B)); fprintf('\n');
