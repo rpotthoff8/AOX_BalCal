@@ -10,7 +10,7 @@ function [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox
 %  FLAGS  =  User option flags
 %  seriesapprox  =  Series labels
 %  series2approx  =  Series2 labels
-%  pointIDapprox  =  data point IDs 
+%  pointIDapprox  =  data point IDs
 %  loadlist  =  channel load labels
 %  output_location  =  save location for output files
 %  GRBF  =  Structure containing GRBF centers, widths, and coefficients if RBFs were placed in calibration
@@ -23,8 +23,12 @@ function [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox
 
 fprintf('\n ********** Starting Approximation Algebraic Calculations **********\n')
 
-%natural zeros (also called global zeros)
-globalZerosapprox = mean(natzerosapprox,1);
+if FLAGS.mode==1
+    %natural zeros (also called global zeros)
+    globalZerosapprox = mean(natzerosapprox,1);
+else
+    globalZerosapprox=zeros(1,size(excessVecapprox,1));
+end
 
 % Subtract the Global Zeros from the Inputs
 dainputsapprox = excessVecapprox-globalZerosapprox;
@@ -49,15 +53,24 @@ end
 if FLAGS.approx_and_PI_print==1
     section='APPROX ALG';
     load_and_PI_file_output(aprxINminGZapprox.ALG,loadPI_approx.ALG,pointIDapprox,seriesapprox,series2approx,loadlist,output_location,section)
-
+    
 elseif FLAGS.excel == 1
     %Output approximation load approximation
-    filename = 'APPROX ALG Global Load Approximation.csv';
+    if FLAGS.mode==1
+        filename = 'APPROX ALG Global Load Approximation.csv';
+        description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
+    else
+        filename = 'APPROX ALG Output Approximation.csv';
+        description='APPROXIMATION ALGEBRAIC MODEL OUTPUT APPROXIMATION';
+    end
     approxinput=aprxINminGZapprox.ALG;
-    description='APPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION';
     print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
 else
-    fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
+    if FLAGS.mode==1
+        fprintf('\nAPPROXIMATION ALGEBRAIC MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
+    else
+        fprintf('\nAPPROXIMATION ALGEBRAIC MODEL OUTPUT APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,7 +81,7 @@ end
 
 if FLAGS.balCal == 2
     fprintf('\n ********** Starting Approximation GRBF Calculations **********\n')
-
+    
     comINapprox_RBF=create_comIN_RBF(dainputsapprox,GRBF.epsHist,GRBF.center_daHist,GRBF.h_GRBF); %Generate comIN for RBFs
     comINapprox_algRBF=[comINapprox, comINapprox_RBF]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
     
@@ -90,13 +103,22 @@ if FLAGS.balCal == 2
         
     elseif FLAGS.excel == 1
         %Output approximation load approximation
-        filename = 'APPROX GRBF Global Load Approximation.csv';
+        if FLAGS.mode==1
+            filename = 'APPROX GRBF Global Load Approximation.csv';
+            description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
+        else
+            filename = 'APPROX GRBF Output Approximation.csv';
+            description='APPROXIMATION ALGEBRAIC+GRBF MODEL OUTPUT APPROXIMATION';
+        end
         approxinput=aprxINminGZapprox.GRBF;
-        description='APPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointIDapprox,seriesapprox,series2approx,loadlist,output_location);
     else
-        fprintf('\nAPPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
+        if FLAGS.mode==1
+            fprintf('\nAPPROXIMATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
+        else
+            fprintf('\nAPPROXIMATION ALGEBRAIC+GRBF MODEL OUTPUT APPROXIMATION RESULTS: Check aprxINminGZapprox in Workspace \n');
+        end
     end
-     
+    
 end
 % END APPROXIMATION GRBF SECTION

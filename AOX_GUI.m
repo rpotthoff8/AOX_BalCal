@@ -25,7 +25,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 29-Jan-2020 14:25:43
+% Last Modified by GUIDE v2.5 05-Feb-2020 11:37:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -152,6 +152,12 @@ function runbutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 set(hObject,'Enable','off','String','...')
 uiresume(handles.figure1);
+if handles.bal_mode.Value==1
+    outStruct.mode=1; %Balance calibration mode
+elseif handles.gen_mode.Value==1
+    outStruct.mode=2; %General Function Approximation
+end
+
 %outStruct.tares = get(handles.tares_FLAGcheck,'Value');
 outStruct.disp = get(handles.disp_FLAGcheck,'Value');
 %outStruct.grbftares = get(handles.grbftares_FLAGcheck,'Value');
@@ -253,21 +259,24 @@ cal.Path = get(handles.calPath,'String');
 [~,~,calext] = fileparts(cal.Path);
 switch calext
     case '.csv'
-        cal.Range{1} = [get(handles.c11,'String'),'..',get(handles.c12,'String')];
-        cal.CSV(1,:) = a12rc(get(handles.c11,'String'));
-        cal.Range{2} = [get(handles.c21,'String'),'..',get(handles.c22,'String')];
-        cal.CSV(2,:) = a12rc(get(handles.c21,'String'));
-        cal.Range{3} = [get(handles.c31,'String'),'..',get(handles.c32,'String')];
-        cal.CSV(3,:) = a12rc(get(handles.c31,'String'));
+        if outStruct.mode==1
+            cal.Range{1} = [get(handles.c11,'String'),'..',get(handles.c12,'String')];
+            cal.CSV(1,:) = a12rc(get(handles.c11,'String'));
+            cal.Range{2} = [get(handles.c21,'String'),'..',get(handles.c22,'String')];
+            cal.CSV(2,:) = a12rc(get(handles.c21,'String'));
+            cal.Range{3} = [get(handles.c31,'String'),'..',get(handles.c32,'String')];
+            cal.CSV(3,:) = a12rc(get(handles.c31,'String'));
+        end
+        
+        cal.loadend          = a12rc(get(handles.c42,'String'));
+        cal.voltend          = a12rc(get(handles.c52,'String'));
         cal.Range{4} = [get(handles.c41,'String'),'..',get(handles.c42,'String')];
         cal.CSV(4,:) = a12rc(get(handles.c41,'String'));
         cal.Range{5} = [get(handles.c51,'String'),'..',get(handles.c52,'String')];
         cal.CSV(5,:) = a12rc(get(handles.c51,'String'));
         
-        cal.loadend          = a12rc(get(handles.c12,'String'));
-        cal.voltend          = a12rc(get(handles.c22,'String'));
         
-        outStruct.savePathcal = loadCSV(cal,outStruct.output_location);
+        outStruct.savePathcal = loadCSV(cal,outStruct.output_location,outStruct.mode);
         outStruct.cal_create=1; %track if .cal file was created
     case '.cal'
         outStruct.savePathcal = cal.Path;
@@ -296,17 +305,20 @@ if outStruct.valid == 1
     [~,~,valext] = fileparts(val.Path);
     switch valext
         case '.csv'
+            if outStruct.mode==1
             val.Range{1} = [get(handles.v11,'String'),'..',get(handles.v12,'String')];
             val.CSV(1,:) = a12rc(get(handles.v11,'String'));
             val.Range{2} = [get(handles.v21,'String'),'..',get(handles.v22,'String')];
             val.CSV(2,:) = a12rc(get(handles.v21,'String'));
             val.Range{3} = [get(handles.v31,'String'),'..',get(handles.v32,'String')];
             val.CSV(3,:) = a12rc(get(handles.v31,'String'));
+            end
+            
             val.Range{4} = [get(handles.v41,'String'),'..',get(handles.v42,'String')];
             val.CSV(4,:) = a12rc(get(handles.v41,'String'));
             val.Range{5} = [get(handles.v51,'String'),'..',get(handles.v52,'String')];
             val.CSV(5,:) = a12rc(get(handles.v51,'String'));
-            outStruct.savePathval = loadCSV(val,outStruct.output_location);
+            outStruct.savePathval = loadCSV(val,outStruct.output_location,outStruct.mode);
             outStruct.val_create=1; %track if .val file was created
             
         case '.val'
@@ -337,15 +349,17 @@ if outStruct.approx == 1
     [~,~,appext] = fileparts(app.Path);
     switch appext
         case '.csv'
+            if outStruct.mode==1
             app.Range{1} = [get(handles.a11,'String'),'..',get(handles.a12,'String')];
             app.CSV(1,:) = a12rc(get(handles.a11,'String'));
             app.Range{2} = [get(handles.a21,'String'),'..',get(handles.a22,'String')];
             app.CSV(2,:) = a12rc(get(handles.a21,'String'));
             app.Range{3} = [get(handles.a31,'String'),'..',get(handles.a32,'String')];
             app.CSV(3,:) = a12rc(get(handles.a31,'String'));
+            end
             app.Range{4} = [get(handles.a41,'String'),'..',get(handles.a42,'String')];
             app.CSV(4,:) = a12rc(get(handles.a41,'String'));
-            outStruct.savePathapp = loadCSV(app,outStruct.output_location);
+            outStruct.savePathapp = loadCSV(app,outStruct.output_location,outStruct.mode);
             outStruct.app_create=1; %track if .app file was created
         case '.app'
             outStruct.savePathapp = app.Path;
@@ -436,7 +450,7 @@ else
     set(handles.AlgModel_opt_pop,'Enable','on');
     outlier_FLAGcheck_Callback(hObject, eventdata, handles);
     AlgModel_opt_pop_Callback(hObject, eventdata, handles);
-
+    
 end
 
 
@@ -620,8 +634,8 @@ if get(hObject,'Value') == 1
     set(handles.GRBF_defaultEps,'Enable','on');
     set(handles.eps_note,'Enable','on');
     set(handles.eps_title,'Enable','on');
-        GRBF_defaultEps_Callback(handles.GRBF_defaultEps, eventdata, handles);
-
+    GRBF_defaultEps_Callback(handles.GRBF_defaultEps, eventdata, handles);
+    
     %set(handles.loglog_FLAGcheck,'Enable','on');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','on');
     %set(handles.grbftares_FLAGcheck,'Enable','on');
@@ -631,12 +645,12 @@ else
     set(handles.selfTerm_pop,'Enable','off');
     set(handles.GRBF_defaultEps,'Enable','off');
     set(handles.min_eps_text,'Enable','off');
-        set(handles.min_eps,'Enable','off');
+    set(handles.min_eps,'Enable','off');
     set(handles.max_eps_text,'Enable','off');
     set(handles.max_eps,'Enable','off');
     set(handles.eps_note,'Enable','off');
-        set(handles.eps_title,'Enable','off');
-
+    set(handles.eps_title,'Enable','off');
+    
     %set(handles.loglog_FLAGcheck,'Enable','off');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','off');
     %set(handles.grbftares_FLAGcheck,'Enable','off');
@@ -1429,7 +1443,7 @@ function calSave_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-function savePath = loadCSV(cva,output_location)
+function savePath = loadCSV(cva,output_location,mode)
 % This function pre-loads the csv's and saves the data as .mat for quicker
 % reading.
 % Input: type - String that changes depending on whether loading
@@ -1438,45 +1452,38 @@ switch cva.type
     case 'calibrate'
         cal = cva;
         
-        loadCapacities =     csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),cal.Range{1});
-        natzeros =           csvread(cal.Path,cal.CSV(2,1),cal.CSV(2,2),cal.Range{2});
-        
-        %Read series labels using 'readtable': JRP 19 June 19
-        A=extractAfter(cal.Range{3},'..');
-        bottom=str2double(regexp(A,'\d*','Match'));
-        opts=delimitedTextImportOptions('DataLines',[cal.CSV(3,1)+1 bottom]);
-        series_bulk=readtable(cal.Path,opts);
-        series=str2double(table2array(series_bulk(:,cal.CSV(3,2)+1)));
-        series2=table2array(series_bulk(:,cal.CSV(3,2)+2));
-        pointID=table2array(series_bulk(:,cal.CSV(3,2)));
-        clear A bottom opts series_bulk
+        if mode==1
+            loadCapacities =     csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),cal.Range{1});
+            natzeros =           csvread(cal.Path,cal.CSV(2,1),cal.CSV(2,2),cal.Range{2});
+            
+            %Read series labels using 'readtable': JRP 19 June 19
+            A=extractAfter(cal.Range{3},'..');
+            bottom=str2double(regexp(A,'\d*','Match'));
+            opts=delimitedTextImportOptions('DataLines',[cal.CSV(3,1)+1 bottom]);
+            series_bulk=readtable(cal.Path,opts);
+            series=str2double(table2array(series_bulk(:,cal.CSV(3,2)+1)));
+            series2=table2array(series_bulk(:,cal.CSV(3,2)+2));
+            pointID=table2array(series_bulk(:,cal.CSV(3,2)));
+            clear A bottom opts series_bulk
+        end
         
         %         series =             csvread(cal.Path,cal.CSV(3,1),cal.CSV(3,2),cal.Range{3});
         
         targetMatrix0 =      csvread(cal.Path,cal.CSV(4,1),cal.CSV(4,2),cal.Range{4});
         excessVec0 =         csvread(cal.Path,cal.CSV(5,1),cal.CSV(5,2),cal.Range{5});
         
-        try
-            %             l_label1         = rc2a1([cal.CSV(1,1)-4, cal.CSV(1,2)]);
-            %             l_label2         = rc2a1([cal.CSV(1,1)-4, cal.loadend(2)]);
-            % %            [~,loadlabels,~] = xlsread(cal.Path,[l_label1,':',l_label2]);  %AJM 4_20_19
-            %             [~,loadlabels,~] = csvread(cal.Path,[l_label1,':',l_label2]);
-            
+        try          
             %START: new approach, JRP 11 June 19
             file=fopen(cal.Path); %open file
             all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
-            splitlabelRow=cellstr(strsplit(string(all_text1{1}{cal.CSV(1,1)-3}),',','CollapseDelimiters',false)); %Extract row with labels
+            splitlabelRow=cellstr(strsplit(string(all_text1{1}{cal.CSV(4,1)}),',','CollapseDelimiters',false)); %Extract row with labels
             fclose(file); %close file
-            loadlabels=splitlabelRow(cal.CSV(1,2)+1:cal.loadend(2)+1); %extract load labels
-            voltlabels=splitlabelRow(cal.CSV(2,2)+1:cal.voltend(2)+1); %extract voltage labels
-            % read in load and voltage units, JRP 11 July 19
-            splitunitRow=cellstr(strsplit(string(all_text1{1}{cal.CSV(1,1)-1}),',','CollapseDelimiters',false)); %extract row with units
-            loadunits=splitunitRow(cal.CSV(1,2)+1:cal.loadend(2)+1); %extract load units
-            voltunits=splitunitRow(cal.CSV(2,2)+1:cal.voltend(2)+1); %extract voltage units
-            
+            loadlabels=splitlabelRow(cal.CSV(4,2)+1:cal.loadend(2)+1); %extract load labels
+            voltlabels=splitlabelRow(cal.CSV(5,2)+1:cal.voltend(2)+1); %extract voltage labels
+          
             try
                 %Eliminate rows with ";" in first column
-                lastrow=a12rc(extractAfter(cal.Range{3},".."));
+                lastrow=a12rc(extractAfter(cal.Range{4},".."));
                 all_text_points=all_text1{1}(cal.CSV(4,1)+1:lastrow(1)+1);
                 for i=1:size(all_text_points,1)
                     all_text_points_split(i,:)=cellstr(strsplit(string(all_text_points(i)),',','CollapseDelimiters',false)); %Extract row with labels
@@ -1485,10 +1492,13 @@ switch cva.type
                 ignore_row=find(contains(first_col,';')); %Find rows with semicolons in the first column
                 
                 excessVec0(ignore_row,:)=[];
-                pointID(ignore_row,:)=[];
-                series(ignore_row,:)=[];
-                series2(ignore_row,:)=[];
                 targetMatrix0(ignore_row,:)=[];
+                if mode==1
+                    pointID(ignore_row,:)=[];
+                    series(ignore_row,:)=[];
+                    series2(ignore_row,:)=[];
+                end
+                
             catch
                 fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
             end
@@ -1505,23 +1515,30 @@ switch cva.type
             clear description_i descriptionRow
             
             try
-                balance_i=find(contains(all_text1{1},'BALANCE_NAME'));
-                assert(any(balance_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
-                balanceRow=cellstr(strsplit(string(all_text1{1}{balance_i}),',','CollapseDelimiters',false)); %Extract row with balance name
-                balance_type=balanceRow(find(contains(balanceRow,'BALANCE_NAME'))+1);
-            catch
-                balance_type={'NO BALANCE NAME FOUND'};
+                unit_i=find(contains(all_text1{1},'units'));
+                assert(any(unit_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
+                % read in load and voltage units, JRP 11 July 19
+                splitunitRow=cellstr(strsplit(string(all_text1{1}{unit_i+1}),',','CollapseDelimiters',false)); %extract row with units
+                loadunits=splitunitRow(cal.CSV(4,2)+1:cal.loadend(2)+1); %extract load units
+                voltunits=splitunitRow(cal.CSV(5,2)+1:cal.voltend(2)+1); %extract voltage units
             end
-            clear balance_i balanceRow
-            %END:find file description and balance name: JRP 25 July 19
+            clear unit_i splitunitRow
+            
+            if mode==1
+                try
+                    balance_i=find(contains(all_text1{1},'BALANCE_NAME'));
+                    assert(any(balance_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
+                    balanceRow=cellstr(strsplit(string(all_text1{1}{balance_i}),',','CollapseDelimiters',false)); %Extract row with balance name
+                    balance_type=balanceRow(find(contains(balanceRow,'BALANCE_NAME'))+1);
+                catch
+                    balance_type={'NO BALANCE NAME FOUND'};
+                end
+                clear balance_i balanceRow
+                %END:find file description and balance name: JRP 25 July 19
+            end
             clear file label_text1 splitlabelRow splitunitRow
             %END: new approach, JRP 11 June 19
-            
-            try
-                splitlabelRow=cellstr(strsplit(string(all_text1{1}{cal.CSV(1,1)-3}),',','CollapseDelimiters',false)); %Extract row with labels
-                
-            end
-            
+                       
         end
         
         [~,calName,~] = fileparts(cal.Path);
@@ -1533,19 +1550,21 @@ switch cva.type
     case 'validate'
         val = cva;
         
-        loadCapacitiesvalid =    csvread(val.Path,val.CSV(1,1),val.CSV(1,2),val.Range{1});
-        natzerosvalid =          csvread(val.Path,val.CSV(2,1),val.CSV(2,2),val.Range{2});
-        
-        %Read series labels using 'readtable': JRP 19 June 19
-        A=extractAfter(val.Range{3},'..');
-        bottom=str2double(regexp(A,'\d*','Match'));
-        opts=delimitedTextImportOptions('DataLines',[val.CSV(3,1)+1 bottom]);
-        series_bulk=readtable(val.Path,opts);
-        seriesvalid=str2double(table2array(series_bulk(:,val.CSV(3,2)+1)));
-        series2valid=table2array(series_bulk(:,val.CSV(3,2)+2));
-        pointIDvalid=table2array(series_bulk(:,val.CSV(3,2)));
-        clear A bottom opts series_bulk
-        %         seriesvalid =            csvread(val.Path,val.CSV(3,1),val.CSV(3,2),val.Range{3});
+        if mode==1
+            loadCapacitiesvalid =    csvread(val.Path,val.CSV(1,1),val.CSV(1,2),val.Range{1});
+            natzerosvalid =          csvread(val.Path,val.CSV(2,1),val.CSV(2,2),val.Range{2});
+            
+            %Read series labels using 'readtable': JRP 19 June 19
+            A=extractAfter(val.Range{3},'..');
+            bottom=str2double(regexp(A,'\d*','Match'));
+            opts=delimitedTextImportOptions('DataLines',[val.CSV(3,1)+1 bottom]);
+            series_bulk=readtable(val.Path,opts);
+            seriesvalid=str2double(table2array(series_bulk(:,val.CSV(3,2)+1)));
+            series2valid=table2array(series_bulk(:,val.CSV(3,2)+2));
+            pointIDvalid=table2array(series_bulk(:,val.CSV(3,2)));
+            clear A bottom opts series_bulk
+            %         seriesvalid =            csvread(val.Path,val.CSV(3,1),val.CSV(3,2),val.Range{3});
+        end
         
         targetMatrixvalid =      csvread(val.Path,val.CSV(4,1),val.CSV(4,2),val.Range{4});
         excessVecvalid =         csvread(val.Path,val.CSV(5,1),val.CSV(5,2),val.Range{5});
@@ -1555,7 +1574,7 @@ switch cva.type
             all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
             fclose(file); %close file
             %Eliminate rows with ";" in first column
-            lastrow=a12rc(extractAfter(val.Range{3},".."));
+            lastrow=a12rc(extractAfter(val.Range{4},".."));
             all_text_points=all_text1{1}(val.CSV(4,1)+1:lastrow(1)+1);
             for i=1:size(all_text_points,1)
                 all_text_points_split(i,:)=cellstr(strsplit(string(all_text_points(i)),',','CollapseDelimiters',false)); %Extract row with labels
@@ -1564,10 +1583,13 @@ switch cva.type
             ignore_row=find(contains(first_col,';')); %Find rows with semicolons in the first column
             
             excessVecvalid(ignore_row,:)=[];
-            pointIDvalid(ignore_row,:)=[];
-            seriesvalid(ignore_row,:)=[];
-            series2valid(ignore_row,:)=[];
             targetMatrixvalid(ignore_row,:)=[];
+            if mode==1
+                pointIDvalid(ignore_row,:)=[];
+                seriesvalid(ignore_row,:)=[];
+                series2valid(ignore_row,:)=[];
+            end
+
         catch
             fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
         end
@@ -1582,19 +1604,21 @@ switch cva.type
     case 'approximate'
         app = cva;
         
-        loadCapacitiesapprox =    csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
-        natzerosapprox =          csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
-        
-        %Read series labels using 'readtable': JRP 19 June 19
-        A=extractAfter(app.Range{3},'..');
-        bottom=str2double(regexp(A,'\d*','Match'));
-        opts=delimitedTextImportOptions('DataLines',[app.CSV(3,1)+1 bottom]);
-        series_bulk=readtable(app.Path,opts);
-        seriesapprox=str2double(table2array(series_bulk(:,app.CSV(3,2)+1)));
-        series2approx=table2array(series_bulk(:,app.CSV(3,2)+2));
-        pointIDapprox=table2array(series_bulk(:,app.CSV(3,2)));
-        clear A bottom opts series_bulk
-        %         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
+        if mode==1
+            loadCapacitiesapprox =    csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
+            natzerosapprox =          csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
+            
+            %Read series labels using 'readtable': JRP 19 June 19
+            A=extractAfter(app.Range{3},'..');
+            bottom=str2double(regexp(A,'\d*','Match'));
+            opts=delimitedTextImportOptions('DataLines',[app.CSV(3,1)+1 bottom]);
+            series_bulk=readtable(app.Path,opts);
+            seriesapprox=str2double(table2array(series_bulk(:,app.CSV(3,2)+1)));
+            series2approx=table2array(series_bulk(:,app.CSV(3,2)+2));
+            pointIDapprox=table2array(series_bulk(:,app.CSV(3,2)));
+            clear A bottom opts series_bulk
+            %         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
+        end
         
         excessVecapprox =         csvread(app.Path,app.CSV(4,1),app.CSV(4,2),app.Range{4});
         
@@ -1603,7 +1627,7 @@ switch cva.type
             all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
             fclose(file); %close file
             %Eliminate rows with ";" in first column
-            lastrow=a12rc(extractAfter(app.Range{3},".."));
+            lastrow=a12rc(extractAfter(app.Range{4},".."));
             all_text_points=all_text1{1}(app.CSV(4,1)+1:lastrow(1)+1);
             for i=1:size(all_text_points,1)
                 all_text_points_split(i,:)=cellstr(strsplit(string(all_text_points(i)),',','CollapseDelimiters',false)); %Extract row with labels
@@ -1612,9 +1636,11 @@ switch cva.type
             ignore_row=find(contains(first_col,';')); %Find rows with semicolons in the first column
             
             excessVecapprox(ignore_row,:)=[];
+            if mode==1
             pointIDapprox(ignore_row,:)=[];
             seriesapprox(ignore_row,:)=[];
             series2approx(ignore_row,:)=[];
+            end
         catch
             fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
         end
@@ -2190,6 +2216,9 @@ if nargin==4
     default.runID=runID;
 end
 
+default.bal_mode=handles.bal_mode.Value;
+default.gen_mode=handles.gen_mode.Value;
+
 %default.tares = get(handles.tares_FLAGcheck,'Value');
 default.disp = get(handles.disp_FLAGcheck,'Value');
 %default.grbftares = get(handles.grbftares_FLAGcheck,'Value');
@@ -2302,6 +2331,11 @@ if exist(fullfileName,'file')
         load(fullfileName,'-mat');
         
         versionCheck(default);
+        
+        %Set Mode:
+        handles.bal_mode.Value=default.bal_mode;
+        handles.gen_mode.Value=default.gen_mode;
+        modepanel_SelectionChangedFcn(handles.bal_mode, eventdata, handles)
         
         %set(handles.tares_FLAGcheck,'Value',default.tares);
         set(handles.disp_FLAGcheck,'Value',default.disp);
@@ -2700,4 +2734,113 @@ function max_eps_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes when selected object is changed in modepanel.
+function modepanel_SelectionChangedFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in modepanel
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if handles.bal_mode.Value==1 %Change GUI for balance Calibration
+    %Calibration pannel changes
+    handles.cal_l1.Visible='On';
+    handles.cal_l2.Visible='On';
+    handles.cal_l3.Visible='On';
+    handles.cal_l4.String='Load Array:';
+    handles.cal_l5.String='Voltage Array:';
+    handles.c11.Visible='On';
+    handles.c12.Visible='On';
+    handles.c21.Visible='On';
+    handles.c22.Visible='On';
+    handles.c31.Visible='On';
+    handles.c32.Visible='On';
+    %Validation pannel changes
+    handles.val_l1.Visible='On';
+    handles.val_l2.Visible='On';
+    handles.val_l3.Visible='On';
+    handles.val_l4.String='Load Array:';
+    handles.val_l5.String='Voltage Array:';
+    handles.v11.Visible='On';
+    handles.v12.Visible='On';
+    handles.v21.Visible='On';
+    handles.v22.Visible='On';
+    handles.v31.Visible='On';
+    handles.v32.Visible='On';
+    %Approximation pannel changes
+    handles.app_l1.Visible='On';
+    handles.app_l2.Visible='On';
+    handles.app_l3.Visible='On';
+    handles.app_l4.String='Voltage Array:';
+    handles.a11.Visible='On';
+    handles.a12.Visible='On';
+    handles.a21.Visible='On';
+    handles.a22.Visible='On';
+    handles.a31.Visible='On';
+    handles.a32.Visible='On';
+    %Model pannel options
+    handles.intercept_pop.String={'Series Specific Intercept Terms (Tare loads)','Global Intercept Term','No Intercept Term'};
+    handles.intercept_pop.Value=handles.intercept_pop.Value+1;
+    %Output pannel options
+    handles.excel_FLAGcheck.String='Print Load and Coefficient csv Files';
+    handles.BALFIT_Matrix_FLAGcheck.Visible='On';
+    handles.BALFIT_ANOVA_FLAGcheck.Visible='On';
+    handles.approx_and_PI_print.String='Print Load w/ Prediction Interval xlsx File';
+    
+elseif handles.gen_mode.Value==1
+    %Calibration pannel changes
+    handles.cal_l1.Visible='Off';
+    handles.cal_l2.Visible='Off';
+    handles.cal_l3.Visible='Off';
+    handles.cal_l4.String='Output Array:';
+    handles.cal_l5.String='Input Array:';
+    handles.c11.Visible='Off';
+    handles.c12.Visible='Off';
+    handles.c21.Visible='Off';
+    handles.c22.Visible='Off';
+    handles.c31.Visible='Off';
+    handles.c32.Visible='Off';
+    %Validation pannel changes
+    handles.val_l1.Visible='Off';
+    handles.val_l2.Visible='Off';
+    handles.val_l3.Visible='Off';
+    handles.val_l4.String='Output Array:';
+    handles.val_l5.String='Input Array:';
+    handles.v11.Visible='Off';
+    handles.v12.Visible='Off';
+    handles.v21.Visible='Off';
+    handles.v22.Visible='Off';
+    handles.v31.Visible='Off';
+    handles.v32.Visible='Off';
+    %Approximation pannel changes
+    handles.app_l1.Visible='Off';
+    handles.app_l2.Visible='Off';
+    handles.app_l3.Visible='Off';
+    handles.app_l4.String='Input Array:';
+    handles.a11.Visible='Off';
+    handles.a12.Visible='Off';
+    handles.a21.Visible='Off';
+    handles.a22.Visible='Off';
+    handles.a31.Visible='Off';
+    handles.a32.Visible='Off';
+    %Model pannel options
+    handles.intercept_pop.String={'Global Intercept Term','No Intercept Term'};
+    handles.intercept_pop.Value=handles.intercept_pop.Value-1;
+    if handles.intercept_pop.Value==0
+        handles.intercept_pop.Value=1;
+    end
+    %Output pannel options
+    handles.excel_FLAGcheck.String='Print Output and Coefficient csv Files';
+    handles.BALFIT_Matrix_FLAGcheck.Visible='Off';
+    handles.BALFIT_ANOVA_FLAGcheck.Visible='Off';
+    handles.approx_and_PI_print.String='Print Output w/ Prediction Interval xlsx File';
+end
+if ~isempty(handles.calPath.String)
+    calPath_Callback(handles.calPath, eventdata, handles);
+end
+if ~isempty(handles.valPath.String)
+    valPath_Callback(handles.valPath, eventdata, handles);
+end
+if ~isempty(handles.appPath.String)
+    appPath_Callback(handles.appPath, eventdata, handles);
 end
