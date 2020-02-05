@@ -405,7 +405,7 @@ end
 
 %% Resume calibration
 %Calculate xcalib (coefficients)
-[xcalib, ANOVA] = calc_xcalib(comIN       ,targetMatrix       ,series,...
+[xcalib, ANOVA] = calc_xcalib(comIN_TareC       ,targetMatrix       ,series,...
     nterms,nseries0,loaddimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
 
 if FLAGS.calc_balfit==1
