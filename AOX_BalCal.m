@@ -244,7 +244,7 @@ elseif FLAGS.model==5
         algebraic_model={'BALANCE TYPE 2-C'};
     elseif balanceType==8
         termInclude(1:10)=1;
-        algebraic_model={'FULL (BALANCE TYPE 2-D)'};
+        algebraic_model={'BALANCE TYPE 2-D'};
     elseif balanceType==9
         termInclude([1,2,4,5])=1;
         algebraic_model={'BALANCE TYPE 2-E'};
@@ -274,8 +274,8 @@ else
         termInclude([1,3,5])=1;
         algebraic_model={'TRUNCATED (BALANCE TYPE 1-A)'};
     elseif FLAGS.model==1 %Full Eqn type
-        termInclude(1:10)=1;
-        algebraic_model={'FULL (BALANCE TYPE 2-D)'};
+        termInclude(1:12)=1;
+        algebraic_model={'FULL'};
     elseif FLAGS.model==0 %No Algebraic Model
         algebraic_model={'NO ALGEBRAIC MODEL'};
     end
