@@ -675,7 +675,7 @@ if FLAGS.balVal == 1
         
         if FLAGS.mode==1
             newStruct=struct('loadCapacitiesvalid',loadCapacitiesvalid,...
-                'taresvalid',taresvalid,'tares_STDEV_valid',tares_STDEV_valid);
+                'tares',taresvalid,'tares_STDDEV',tares_STDEV_valid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         end
@@ -1193,7 +1193,7 @@ if FLAGS.balCal == 2
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         
         if FLAGS.mode==1
-        newStruct=struct('loadCapacities',loadCapacities,'taresGRBF',taresGRBF,'taresGRBFSTDEV',taresGRBFSTDEV);
+        newStruct=struct('loadCapacities',loadCapacities,'tares',taresGRBF,'tares_STDDEV',taresGRBFSTDEV);
                 uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         end
@@ -1257,7 +1257,7 @@ if FLAGS.balCal == 2
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         
         if FLAGS.mode==1
-            newStruct=struct('loadCapacitiesvalid',loadCapacitiesvalid,'taresGRBFvalid',taresGRBFvalid,'taresGRBFSTDEVvalid',taresGRBFSTDEVvalid);
+            newStruct=struct('loadCapacitiesvalid',loadCapacitiesvalid,'tares',taresGRBFvalid,'tares_STDDEV',taresGRBFSTDEVvalid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         end

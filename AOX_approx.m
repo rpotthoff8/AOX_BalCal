@@ -44,6 +44,7 @@ FLAGS.approx_and_PI_print=out.approx_and_PI_print;
 FLAGS.model=model;
 FLAGS.input_save=out.input_save_FLAG;
 FLAGS.save_files=out.save_files;
+FLAGS.mode= out.mode;
 
 PI_pct=out.PI_percent_confidence;
 REPORT_NO=out.REPORT_NO;
@@ -59,7 +60,17 @@ else
     GRBF='GRBFS NOT PLACED';
 end
 
-%% Approximation Calculations Section
+if FLAGS.mode~=1
+    seriesapprox=ones(size(excessVecapprox,1),1);
+    series2approx=ones(size(excessVecapprox,1),1);
+    natzerosapprox=0;
+end
+
+if exist( 'pointIDvalid', 'var')==0
+    pointIDapprox=cellstr([repmat('P-',size(excessVecapprox,1),1),num2str((1:size(excessVecapprox,1))')]);
+end
+    
+    %% Approximation Calculations Section
 %Function that performs all ANOVA calculations and outputs
 [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,series2approx,pointIDapprox,loadlist,output_location,GRBF,ANOVA,PI_pct);
 

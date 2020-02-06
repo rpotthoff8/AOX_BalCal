@@ -303,12 +303,12 @@ if outStruct.valid == 1
     switch valext
         case '.csv'
             if outStruct.mode==1
-            val.Range{1} = [get(handles.v11,'String'),'..',get(handles.v12,'String')];
-            val.CSV(1,:) = a12rc(get(handles.v11,'String'));
-            val.Range{2} = [get(handles.v21,'String'),'..',get(handles.v22,'String')];
-            val.CSV(2,:) = a12rc(get(handles.v21,'String'));
-            val.Range{3} = [get(handles.v31,'String'),'..',get(handles.v32,'String')];
-            val.CSV(3,:) = a12rc(get(handles.v31,'String'));
+                val.Range{1} = [get(handles.v11,'String'),'..',get(handles.v12,'String')];
+                val.CSV(1,:) = a12rc(get(handles.v11,'String'));
+                val.Range{2} = [get(handles.v21,'String'),'..',get(handles.v22,'String')];
+                val.CSV(2,:) = a12rc(get(handles.v21,'String'));
+                val.Range{3} = [get(handles.v31,'String'),'..',get(handles.v32,'String')];
+                val.CSV(3,:) = a12rc(get(handles.v31,'String'));
             end
             
             val.Range{4} = [get(handles.v41,'String'),'..',get(handles.v42,'String')];
@@ -347,12 +347,12 @@ if outStruct.approx == 1
     switch appext
         case '.csv'
             if outStruct.mode==1
-            app.Range{1} = [get(handles.a11,'String'),'..',get(handles.a12,'String')];
-            app.CSV(1,:) = a12rc(get(handles.a11,'String'));
-            app.Range{2} = [get(handles.a21,'String'),'..',get(handles.a22,'String')];
-            app.CSV(2,:) = a12rc(get(handles.a21,'String'));
-            app.Range{3} = [get(handles.a31,'String'),'..',get(handles.a32,'String')];
-            app.CSV(3,:) = a12rc(get(handles.a31,'String'));
+                app.Range{1} = [get(handles.a11,'String'),'..',get(handles.a12,'String')];
+                app.CSV(1,:) = a12rc(get(handles.a11,'String'));
+                app.Range{2} = [get(handles.a21,'String'),'..',get(handles.a22,'String')];
+                app.CSV(2,:) = a12rc(get(handles.a21,'String'));
+                app.Range{3} = [get(handles.a31,'String'),'..',get(handles.a32,'String')];
+                app.CSV(3,:) = a12rc(get(handles.a31,'String'));
             end
             app.Range{4} = [get(handles.a41,'String'),'..',get(handles.a42,'String')];
             app.CSV(4,:) = a12rc(get(handles.a41,'String'));
@@ -584,7 +584,7 @@ try
             else
                 load(get(hObject,'String'), '-mat', 'excessVecvalid','targetMatrixvalid');
                 splitrange=cell(1,5,2);
-                splitrange(1,4:5,:) = split(val.Range(4:5),'..');                
+                splitrange(1,4:5,:) = split(val.Range(4:5),'..');
             end
             warning('on','MATLAB:load:variableNotFound');
             assert(isempty(lastwarn)); %Throw error if warning present
@@ -1502,7 +1502,7 @@ switch cva.type
         targetMatrix0 =      csvread(cal.Path,cal.CSV(4,1),cal.CSV(4,2),cal.Range{4});
         excessVec0 =         csvread(cal.Path,cal.CSV(5,1),cal.CSV(5,2),cal.Range{5});
         
-        try          
+        try
             %START: new approach, JRP 11 June 19
             file=fopen(cal.Path); %open file
             all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
@@ -1510,7 +1510,7 @@ switch cva.type
             fclose(file); %close file
             loadlabels=splitlabelRow(cal.CSV(4,2)+1:cal.loadend(2)+1); %extract load labels
             voltlabels=splitlabelRow(cal.CSV(5,2)+1:cal.voltend(2)+1); %extract voltage labels
-          
+            
             try
                 %Eliminate rows with ";" in first column
                 lastrow=a12rc(extractAfter(cal.Range{4},".."));
@@ -1568,7 +1568,7 @@ switch cva.type
             end
             clear file label_text1 splitlabelRow splitunitRow
             %END: new approach, JRP 11 June 19
-                       
+            
         end
         
         [~,calName,~] = fileparts(cal.Path);
@@ -1619,7 +1619,7 @@ switch cva.type
                 seriesvalid(ignore_row,:)=[];
                 series2valid(ignore_row,:)=[];
             end
-
+            
         catch
             fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
         end
@@ -1667,9 +1667,9 @@ switch cva.type
             
             excessVecapprox(ignore_row,:)=[];
             if mode==1
-            pointIDapprox(ignore_row,:)=[];
-            seriesapprox(ignore_row,:)=[];
-            series2approx(ignore_row,:)=[];
+                pointIDapprox(ignore_row,:)=[];
+                seriesapprox(ignore_row,:)=[];
+                series2approx(ignore_row,:)=[];
             end
         catch
             fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
@@ -1679,7 +1679,7 @@ switch cva.type
         fileNameapprox = [appName,'.app'];
         savePathapprox=fullfile(output_location,fileNameapprox);
         
-        clear cva appName CurrentPath
+        clear cva appName CurrentPath all_text1 all_text_points all_text_points_split ans first_col i lastrow         
         save(savePathapprox);
         savePath = savePathapprox;
 end
@@ -2867,5 +2867,5 @@ elseif handles.gen_mode.Value==1
     handles.BALFIT_ANOVA_FLAGcheck.Visible='Off';
     handles.approx_and_PI_print.String='Print Output w/ Prediction Interval xlsx File';
 end
-    actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles);
+actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles);
 
