@@ -270,3 +270,59 @@ fprintf('RMS between tare corrected approximation and F_prime: '); fprintf(num2s
 fprintf('RMS between calculated and true tares: '); fprintf(num2str(tare_RMS3B)); fprintf('\n');
 disp('Press ENTER to continue.');
 fprintf('\n');
+pause();
+
+%% Approach 3C: Calculate coefficients using formulation subtracting mean of input in each series (zero mean each series), calculate tares from mean difference in each series
+%Determine mean value for each input variable in series for calculating Tares
+mean_Term_series=zeros(max(series),size(comIN,2));
+comIN_3C_tare=zeros(max(series),size(comIN,2));
+for i=1:max(series)
+    mean_Term_series(i,:)=mean(comIN(series==i,:),1); %Determine mean for each input variable in series
+    comIN_3C_tare(i,:)=mean_Term_series(i,:);
+end
+comIN_3C=comIN-mean_Term_series(series,:); %Calculate coefficients using comIN corrected with mean voltages
+
+% Normalize the data for a better conditioned matrix
+scale3C = max(abs(comIN_3C));
+scale3C(scale3C==0)=1; %To avoid NaN
+comIN_3C = comIN_3C./scale3C;
+
+xcalib_3C = comIN_3C\F_prime; %Solve for coefficients:
+xcalib_3C = xcalib_3C./scale3C'; % De-normalize the coefficients to be used with raw data
+coeff_3C = xcalib_3C;
+
+%Calculate our approximation without tare correcting:
+aprxIN3C = comIN*coeff_3C;
+
+%Find residual between F' and approximation:
+checkit3C = aprxIN3C-F_prime;
+taresAllPoints3C = meantare(series,checkit3C);
+tares3C=taresAllPoints3C(s_1st);
+%Tare subtracted approximation to compare to F_prime
+aprxIN3C_mTares=aprxIN3C-taresAllPoints3C;
+
+%Calculate true RMS and tare corrected RMS
+RMS3C_true=sqrt(mean((aprxIN3C-F_true).^2));
+RMS3C_tareC=sqrt(mean((aprxIN3C_mTares-F_prime).^2));
+%Calculate Tare RMS
+tare_RMS3C=sqrt(mean((tares3C-tares_true).^2));
+
+%Plot the approximation:
+subplot(3,2,5);
+scatter(V_in,aprxIN3C,20,series,'filled');
+xlabel('V');
+ylabel('F approx');
+title('True load (F) Approximation 3C');
+
+subplot(3,2,6);
+scatter(V_in,aprxIN3C_mTares,20,series,'filled');
+xlabel('V');
+ylabel('F approx');
+title('Tare subracted (F prime) Approximation 3C');
+
+disp('Approach 3C calculates coefficients without intercepts using comIN corrected with mean inputs in each series, then calculates tares using mean difference between approximation and F_prime in each series')
+fprintf('RMS between global approximation and true global load: '); fprintf(num2str(RMS3C_true)); fprintf('\n');
+fprintf('RMS between tare corrected approximation and F_prime: '); fprintf(num2str(RMS3C_tareC)); fprintf('\n');
+fprintf('RMS between calculated and true tares: '); fprintf(num2str(tare_RMS3C)); fprintf('\n');
+disp('Press ENTER to continue.');
+fprintf('\n');
