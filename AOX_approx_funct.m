@@ -26,12 +26,11 @@ fprintf('\n ********** Starting Approximation Algebraic Calculations **********\
 if FLAGS.mode==1
     %natural zeros (also called global zeros)
     globalZerosapprox = mean(natzerosapprox,1);
+    % Subtract the Global Zeros from the Inputs
+    dainputsapprox = excessVecapprox-globalZerosapprox;
 else
-    globalZerosapprox=zeros(1,size(excessVecapprox,1));
+    dainputsapprox = excessVecapprox;
 end
-
-% Subtract the Global Zeros from the Inputs
-dainputsapprox = excessVecapprox-globalZerosapprox;
 
 % Call the Algebraic Subroutine
 comINapprox = balCal_algEqns(FLAGS.model,dainputsapprox,seriesapprox,0);
@@ -51,7 +50,11 @@ end
 
 %OUTPUTING APPROXIMATION WITH PI FILE
 if FLAGS.approx_and_PI_print==1
-    section='APPROX ALG';
+    if FLAGS.mode==1
+        section='APPROX ALG Global Load';
+    else
+        section='APPROX ALG Output';
+    end
     load_and_PI_file_output(aprxINminGZapprox.ALG,loadPI_approx.ALG,pointIDapprox,seriesapprox,series2approx,loadlist,output_location,section)
     
 elseif FLAGS.excel == 1
@@ -98,7 +101,11 @@ if FLAGS.balCal == 2
     
     fprintf('\n ********************************************************************* \n');
     if FLAGS.approx_and_PI_print==1
-        section='APPROX GRBF';
+        if FLAGS.mode==1
+            section='APPROX GRBF Global Load';
+        else
+            section='APPROX GRBF Output';            
+        end
         load_and_PI_file_output(aprxINminGZapprox.GRBF,loadPI_approx.GRBF,pointIDapprox,seriesapprox,series2approx,loadlist,output_location,section)
         
     elseif FLAGS.excel == 1

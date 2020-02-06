@@ -85,9 +85,6 @@ handles.termInclude=zeros(10,1); %Initialize for sub gui
 
 loadSettings(handles, fileName, eventdata);
 
-
-
-
 uiwait(handles.figure1);
 
 
@@ -488,8 +485,19 @@ try
     else
         %set(handles.calSave, 'Enable', 'off');
         if strcmp(ext,'.cal')
+            lastwarn('') % Clear last warning message
+            warning('off','MATLAB:load:variableNotFound');
             load(get(hObject,'String'), '-mat', 'cal');
-            splitrange = split(cal.Range,'..');
+            if handles.bal_mode.Value==1
+                load(get(hObject,'String'), '-mat', 'excessVec0','targetMatrix0','loadCapacities','natzeros','series2','series','balance_type');
+                splitrange = split(cal.Range,'..');
+            else
+                load(get(hObject,'String'), '-mat', 'excessVec0','targetMatrix0');
+                splitrange=cell(1,5,2);
+                splitrange(1,4:5,:) = split(cal.Range(4:5),'..');
+            end
+            warning('on','MATLAB:load:variableNotFound');
+            assert(isempty(lastwarn)); %Throw error if warning present
         else
             splitrange=cell(1,5,2);
         end
@@ -507,7 +515,7 @@ try
     end
     output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles)
 catch
-    disp('Problem occurred while reading Calibration file')
+    disp('Problem occurred while reading Calibration file. Check Application Mode.')
 end
 
 
@@ -567,8 +575,19 @@ try
     else
         %set(handles.valSave, 'Enable', 'off');
         if strcmp(ext,'.val')
+            lastwarn('') % Clear last warning message
+            warning('off','MATLAB:load:variableNotFound');
             load(get(hObject,'String'), '-mat', 'val');
-            splitrange = split(val.Range,'..');
+            if handles.bal_mode.Value==1
+                load(get(hObject,'String'), '-mat', 'excessVecvalid','targetMatrixvalid','loadCapacitiesvalid','natzerosvalid','series2valid','seriesvalid');
+                splitrange = split(val.Range,'..');
+            else
+                load(get(hObject,'String'), '-mat', 'excessVecvalid','targetMatrixvalid');
+                splitrange=cell(1,5,2);
+                splitrange(1,4:5,:) = split(val.Range(4:5),'..');                
+            end
+            warning('on','MATLAB:load:variableNotFound');
+            assert(isempty(lastwarn)); %Throw error if warning present
         else
             splitrange=cell(1,5,2);
         end
@@ -585,7 +604,7 @@ try
         set(handles.v52, 'Enable', 'off', 'String', splitrange{1,5,2});
     end
 catch
-    disp('Problem occurred while reading Validation file');
+    disp('Problem occurred while reading Validation file. Check Application Mode.');
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -1372,8 +1391,19 @@ try
     else
         %set(handles.appSave, 'Enable', 'off');
         if strcmp(ext,'.app')
+            lastwarn('') % Clear last warning message
+            warning('off','MATLAB:load:variableNotFound');
             load(get(hObject,'String'), '-mat', 'app');
-            splitrange = split(app.Range,'..');
+            if handles.bal_mode.Value==1
+                load(get(hObject,'String'), '-mat', 'excessVecapprox','loadCapacitiesapprox','natzerosapprox','series2approx','seriesapprox');
+                splitrange = split(app.Range,'..');
+            else
+                load(get(hObject,'String'), '-mat', 'excessVecapprox');
+                splitrange=cell(1,4,2);
+                splitrange(1,4,:) = split(app.Range(4),'..');
+            end
+            warning('on','MATLAB:load:variableNotFound');
+            assert(isempty(lastwarn)); %Throw error if warning present
         else
             splitrange=cell(1,4,2);
         end
@@ -1388,7 +1418,7 @@ try
         set(handles.a42, 'Enable', 'off', 'String', splitrange{1,4,2});
     end
 catch
-    disp('Problem occurred while reading Approximation file');
+    disp('Problem occurred while reading Approximation file. Check Application Mode.');
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -2451,12 +2481,12 @@ if exist(fullfileName,'file')
         disp(['Unable to fully load settings. ',fileName,'.ini may be outdated or incompatible with GUI.']);
     end
     
-    modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles);
-    actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles);
-    outlier_FLAGcheck_Callback(handles.outlier_FLAGcheck, eventdata, handles);
     calPath_Callback(handles.calPath, eventdata, handles);
     valPath_Callback(handles.valPath, eventdata, handles);
     appPath_Callback(handles.appPath, eventdata, handles);
+    modelPanel_SelectionChangeFcn(handles.custom, eventdata, handles);
+    actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles);
+    outlier_FLAGcheck_Callback(handles.outlier_FLAGcheck, eventdata, handles);
     grbf_Callback(handles.grbf, eventdata, handles);
     anova_FLAGcheck_Callback(handles.anova_FLAGcheck, eventdata, handles);
     output_to_calib_FLAG_Callback(handles.output_to_calib_FLAG, eventdata, handles);
@@ -2781,6 +2811,7 @@ if handles.bal_mode.Value==1 %Change GUI for balance Calibration
     %Model pannel options
     handles.intercept_pop.String={'Series Specific Intercept Terms (Tare loads)','Global Intercept Term','No Intercept Term'};
     handles.intercept_pop.Value=handles.intercept_pop.Value+1;
+    handles.SVDZero_text.String="SVD 'Zero' Threshold (% Capacity)";
     %Output pannel options
     handles.excel_FLAGcheck.String='Print Load and Coefficient csv Files';
     handles.BALFIT_Matrix_FLAGcheck.Visible='On';
@@ -2829,18 +2860,12 @@ elseif handles.gen_mode.Value==1
     if handles.intercept_pop.Value==0
         handles.intercept_pop.Value=1;
     end
+    handles.SVDZero_text.String="SVD 'Zero' Threshold (% Maximum)";
     %Output pannel options
     handles.excel_FLAGcheck.String='Print Output and Coefficient csv Files';
     handles.BALFIT_Matrix_FLAGcheck.Visible='Off';
     handles.BALFIT_ANOVA_FLAGcheck.Visible='Off';
     handles.approx_and_PI_print.String='Print Output w/ Prediction Interval xlsx File';
 end
-if ~isempty(handles.calPath.String)
-    calPath_Callback(handles.calPath, eventdata, handles);
-end
-if ~isempty(handles.valPath.String)
-    valPath_Callback(handles.valPath, eventdata, handles);
-end
-if ~isempty(handles.appPath.String)
-    appPath_Callback(handles.appPath, eventdata, handles);
-end
+    actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles);
+

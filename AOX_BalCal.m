@@ -186,7 +186,7 @@ if FLAGS.mode~=1 %If not in balance calibration mode
     series2=ones(size(excessVec0,1),1);
 end
 if exist( 'pointID', 'var')==0
-    pointID=[repmat('P-',size(excessVec0,1),1),num2str((1:size(excessVec0,1))')];
+    pointID=cellstr([repmat('P-',size(excessVec0,1),1),num2str((1:size(excessVec0,1))')]);
 end
 
 series0 = series;
@@ -310,8 +310,8 @@ else
 end
 reslist = strcat('res',loadlist);
 % Voltage data labels if present, otherwise use default values.
-if exist('loadunits','var')==0
-    if FLAGS.mode==1 %If in balance calibration mode
+if exist('loadunits','var')==0 
+    if FLAGS.mode==1 && loaddimFlag<=10 && voltdimFlag<=10 %If in balance calibration mode
         loadunits = {'lbs','in-lbs','lbs','lbs','in-lbs','lbs','in-lbs', 'in-lbs', 'in-lbs', 'in-lbs'};
         voltunits = {'microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V'};
     else %If in general approaximation mode
@@ -338,12 +338,11 @@ uniqueOut=struct();
 % Finds the average  of the natural zeros (called global zeros)
 if FLAGS.mode==1 %If in balance calibration mode
     globalZeros = mean(natzeros,1);
+    % Subtracts global zeros from signal.
+    dainputs0 = excessVec0 - globalZeros;
 else %If in general functino approximation mode
-    globalZeros=zeros(1,voltdimFlag); %No 'natural zeros'
+    dainputs0 = excessVec0; %No 'natural zeros'
 end
-
-% Subtracts global zeros from signal.
-dainputs0 = excessVec0 - globalZeros;
 
 % The Custom model calculates all terms, and then excludes them in
 % the calibration process as determined by the customMatrix.
@@ -539,7 +538,6 @@ if out.model~=0 %If any algebraic terms included
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, algebraic section
     section={'Calibration Algebraic'};
-    if FLAGS.mode==1
         newStruct=struct('aprxIN',aprxIN,...
             'coeff',coeff,...
             'nterms',nterms,...
@@ -547,10 +545,17 @@ if out.model~=0 %If any algebraic terms included
             'targetMatrix0',targetMatrix0,...
             'loadunits',{loadunits(:)},...
             'voltunits',{voltunits(:)},...
-            'balance_type',balance_type,...
             'description',description);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        
+        if FLAGS.mode==1 %Outputs for balance calibration mode
+            newStruct=struct('loadCapacities',loadCapacities,...
+                'tares',tares, 'balance_type',balance_type,...
+                'tares_STDDEV',tares_STDDEV);
+            uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+                [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        end
         
         if FLAGS.calc_balfit==1
             newStruct=struct('balfitcomIN',balfitcomIN0,...
@@ -563,10 +568,9 @@ if out.model~=0 %If any algebraic terms included
         end
         
         %Output results from calibration algebraic section
-        balance_output(section,FLAGS,targetRes,loadCapacities,fileName,numpts0,nseries0,...
-            tares,tares_STDDEV,loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
+        output(section,FLAGS,targetRes,fileName,numpts0,nseries0,...
+            loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
             reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
-    end
 else
     fprintf('   NO ALGEBRAIC MODEL INCLUDED \n');
 end
@@ -585,12 +589,18 @@ if FLAGS.balVal == 1
     load(out.savePathval,'-mat'); %Load validation data
     if FLAGS.mode~=1 %If not in balance calibration mode
         seriesvalid=ones(size(excessVecvalid,1),1);
+        series2valid=ones(size(excessVecvalid,1),1);
+
     end
     [validSeries,s_1stV,~] = unique(seriesvalid); %Define series for validation data
     
     % Dimensions of data
     [numptsvalid,voltdimFlagvalid] = size(excessVecvalid); %Number of datapoints and voltage channels
     loaddimFlagvalid=size(targetMatrixvalid,2); %Dimension of load input (desired output variable)
+    
+    if exist( 'pointIDvalid', 'var')==0
+        pointIDvalid=cellstr([repmat('P-',numptsvalid,1),num2str((1:numptsvalid)')]);
+    end
     
     if voltdimFlag~=voltdimFlagvalid || loaddimFlag~= loaddimFlagvalid
         fprintf('\n  ');
@@ -605,28 +615,18 @@ if FLAGS.balVal == 1
     if FLAGS.mode==1
         %find the average natural zeros (also called global zeros)
         globalZerosvalid = mean(natzerosvalid,1);
+        % Subtract the Global Zeros from the Inputs and Local Zeros
+        dainputsvalid = excessVecvalid-globalZerosvalid;
+    
         %load capacities
         loadCapacitiesvalid(loadCapacitiesvalid == 0) = realmin;
     else
-        globalZerosvalid=zeros(1,voltdimFlagvalid);
+        dainputsvalid = excessVecvalid;
     end
     
     %find number of series0; this will tell us the number of tares
     nseriesvalid = max(seriesvalid);
-    
-    %find zero points of each series0 and number of points in a series0
-    %localZerosAllPoints is the same as localZeroMatrix defined in the RBF
-    %section
-    globalZerosAllPointsvalid = ones(numptsvalid,1)*globalZerosvalid;
-    
-    % Subtract the Global Zeros from the Inputs and Local Zeros
-    dainputsvalid = excessVecvalid-globalZerosvalid;
-    
-    %%% 5/16/18
-    %Remember that  excessVec0 = excessVec0_complete - globalZerosAllPoints;
-    excessVecvalidkeep = excessVecvalid  - globalZerosAllPointsvalid;
-    %%%
-    
+          
     % Call the Algebraic Subroutine
     comINvalid = balCal_algEqns(FLAGS.model,dainputsvalid,seriesvalid,0); %Generate term combinations
     
@@ -669,15 +669,21 @@ if FLAGS.balVal == 1
         
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, algebraic section
+        newStruct=struct('aprxINminTAREvalid',aprxINminTAREvalid);
+        uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        
         if FLAGS.mode==1
-            newStruct=struct('aprxINminTAREvalid',aprxINminTAREvalid);
+            newStruct=struct('loadCapacitiesvalid',loadCapacitiesvalid,...
+                'taresvalid',taresvalid,'tares_STDEV_valid',tares_STDEV_valid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-            section={'Validation Algebraic'};
-            balance_output(section,FLAGS,targetResvalid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
-                taresvalid,tares_STDEV_valid,loadlist, seriesvalid ,excessVecvalidkeep,voltdimFlag,loaddimFlag,voltagelist,...
-                reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
         end
+        
+        section={'Validation Algebraic'};
+        output(section,FLAGS,targetResvalid,fileNamevalid,numptsvalid,nseriesvalid,...
+            loadlist, seriesvalid ,excessVecvalid,voltdimFlag,loaddimFlag,voltagelist,...
+            reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
     else
         fprintf('   NO ALGEBRAIC MODEL INCLUDED \n');
     end
@@ -864,6 +870,7 @@ if FLAGS.balCal == 2
         end
         
         %New flag structure for calc_xcalib
+        FLAGS_RBF=FLAGS; %Initialize as global flag structure
         FLAGS_RBF.model=4;
         if u==numBasis %If final RBF placed
             if any(self_Terminate) %If self terminated, stats will be recalculated below
@@ -1169,7 +1176,6 @@ if FLAGS.balCal == 2
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
-    if FLAGS.mode==1
         newStruct=struct('aprxINminTARE2',aprxINminTARE2,...
             'epsHist',epsHist,...
             'coeff_algRBFmodel_RBF',coeff_algRBFmodel_RBF,...
@@ -1185,10 +1191,16 @@ if FLAGS.balCal == 2
             'coeff',coeff);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-        balance_output(section,FLAGS,targetRes2,loadCapacities,fileName,numpts0,nseries0,...
-            taresGRBF,taresGRBFSTDEV,loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
+        
+        if FLAGS.mode==1
+        newStruct=struct('loadCapacities',loadCapacities,'taresGRBF',taresGRBF,'taresGRBFSTDEV',taresGRBFSTDEV);
+                uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        end
+        
+        output(section,FLAGS,targetRes2,fileName,numpts0,nseries0,...
+            loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
             reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
-    end
     %END CALIBRATION GRBF SECTION
     
     %%
@@ -1240,14 +1252,19 @@ if FLAGS.balCal == 2
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         section={'Validation GRBF'};
+        newStruct=struct('aprxINminTARE2valid',aprxINminTARE2valid);
+        uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        
         if FLAGS.mode==1
-            newStruct=struct('aprxINminTARE2valid',aprxINminTARE2valid);
+            newStruct=struct('loadCapacitiesvalid',loadCapacitiesvalid,'taresGRBFvalid',taresGRBFvalid,'taresGRBFSTDEVvalid',taresGRBFSTDEVvalid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-            output(section,FLAGS,targetRes2valid,loadCapacitiesvalid,fileNamevalid,numptsvalid,nseriesvalid,...
-                taresGRBFvalid,taresGRBFSTDEVvalid,loadlist,seriesvalid,excessVecvalid,voltdimFlagvalid,loaddimFlagvalid,voltagelist,...
-                reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
         end
+            
+            output(section,FLAGS,targetRes2valid,fileNamevalid,numptsvalid,nseriesvalid,...
+                loadlist,seriesvalid,excessVecvalid,voltdimFlagvalid,loaddimFlagvalid,voltagelist,...
+                reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
     end
     %END GRBF SECTION FOR VALIDATION
 end
@@ -1265,6 +1282,10 @@ if FLAGS.balApprox == 1
         seriesapprox=ones(size(excessVecapprox,1),1);
         series2approx=ones(size(excessVecapprox,1),1);
         natzerosapprox=0;
+    end
+    
+    if exist( 'pointIDvalid', 'var')==0
+        pointIDapprox=cellstr([repmat('P-',size(excessVecapprox,1),1),num2str((1:size(excessVecapprox,1))')]);
     end
     
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure

@@ -2,7 +2,7 @@ function [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMa
 % Method uses SVD to determine the "permitted" set of terms for math model
 % by enforcing the constraint that no terms (columns of predictor variable matrix)
 % are linearly dependant. Mirrors approach used by BalFit to ensure a
-% non-singular solution always exists for the global regression problem. 
+% non-singular solution always exists for the global regression problem.
 % Basic flow off process:
 % 1) Perform 2 term regression (intercept and voltage) for simple voltage to load model
 % 2) Use model to calculate gage output capacities from channel load capacities
@@ -15,7 +15,7 @@ function [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMa
 % 'B2' (pg 3) for explanation of BalFit's approach
 
 %INPUTS:
-%  customMatrix = Current matrix of what terms should be included in Eqn Set. 
+%  customMatrix = Current matrix of what terms should be included in Eqn Set.
 %  customMatrix_req = Minimum terms that must be included in Eqn Set.
 %  voltdimFlag = Dimension of voltage data (# channels)
 %  loaddimFlag = Dimension of load data (# channels)
@@ -26,7 +26,7 @@ function [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMa
 %  voltagelist = Labels for voltage columns
 %  zero_threshold = In Balfit: MATH MODEL SELECTION THRESHOLD IN % OF CAPACITY. This variable is used in performing SVD. Datapoints where the gage output (voltage) is less
 ...then the threshold as a percentage of gage capacity are set to zero for constructing comIN and performing SVD
-%  loadCapacities = Maximum load capacity for each channel
+    %  loadCapacities = Maximum load capacity for each channel
 %  nterms = Number of predictor terms in regression model
 %  nseries0 = Number of series
 
@@ -37,9 +37,10 @@ function [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMa
 fprintf('\nCalculating Permitted Eqn Set with SVD....')
 
 opt_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calculate
-all_support=1; %Variable for tracking if any terms have been eliminated 
+all_support=1; %Variable for tracking if any terms have been eliminated
 
-%Perform linear regression to solve for gage capacities
+if FLAGS.mode==1 %If in balance calibration mode
+    %Perform linear regression to solve for gage capacities
     gageCapacities=zeros(1,voltdimFlag); %initialize
     if zero_threshold>0 %If zero_threshold==0, unnecessary to calculate capacities
         for i=1:loaddimFlag
@@ -52,74 +53,76 @@ all_support=1; %Variable for tracking if any terms have been eliminated
             gageCapacities(i+1:end)=max(abs(dainputs0(:,i+1:end)),[],1); %In remaining channels where linear regression not possible, set gage capacity as max absolute value gage output
         end
     end
-%     gageCapacities=max(abs(dainputs0),[],1); %In remaining channels where linear regression not possible, set gage capacity as max absolute value gage output
-    
-    %Set voltages below threshold to zero:
-    volt_theshold=zero_threshold*gageCapacities; %Zero threshold in gage output limits
-    dainputs_svd=dainputs0; %Initialize as dainputs
-    dainputs_svd(abs(dainputs0)<volt_theshold)=0; %Set voltages less than threshold to 0
+else %If in general approximation mode
+    gageCapacities=max(abs(dainputs0),[],1); %Set gage capacity as max absolute value gage output
+end
 
-    %Construct comIN with thresholded voltages
-    comIN_svd = balCal_algEqns(FLAGS.model,dainputs_svd,series0,FLAGS.tare_intercept,voltagelist); %Matrix of predictor variables from thresholded voltages
-    % Normalize the data for a better conditioned matrix
-    scale = max(abs(comIN_svd),[],1);
-    scale(scale==0)=1; %To avoid NaN
-    comIN_svd = comIN_svd./scale;
+%Set voltages below threshold to zero:
+volt_theshold=zero_threshold*gageCapacities; %Zero threshold in gage output limits
+dainputs_svd=dainputs0; %Initialize as dainputs
+dainputs_svd(abs(dainputs0)<volt_theshold)=0; %Set voltages less than threshold to 0
 
-    identical_custom=all(~diff(customMatrix,1,2),'all'); %Check if customMatrix is identical for all channels
-    identical_custom_req=all(~diff(customMatrix_req,1,2),'all'); %Check if required customMatrix is identical for all channels
-    if identical_custom==1 && identical_custom_req==1 %If custom equation identical for each channel
-        calcThrough=1; %only 1 run through SVD necessary
-    else
-        calcThrough=loaddimFlag; %Necessary to calculate for each channel seperate
+%Construct comIN with thresholded voltages
+comIN_svd = balCal_algEqns(FLAGS.model,dainputs_svd,series0,FLAGS.tare_intercept,voltagelist); %Matrix of predictor variables from thresholded voltages
+% Normalize the data for a better conditioned matrix
+scale = max(abs(comIN_svd),[],1);
+scale(scale==0)=1; %To avoid NaN
+comIN_svd = comIN_svd./scale;
+
+identical_custom=all(~diff(customMatrix,1,2),'all'); %Check if customMatrix is identical for all channels
+identical_custom_req=all(~diff(customMatrix_req,1,2),'all'); %Check if required customMatrix is identical for all channels
+if identical_custom==1 && identical_custom_req==1 %If custom equation identical for each channel
+    calcThrough=1; %only 1 run through SVD necessary
+else
+    calcThrough=loaddimFlag; %Necessary to calculate for each channel seperate
+end
+
+svd_include=customMatrix_req; %Initialize vector for tracking which terms are supported, start with required matrix
+
+%Test if required terms are supported
+for i=1:loaddimFlag
+    rankIter=rank(comIN_svd(:,boolean(svd_include(:,i)))); %Using rank command (SVD) find rank of predictor variable matrix
+    if rankIter~=sum(svd_include(:,i)) %If required matrix is rank deficient
+        opt_channel(i)=0; %Do not proceed further with channel
+        fprintf('\n  Error calculating permitted math model for load channel '); fprintf(num2str(i)); fprintf('. Required math model terms are not supported.\n');
+        all_support=0;
+        calcThrough=loaddimFlag;
     end
+end
 
-    svd_include=customMatrix_req; %Initialize vector for tracking which terms are supported, start with required matrix
-    
-    %Test if required terms are supported
-    for i=1:loaddimFlag
-        rankIter=rank(comIN_svd(:,boolean(svd_include(:,i)))); %Using rank command (SVD) find rank of predictor variable matrix
-                if rankIter~=sum(svd_include(:,i)) %If required matrix is rank deficient
-                    opt_channel(i)=0; %Do not proceed further with channel
-                    fprintf('\n  Error calculating permitted math model for load channel '); fprintf(num2str(i)); fprintf('. Required math model terms are not supported.\n');
+j=1; %Initialize counter
+while j<= calcThrough
+    if opt_channel(j)==1 %
+        for i=1:size(customMatrix,1) %Loop through all possible terms
+            if customMatrix(i,j)==1 %If term is included according to customMatrix for eqn
+                svd_include_test=svd_include(:,j); %Initialize test variable for iteration
+                svd_include_test(i)=1; %Include new term for this iteration
+                rankIter=rank(comIN_svd(:,boolean(svd_include_test))); %Using rank command (SVD) find rank of predictor variable matrix
+                if rankIter==sum(svd_include_test) %If rank is equal to number of terms
+                    svd_include(i,j)=1; %Add term to supported terms
+                else %New matrix is rank deficient
                     all_support=0;
-                    calcThrough=loaddimFlag;
-                end
-    end
-    
-    j=1; %Initialize counter
-    while j<= calcThrough
-        if opt_channel(j)==1 %
-            for i=1:size(customMatrix,1) %Loop through all possible terms
-                if customMatrix(i,j)==1 %If term is included according to customMatrix for eqn
-                    svd_include_test=svd_include(:,j); %Initialize test variable for iteration
-                    svd_include_test(i)=1; %Include new term for this iteration
-                    rankIter=rank(comIN_svd(:,boolean(svd_include_test))); %Using rank command (SVD) find rank of predictor variable matrix
-                    if rankIter==sum(svd_include_test) %If rank is equal to number of terms
-                        svd_include(i,j)=1; %Add term to supported terms
-                    else %New matrix is rank deficient
-                        all_support=0;
-                        if calcThrough~=loaddimFlag && any(customMatrix_req(i,:)) %If calculating not full number of channels (for time savings) but found linear dependancy between linear voltages
-                            calcThrough=loaddimFlag; %Now necessary to calculate for each channel seperate
-                        end
+                    if calcThrough~=loaddimFlag && any(customMatrix_req(i,:)) %If calculating not full number of channels (for time savings) but found linear dependancy between linear voltages
+                        calcThrough=loaddimFlag; %Now necessary to calculate for each channel seperate
                     end
                 end
             end
         end
-        j=j+1;
     end
+    j=j+1;
+end
 
-    if calcThrough==1 %If permitted equation identical for each channel
-        svd_include(:,2:loaddimFlag)=repmat(svd_include(:,1),1,loaddimFlag-1); %Duplicate for each column
-    end
-    customMatrix_permitted = svd_include; %customMatrix for permitted eqn set.
-    FLAGS.opt_channel=opt_channel; %Output tracker of what channels were able to calculate permitted equation
-    fprintf(' Complete. \n')
-    
-    if all_support==1
-        fprintf('   All tested predictor variable terms are supported by data. No terms eliminated. \n');
-    else
-        fprintf('   Linear dependence found between predictor variable terms. Terms eliminated to ensure non-singularity.\n');
-    end
-    
+if calcThrough==1 %If permitted equation identical for each channel
+    svd_include(:,2:loaddimFlag)=repmat(svd_include(:,1),1,loaddimFlag-1); %Duplicate for each column
+end
+customMatrix_permitted = svd_include; %customMatrix for permitted eqn set.
+FLAGS.opt_channel=opt_channel; %Output tracker of what channels were able to calculate permitted equation
+fprintf(' Complete. \n')
+
+if all_support==1
+    fprintf('   All tested predictor variable terms are supported by data. No terms eliminated. \n');
+else
+    fprintf('   Linear dependence found between predictor variable terms. Terms eliminated to ensure non-singularity.\n');
+end
+
 end

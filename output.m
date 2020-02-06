@@ -1,4 +1,4 @@
-function [] = balance_output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series,excessVec0,voltdimFlag,loaddimFlag,voltagelist,reslist,numBasis,pointID,series2,output_location,REPORT_NO,algebraic_model,uniqueOut)
+function [] = balance_output(section,FLAGS,targetRes,fileName,numpts,nseries0,loadlist,series,excessVec0,voltdimFlag,loaddimFlag,voltagelist,reslist,numBasis,pointID,series2,output_location,REPORT_NO,algebraic_model,uniqueOut)
 %Function creates all the outputs for the calibration and validation ALG
 %and GRBF sections.  First common section runs for all sections.  Following
 %sections run for specific section outputs
@@ -48,46 +48,53 @@ for k=1:length(targetRes(1,:))
     minTargets(k) = min(targetRes(:,k));
     tR2(k) = targetRes(:,k)'*targetRes(:,k);     % AJM 6_12_19
 end
-perGoop = 100*(goop./loadCapacities);
 davariance = var(targetRes);
 gee = mean(targetRes);
 standardDev10 = std(targetRes);
 standardDev = standardDev10';
-stdDevPercentCapacity = 100*(standardDev'./loadCapacities);
 ratioGoop = goop./standardDev';
 ratioGoop(isnan(ratioGoop)) = realmin;
 twoSigma = standardDev'.*2;
+if FLAGS.mode==1
+    perGoop = 100*(goop./loadCapacities);
+    stdDevPercentCapacity = 100*(standardDev'./loadCapacities);
+end
 
 %% START PRINT OUT PERFORMANCE INFORMATION TO CSV or command window
 if FLAGS.print == 1 || FLAGS.disp==1
     %Initialize cell arrays
     empty_cells=cell(1,loaddimFlag+1);
-    Header_cells=cell(9,loaddimFlag+1);
+    Header_cells=cell(10,loaddimFlag+1);
     output_name=cell(1,loaddimFlag+1);
     load_line=[cell(1),loadlist(1:loaddimFlag)];
     
     %Define Header section
     Header_cells{1,1}=char(strcat(section, {' '},'Results'));
-    Header_cells{2,1}=char(strcat('REPORT NO:',{' '},REPORT_NO));
-    Header_cells{3,1}=char(strcat(strtok(section),{' '}, 'Input File:',{' '},fileName));
+    if FLAGS.mode==1
+        Header_cells{2,1}='Software Mode: FORCE BALANCE CALIBRATION';
+    elseif FLAGS.mode==2
+        Header_cells{2,1}='Software Mode: GENERAL FUNCTION APPROXIMATION';
+    end
+    Header_cells{3,1}=char(strcat('REPORT NO:',{' '},REPORT_NO));
+    Header_cells{4,1}=char(strcat(strtok(section),{' '}, 'Input File:',{' '},fileName));
     if FLAGS.balOut == 1
-        Header_cells{4,1}='Calibration Outliers Flagged: TRUE';
+        Header_cells{5,1}='Calibration ALG Outliers Flagged: TRUE';
     else
-        Header_cells{4,1}='Calibration Outliers Flagged: FALSE';
+        Header_cells{5,1}='Calibration ALG Outliers Flagged: FALSE';
     end
     if FLAGS.zeroed == 1
-        Header_cells{5,1}='Calibration Outliers Removed: TRUE';
+        Header_cells{6,1}='Calibration ALG Outliers Removed: TRUE';
     else
-        Header_cells{5,1}='Calibration Outliers Removed: FALSE';
+        Header_cells{6,1}='Calibration ALG Outliers Removed: FALSE';
     end
-    Header_cells{6,1}=char(strcat('Algebraic Model Used:',{' '},algebraic_model));
-    Header_cells{7,1}=char(strcat('Number of Datapoints:',{' '},string(numpts)));
+    Header_cells{7,1}=char(strcat('Algebraic Model Used:',{' '},algebraic_model));
+    Header_cells{8,1}=char(strcat('Number of Datapoints:',{' '},string(numpts)));
     if FLAGS.balCal == 2
-        Header_cells{8,1}='GRBF Addition Performed: TRUE';
-        Header_cells{9,1}=char(strcat('Number GRBFs:',{' '},string(numBasis)));
+        Header_cells{9,1}='GRBF Addition Performed: TRUE';
+        Header_cells{10,1}=char(strcat('Number GRBFs:',{' '},string(numBasis)));
     else
-        Header_cells{8,1}='GRBF Addition Performed: FALSE';
-        Header_cells{9,1}='Number GRBFs: N/A';
+        Header_cells{9,1}='GRBF Addition Performed: FALSE';
+        Header_cells{10,1}='Number GRBFs: N/A';
     end
     csv_output=[Header_cells;empty_cells];
     %Command window printing;
@@ -99,39 +106,48 @@ if FLAGS.print == 1 || FLAGS.disp==1
         end
         fprintf('\n')
     end
-    
-    %Statistics output section
-    output_name{1}='Percent Load Capacity of Residual Standard Deviation';
-    section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+      
+    %Call outputs 'Load' for balance calibration, otherwise only 'Load'
+    if FLAGS.mode==1
+        outLabel='Load';
+    else
+        outLabel='Output';
     end
     
-    output_name{1}='Tares';
-    section_out=[{'Series'},loadlist(1:loaddimFlag);num2cell([(1:nseries0)', tares])];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
+    if FLAGS.mode==1
+        %Statistics output section
+        output_name{1}='Percent Load Capacity of Residual Standard Deviation';
+        section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
+        csv_output=[csv_output;output_name;section_out;empty_cells];
+        %Command window printing;
+        if FLAGS.disp==1
+            fprintf(output_name{:})
+            fprintf('\n')
+            disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+        end
+        
+        output_name{1}='Tares';
+        section_out=[{'Series'},loadlist(1:loaddimFlag);num2cell([(1:nseries0)', tares])];
+        csv_output=[csv_output;output_name;section_out;empty_cells];
+        %Command window printing;
+        if FLAGS.disp==1
+            fprintf(output_name{:})
+            fprintf('\n')
+            disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
+        end
+        
+        output_name{1}='Tares Standard Deviation';
+        section_out=[{'Series'},loadlist(1:loaddimFlag);num2cell([(1:nseries0)', tares_STDDEV])];
+        csv_output=[csv_output;output_name;section_out;empty_cells];
+        %Command window printing;
+        if FLAGS.disp==1
+            fprintf(output_name{:})
+            fprintf('\n')
+            disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
+        end
     end
     
-    output_name{1}='Tares Standard Deviation';
-    section_out=[{'Series'},loadlist(1:loaddimFlag);num2cell([(1:nseries0)', tares_STDDEV])];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
-    end
-    
-    output_name{1}='Mean Load Residual Squared';
+    output_name{1}=['Mean ' outLabel,' Residual Squared'];
     section_out=[load_line;cell(1),num2cell((resSquare'./numpts)')];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -141,17 +157,19 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Percent Load Capacity of Maximum Residual';
-    section_out=[load_line;cell(1),num2cell(perGoop)];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+    if FLAGS.mode==1
+        output_name{1}='Percent Load Capacity of Maximum Residual';
+        section_out=[load_line;cell(1),num2cell(perGoop)];
+        csv_output=[csv_output;output_name;section_out;empty_cells];
+        %Command window printing;
+        if FLAGS.disp==1
+            fprintf(output_name{:})
+            fprintf('\n')
+            disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+        end
     end
     
-    output_name{1}='Maximum Load Residual';
+    output_name{1}=['Maximum ',outLabel,' Residual'];
     section_out=[load_line;cell(1),num2cell(maxTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -161,7 +179,7 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Minimum Load Residual';
+    output_name{1}=['Minimum ',outLabel,' Residual'];
     section_out=[load_line;cell(1),num2cell(minTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -171,7 +189,7 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Load Residual 2*(standard deviation)';
+    output_name{1}=[outLabel,' Residual 2*(standard deviation)'];
     section_out=[load_line;cell(1),num2cell(twoSigma)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -181,7 +199,7 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Ratio (Maximum Load Residual)/(Load Residual Standard Deviation)';
+    output_name{1}=['Ratio (Maximum ',outLabel,' Residual)/(',outLabel,' Residual Standard Deviation)'];
     section_out=[load_line;cell(1),num2cell(ratioGoop)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -299,8 +317,13 @@ end
 
 %% Residual vs datapoint plot
 if FLAGS.res == 1
-    figure('Name',char(strcat(section,{' '},'Model; Residuals of Load Versus Data Point Index')),'NumberTitle','off','WindowState','maximized')
-    plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
+    if FLAGS.mode==1
+         figure('Name',char(strcat(section,{' '},'Model; Residuals of Load Versus Data Point Index')),'NumberTitle','off','WindowState','maximized')
+        plotResPages(series, targetRes, loadlist, stdDevPercentCapacity, loadCapacities)
+    else
+        figure('Name',char(strcat(section,{' '},'Model; Residuals of Output Versus Data Point Index')),'NumberTitle','off','WindowState','maximized')
+        plotResPages(series, targetRes, loadlist, standardDev)
+    end
 end
 
 %% OUTPUT HISTOGRAM PLOTS
@@ -523,9 +546,14 @@ if strcmp(section,{'Calibration Algebraic'})==1
     
     if FLAGS.excel == 1
         %Output calibration load approximation
-        filename = 'CALIB ALG Tare Corrected Load Approximation.csv';
+        if FLAGS.mode==1
+            filename = 'CALIB ALG Tare Corrected Load Approximation.csv';
+            description='CALIBRATION ALGEBRAIC MODEL LOAD APPROXIMATION';
+        else
+            filename = 'CALIB ALG Output Approximation.csv';
+            description='CALIBRATION ALGEBRAIC MODEL OUTPUT APPROXIMATION';
+        end
         approxinput=aprxIN;
-        description='CALIBRATION ALGEBRAIC MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
     end
     
@@ -557,9 +585,14 @@ if strcmp(section,{'Calibration GRBF'})==1
         
         
         %Output calibration load approximation
-        filename = 'CALIB GRBF Tare Corrected Load Approximation.csv';
+        if FLAGS.mode==1
+            filename = 'CALIB GRBF Tare Corrected Load Approximation.csv';
+            description='CALIBRATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
+        else
+            filename = 'CALIB GRBF Output Approximation.csv';
+            description='CALIBRATION ALGEBRAIC+GRBF MODEL OUTPUT APPROXIMATION';
+        end
         approxinput=aprxINminTARE2;
-        description='CALIBRATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
         
         %Output GRBF Widths
@@ -617,14 +650,23 @@ end
 if strcmp(section,{'Validation Algebraic'})==1
     %OUTPUTING APPROXIMATION WITH PI FILE
     if FLAGS.approx_and_PI_print==1
-        section='VALID ALG';
+        if FLAGS.mode==1
+            section='VALID ALG Tare Corrected Load';
+        else
+            section='VALID ALG Output';
+        end
         load_and_PI_file_output(aprxINminTAREvalid,loadPI_valid,pointID,series,series2,loadlist,output_location,section)
         
         %OUTPUTING APPROXIMATION FILE
     elseif FLAGS.excel == 1
-        filename = 'VALID ALG Tare Corrected Load Approximation.csv';
+        if FLAGS.mode==1
+            filename = 'VALID ALG Tare Corrected Load Approximation.csv';
+            description='VALIDATION ALGEBRAIC MODEL LOAD APPROXIMATION';
+        else
+            filename = 'VALID ALG Output Approximation.csv';
+            description='VALIDATION ALGEBRAIC MODEL OUTPUT APPROXIMATION';            
+        end
         approxinput=aprxINminTAREvalid;
-        description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
     end
 end
@@ -633,15 +675,25 @@ end
 if strcmp(section,{'Validation GRBF'})==1
     %OUTPUTING APPROXIMATION WITH PI FILE
     if FLAGS.approx_and_PI_print==1
-        section='VALID GRBF';
+        if FLAGS.mode==1
+            section='VALID GRBF Tare Corrected Load';
+        else
+            section='VALID GRBF Output';
+        end
         load_and_PI_file_output(aprxINminTARE2valid,loadPI_valid_GRBF,pointID,series,series2,loadlist,output_location,section)
         
         
     elseif FLAGS.excel == 1
         %Output validation load approximation
-        filename = 'VALID GRBF Tare Corrected Load Approximation.csv';
+        if FLAGS.mode==1
+            filename = 'VALID GRBF Tare Corrected Load Approximation.csv';
+            description='VALIDATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
+        else
+            filename = 'VALID GRBF Output Approximation.csv';
+            description='VALIDATION ALGEBRAIC+GRBF MODEL OUTPUT APPROXIMATION';            
+        end
+
         approxinput=aprxINminTARE2valid;
-        description='VALIDATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
         
     end
