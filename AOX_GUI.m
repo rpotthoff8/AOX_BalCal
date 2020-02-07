@@ -1484,6 +1484,11 @@ switch cva.type
         
         if mode==1
             loadCapacities =     csvread(cal.Path,cal.CSV(1,1),cal.CSV(1,2),cal.Range{1});
+            try %Try to read gage capacities
+                gageCapacities= csvread(cal.Path,cal.CSV(1,1),cal.CSV(5,2),[cal.CSV(1,1),cal.CSV(5,2),cal.CSV(1,1),cal.voltend(1,2)]);
+            catch
+                gageCapacities=0;
+            end
             natzeros =           csvread(cal.Path,cal.CSV(2,1),cal.CSV(2,2),cal.Range{2});
             
             %Read series labels using 'readtable': JRP 19 June 19

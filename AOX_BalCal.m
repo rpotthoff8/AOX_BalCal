@@ -189,6 +189,13 @@ if exist( 'pointID', 'var')==0
     pointID=cellstr([repmat('P-',size(excessVec0,1),1),num2str((1:size(excessVec0,1))')]);
 end
 
+if exist('gageCapacities','var')==0 || any(gageCapacities==0)
+    gageCapacities=max(abs(excessVec0),[],1);
+    if FLAGS.mode==1
+        warning('Unable to read gage capacities for calibration data. Using maximum absolute value of voltage as gage capacity.');
+    end
+end
+
 series0 = series;
 series20=series2;
 pointID0=pointID;
@@ -384,7 +391,7 @@ comIN = comIN0;
 
 %% Use SVD to test for permitted math model
 if FLAGS.svd==1
-    [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities); %Call function to determine permitted eqn
+    [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, gageCapacities); %Call function to determine permitted eqn
     customMatrix_orig=customMatrix; %Store original customMatrix
     customMatrix=customMatrix_permitted; %Proceed with permitted custom eqn
 end
@@ -545,7 +552,8 @@ if out.model~=0 %If any algebraic terms included
             'targetMatrix0',targetMatrix0,...
             'loadunits',{loadunits(:)},...
             'voltunits',{voltunits(:)},...
-            'description',description);
+            'description',description,...
+            'gageCapacities',gageCapacities);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         

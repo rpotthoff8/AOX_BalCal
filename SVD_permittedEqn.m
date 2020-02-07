@@ -1,4 +1,4 @@
-function [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, loadCapacities)
+function [customMatrix_permitted, FLAGS]=SVD_permittedEqn(customMatrix, customMatrix_req, voltdimFlag, loaddimFlag, dainputs0, FLAGS, targetMatrix0, series0, voltagelist, zero_threshold, gageCapacities)
 % Method uses SVD to determine the "permitted" set of terms for math model
 % by enforcing the constraint that no terms (columns of predictor variable matrix)
 % are linearly dependant. Mirrors approach used by BalFit to ensure a
@@ -39,23 +39,23 @@ fprintf('\nCalculating Permitted Eqn Set with SVD....')
 opt_channel=ones(1,loaddimFlag); %Variable for tracking which channels to calculate
 all_support=1; %Variable for tracking if any terms have been eliminated
 
-if FLAGS.mode==1 %If in balance calibration mode
-    %Perform linear regression to solve for gage capacities
-    gageCapacities=zeros(1,voltdimFlag); %initialize
-    if zero_threshold>0 %If zero_threshold==0, unnecessary to calculate capacities
-        for i=1:loaddimFlag
-            A=[ones(size(dainputs0,1),1),dainputs0(:,i)]; %Predictor variables are just channel voltage and intercept
-            B=[targetMatrix0(:,i)]; %Target is loads from channel
-            X_lin=A\B; %coefficients for linear model
-            gageCapacities(i)=(loadCapacities(i)-X_lin(1))/X_lin(2); %Find gage capacity from load capacity and linear regression model
-        end
-        if voltdimFlag>loaddimFlag %If greater number of voltage channels than load channels
-            gageCapacities(i+1:end)=max(abs(dainputs0(:,i+1:end)),[],1); %In remaining channels where linear regression not possible, set gage capacity as max absolute value gage output
-        end
-    end
-else %If in general approximation mode
-    gageCapacities=max(abs(dainputs0),[],1); %Set gage capacity as max absolute value gage output
-end
+% if FLAGS.mode==1 %If in balance calibration mode
+%     %Perform linear regression to solve for gage capacities
+%     gageCapacities=zeros(1,voltdimFlag); %initialize
+%     if zero_threshold>0 %If zero_threshold==0, unnecessary to calculate capacities
+%         for i=1:loaddimFlag
+%             A=[ones(size(dainputs0,1),1),dainputs0(:,i)]; %Predictor variables are just channel voltage and intercept
+%             B=[targetMatrix0(:,i)]; %Target is loads from channel
+%             X_lin=A\B; %coefficients for linear model
+%             gageCapacities(i)=(loadCapacities(i)-X_lin(1))/X_lin(2); %Find gage capacity from load capacity and linear regression model
+%         end
+%         if voltdimFlag>loaddimFlag %If greater number of voltage channels than load channels
+%             gageCapacities(i+1:end)=max(abs(dainputs0(:,i+1:end)),[],1); %In remaining channels where linear regression not possible, set gage capacity as max absolute value gage output
+%         end
+%     end
+% else %If in general approximation mode
+%     gageCapacities=max(abs(dainputs0),[],1); %Set gage capacity as max absolute value gage output
+% end
 
 %Set voltages below threshold to zero:
 volt_theshold=zero_threshold*gageCapacities; %Zero threshold in gage output limits
