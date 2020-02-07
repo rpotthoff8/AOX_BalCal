@@ -213,7 +213,6 @@ outStruct.intercept=handles.intercept_pop.Value;
 
 outStruct.anova = get(handles.anova_FLAGcheck,'Value');
 outStruct.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
-outStruct.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 outStruct.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 outStruct.anova_pct= str2num(get(handles.anova_pct,'String'));
 outStruct.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
@@ -1540,7 +1539,7 @@ switch cva.type
             
             try
                 %START: find file description and balance name: JRP 25 July 19
-                description_i=find(contains(all_text1{1},'DESCRIPTION'));
+                description_i=find(contains(all_text1{1},'DESCRIPTION,'),1,'last');
                 assert(any(description_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
                 descriptionRow=cellstr(strsplit(string(all_text1{1}{description_i}),',','CollapseDelimiters',false)); %Extract row with data description
                 description=descriptionRow(find(contains(descriptionRow,'DESCRIPTION'))+1);
@@ -1550,8 +1549,8 @@ switch cva.type
             clear description_i descriptionRow
             
             try
-                unit_i=find(contains(all_text1{1},'units'));
-                assert(any(unit_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
+                unit_i=find(contains(all_text1{1},'units'),1,'last');
+                assert(any(unit_i)) %intentional error to get to cach block if 'units' is not found
                 % read in load and voltage units, JRP 11 July 19
                 splitunitRow=cellstr(strsplit(string(all_text1{1}{unit_i+1}),',','CollapseDelimiters',false)); %extract row with units
                 loadunits=splitunitRow(cal.CSV(4,2)+1:cal.loadend(2)+1); %extract load units
@@ -1561,10 +1560,15 @@ switch cva.type
             
             if mode==1
                 try
-                    balance_i=find(contains(all_text1{1},'BALANCE_NAME'));
+                    balance_i=find(contains(all_text1{1},'BALANCE_NAME,'),1,'last');
                     assert(any(balance_i)) %intentional error to get to cach block if 'BALANCE_NAME' is not found
-                    balanceRow=cellstr(strsplit(string(all_text1{1}{balance_i}),',','CollapseDelimiters',false)); %Extract row with balance name
-                    balance_type=balanceRow(find(contains(balanceRow,'BALANCE_NAME'))+1);
+                    if contains(all_text1{1}{balance_i},'"')
+                        balance_type=extractBetween(all_text1{1}{balance_i},'"','"');
+                    else
+                        balanceRow=cellstr(strsplit(string(all_text1{1}{balance_i}),',','CollapseDelimiters',false)); %Extract row with balance name
+                        balance_type=balanceRow(find(contains(balanceRow,'BALANCE_NAME'))+1);
+                    end
+                    
                 catch
                     balance_type={'NO BALANCE NAME FOUND'};
                 end
@@ -1969,13 +1973,11 @@ function anova_FLAGcheck_Callback(hObject, eventdata, handles)
 selfTerm_strSet(handles);
 
 if get(hObject,'Value') == 0
-    set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','off','Value',0);
     set(handles.Rec_Model_FLAGcheck,'Enable','off','Value',0);
     set(handles.anova_pct,'Enable','off');
     set(handles.anova_pct_text,'Enable','off');
     set(handles.approx_and_PI_print,'Enable','off','Value',0);
 else
-    set(handles.BALFIT_ANOVA_FLAGcheck,'Enable','on');
     set(handles.Rec_Model_FLAGcheck,'Enable','on');
     set(handles.anova_pct,'Enable','on');
     set(handles.anova_pct_text,'Enable','on');
@@ -1990,15 +1992,6 @@ function BALFIT_Matrix_FLAGcheck_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of BALFIT_Matrix_FLAGcheck
-
-
-% --- Executes on button press in BALFIT_ANOVA_FLAGcheck.
-function BALFIT_ANOVA_FLAGcheck_Callback(hObject, eventdata, handles)
-% hObject    handle to BALFIT_ANOVA_FLAGcheck (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of BALFIT_ANOVA_FLAGcheck
 
 
 % --- Executes on button press in Rec_Model_FLAGcheck.
@@ -2331,7 +2324,6 @@ default.max_eps=handles.max_eps.String;
 
 default.anova = get(handles.anova_FLAGcheck,'Value');
 default.BALFIT_Matrix = get(handles.BALFIT_Matrix_FLAGcheck,'Value');
-default.BALFIT_ANOVA = get(handles.BALFIT_ANOVA_FLAGcheck,'Value');
 default.Rec_Model = get(handles.Rec_Model_FLAGcheck,'Value');
 default.anova_pct = get(handles.anova_pct,'String');
 default.approx_and_PI_print = get(handles.approx_and_PI_print,'Value');
@@ -2459,7 +2451,6 @@ if exist(fullfileName,'file')
         set(handles.anova_FLAGcheck,'Value',default.anova);
         
         set(handles.BALFIT_Matrix_FLAGcheck,'Value',default.BALFIT_Matrix);
-        set(handles.BALFIT_ANOVA_FLAGcheck,'Value',default.BALFIT_ANOVA);
         set(handles.Rec_Model_FLAGcheck,'Value',default.Rec_Model);
         set(handles.anova_pct,'String',default.anova_pct);
         set(handles.approx_and_PI_print,'Value',default.approx_and_PI_print);
@@ -2820,7 +2811,6 @@ if handles.bal_mode.Value==1 %Change GUI for balance Calibration
     %Output pannel options
     handles.excel_FLAGcheck.String='Print Load and Coefficient csv Files';
     handles.BALFIT_Matrix_FLAGcheck.Visible='On';
-    handles.BALFIT_ANOVA_FLAGcheck.Visible='On';
     handles.approx_and_PI_print.String='Print Load w/ Prediction Interval xlsx File';
     
 elseif handles.gen_mode.Value==1
@@ -2869,7 +2859,6 @@ elseif handles.gen_mode.Value==1
     %Output pannel options
     handles.excel_FLAGcheck.String='Print Output and Coefficient csv Files';
     handles.BALFIT_Matrix_FLAGcheck.Visible='Off';
-    handles.BALFIT_ANOVA_FLAGcheck.Visible='Off';
     handles.approx_and_PI_print.String='Print Output w/ Prediction Interval xlsx File';
 end
 actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles);
