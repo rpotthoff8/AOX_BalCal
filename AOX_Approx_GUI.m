@@ -25,7 +25,7 @@ function varargout = AOX_Approx_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_Approx_GUI
 
-% Last Modified by GUIDE v2.5 24-Sep-2019 13:25:46
+% Last Modified by GUIDE v2.5 06-Feb-2020 16:29:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -108,6 +108,7 @@ if exist(fileName,'file')
         set(handles.input_save_FLAG,'Value',default.input_save_FLAG);
         
         %Callbacks
+        modepannel_SelectionChangedFcn(handles.bal_mode, eventdata, handles)
         calib_model_path_Callback(handles.calib_model_path, eventdata, handles)
         appPath_Callback(handles.appPath, eventdata, handles)
         output_to_approx_FLAG_Callback(handles.output_to_approx_FLAG, eventdata, handles)
@@ -140,6 +141,13 @@ function runbutton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 uiresume(handles.figure1);
+
+%Software Mode:
+if handles.bal_mode.Value==1
+    outStruct.mode=1; %Balance calibration mode
+elseif handles.gen_mode.Value==1
+    outStruct.mode=2; %General Function Approximation
+end
 
 %Calibration Model Group
 outStruct.calib_model_path=get(handles.calib_model_path,'String');
@@ -187,15 +195,17 @@ app.Path = get(handles.appPath,'String');
 [~,~,appext] = fileparts(app.Path);
 switch appext
     case '.csv'
-        app.Range{1} = [get(handles.a11,'String'),'..',get(handles.a12,'String')];
-        app.CSV(1,:) = a12rc(get(handles.a11,'String'));
-        app.Range{2} = [get(handles.a21,'String'),'..',get(handles.a22,'String')];
-        app.CSV(2,:) = a12rc(get(handles.a21,'String'));
-        app.Range{3} = [get(handles.a31,'String'),'..',get(handles.a32,'String')];
-        app.CSV(3,:) = a12rc(get(handles.a31,'String'));
+        if outStruct.mode==1
+            app.Range{1} = [get(handles.a11,'String'),'..',get(handles.a12,'String')];
+            app.CSV(1,:) = a12rc(get(handles.a11,'String'));
+            app.Range{2} = [get(handles.a21,'String'),'..',get(handles.a22,'String')];
+            app.CSV(2,:) = a12rc(get(handles.a21,'String'));
+            app.Range{3} = [get(handles.a31,'String'),'..',get(handles.a32,'String')];
+            app.CSV(3,:) = a12rc(get(handles.a31,'String'));
+        end
         app.Range{4} = [get(handles.a41,'String'),'..',get(handles.a42,'String')];
         app.CSV(4,:) = a12rc(get(handles.a41,'String'));
-        outStruct.savePathapp = loadCSV(app,outStruct.output_location);
+        outStruct.savePathapp = loadCSV(app,outStruct.output_location,outStruct.mode);
         outStruct.app_create=1; %track if .app file was created
     case '.app'
         outStruct.savePathapp = app.Path;
@@ -261,28 +271,28 @@ global VERSION
 default.version = VERSION;
 
 %Calibration Model Group
-        default.calib_model_path=get(handles.calib_model_path,'String');
-        default.grbf=get(handles.grbf,'Value');
-        %Uncertainty Group
-        default.loadPI=get(handles.loadPI_FLAGcheck,'Value');
-        default.PI_percent_confidence=get(handles.PI_percent_confidence,'String');
-        %Approximation Group
-        default.appPath=get(handles.appPath,'String');
-        default.appRange{1,1}=get(handles.a11,'String');
-        default.appRange{1,2}=get(handles.a12,'String');
-        default.appRange{2,1}=get(handles.a21,'String');
-        default.appRange{2,2}=get(handles.a22,'String');
-        default.appRange{3,1}=get(handles.a31,'String');
-        default.appRange{3,2}=get(handles.a32,'String');
-        default.appRange{4,1}=get(handles.a41,'String');
-        default.appRange{4,2}=get(handles.a42,'String');
-        %Outputs Group
-        default.output_location=get(handles.output_location,'String');
-        default.output_to_approx_FLAG=get(handles.output_to_approx_FLAG,'Value');
-        default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
-        default.excel=get(handles.excel_FLAGcheck,'Value');
-        default.approx_and_PI_print=get(handles.approx_and_PI_print,'Value');
-        default.input_save_FLAG=get(handles.input_save_FLAG,'Value');
+default.calib_model_path=get(handles.calib_model_path,'String');
+default.grbf=get(handles.grbf,'Value');
+%Uncertainty Group
+default.loadPI=get(handles.loadPI_FLAGcheck,'Value');
+default.PI_percent_confidence=get(handles.PI_percent_confidence,'String');
+%Approximation Group
+default.appPath=get(handles.appPath,'String');
+default.appRange{1,1}=get(handles.a11,'String');
+default.appRange{1,2}=get(handles.a12,'String');
+default.appRange{2,1}=get(handles.a21,'String');
+default.appRange{2,2}=get(handles.a22,'String');
+default.appRange{3,1}=get(handles.a31,'String');
+default.appRange{3,2}=get(handles.a32,'String');
+default.appRange{4,1}=get(handles.a41,'String');
+default.appRange{4,2}=get(handles.a42,'String');
+%Outputs Group
+default.output_location=get(handles.output_location,'String');
+default.output_to_approx_FLAG=get(handles.output_to_approx_FLAG,'Value');
+default.subfolder_FLAG=get(handles.subfolder_FLAG,'Value');
+default.excel=get(handles.excel_FLAGcheck,'Value');
+default.approx_and_PI_print=get(handles.approx_and_PI_print,'Value');
+default.input_save_FLAG=get(handles.input_save_FLAG,'Value');
 
 [CurrentPath,~,~] = fileparts(mfilename('fullpath'));
 fileName = [CurrentPath,filesep,'default_approx.ini'];
@@ -377,8 +387,19 @@ try
     else
         %set(handles.appSave, 'Enable', 'off');
         if strcmp(ext,'.app')
+            lastwarn('') % Clear last warning message
+            warning('off','MATLAB:load:variableNotFound');
             load(get(hObject,'String'), '-mat', 'app');
-            splitrange = split(app.Range,'..');
+            if handles.bal_mode.Value==1
+                load(get(hObject,'String'), '-mat', 'excessVecapprox','loadCapacitiesapprox','natzerosapprox','series2approx','seriesapprox');
+                splitrange = split(app.Range,'..');
+            else
+                load(get(hObject,'String'), '-mat', 'excessVecapprox');
+                splitrange=cell(1,4,2);
+                splitrange(1,4,:) = split(app.Range(4),'..');
+            end
+            warning('on','MATLAB:load:variableNotFound');
+            assert(isempty(lastwarn)); %Throw error if warning present
         else
             splitrange=cell(1,4,2);
         end
@@ -393,9 +414,9 @@ try
         set(handles.a42, 'Enable', 'off', 'String', splitrange{1,4,2});
     end
     output_to_approx_FLAG_Callback(handles.output_to_approx_FLAG, eventdata, handles)
-
+    
 catch
-    disp('Problem occurred while reading Approximation file');
+    disp('Problem occurred while reading Approximation file. Check Application Mode.');
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -437,7 +458,7 @@ function appSave_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-function savePath = loadCSV(cva,output_location)
+function savePath = loadCSV(cva,output_location,mode)
 % This function pre-loads the csv's and saves the data as .mat for quicker
 % reading.
 % Input: type - String that changes depending on whether loading
@@ -446,20 +467,22 @@ switch cva.type
     case 'approximate'
         app = cva;
         
-        loadCapacitiesapprox =    csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
-        natzerosapprox =          csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
+        if mode==1
+            loadCapacitiesapprox =    csvread(app.Path,app.CSV(1,1),app.CSV(1,2),app.Range{1});
+            natzerosapprox =          csvread(app.Path,app.CSV(2,1),app.CSV(2,2),app.Range{2});
+            
+            %Read series labels using 'readtable': JRP 19 June 19
+            A=extractAfter(app.Range{3},'..');
+            bottom=str2double(regexp(A,'\d*','Match'));
+            opts=delimitedTextImportOptions('DataLines',[app.CSV(3,1)+1 bottom]);
+            series_bulk=readtable(app.Path,opts);
+            seriesapprox=str2double(table2array(series_bulk(:,app.CSV(3,2)+1)));
+            series2approx=table2array(series_bulk(:,app.CSV(3,2)+2));
+            pointIDapprox=table2array(series_bulk(:,app.CSV(3,2)));
+            clear A bottom opts series_bulk
+            %         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
+        end
         
-       %Read series labels using 'readtable': JRP 19 June 19
-        A=extractAfter(app.Range{3},'..');
-        bottom=str2double(regexp(A,'\d*','Match'));
-        opts=delimitedTextImportOptions('DataLines',[app.CSV(3,1)+1 bottom]);
-        series_bulk=readtable(app.Path,opts);
-        seriesapprox=str2double(table2array(series_bulk(:,app.CSV(3,2)+1)));
-        series2approx=table2array(series_bulk(:,app.CSV(3,2)+2));
-        pointIDapprox=table2array(series_bulk(:,app.CSV(3,2)));
-        clear A bottom opts series_bulk 
-%         seriesapprox =            csvread(app.Path,app.CSV(3,1),app.CSV(3,2),app.Range{3});
-  
         excessVecapprox =         csvread(app.Path,app.CSV(4,1),app.CSV(4,2),app.Range{4});
         
         try
@@ -467,7 +490,7 @@ switch cva.type
             all_text1 = textscan(file,'%s','Delimiter','\n'); %read in all text
             fclose(file); %close file
             %Eliminate rows with ";" in first column
-            lastrow=a12rc(extractAfter(app.Range{3},".."));
+            lastrow=a12rc(extractAfter(app.Range{4},".."));
             all_text_points=all_text1{1}(app.CSV(4,1)+1:lastrow(1)+1);
             for i=1:size(all_text_points,1)
                 all_text_points_split(i,:)=cellstr(strsplit(string(all_text_points(i)),',','CollapseDelimiters',false)); %Extract row with labels
@@ -476,9 +499,11 @@ switch cva.type
             ignore_row=find(contains(first_col,';')); %Find rows with semicolons in the first column
             
             excessVecapprox(ignore_row,:)=[];
-            pointIDapprox(ignore_row,:)=[];
-            seriesapprox(ignore_row,:)=[];
-            series2approx(ignore_row,:)=[];
+            if mode==1
+                pointIDapprox(ignore_row,:)=[];
+                seriesapprox(ignore_row,:)=[];
+                series2approx(ignore_row,:)=[];
+            end
         catch
             fprintf('\n UNABLE TO REMOVE ROWS FLAGGED WITH ";" FROM INPUT FILE \n')
         end
@@ -487,7 +512,7 @@ switch cva.type
         fileNameapprox = [appName,'.app'];
         savePathapprox=fullfile(output_location,fileNameapprox);
         
-        clear cva appName CurrentPath
+        clear cva appName CurrentPath all_text1 all_text_points all_text_points_split ans first_col i lastrow
         save(savePathapprox);
         savePath = savePathapprox;
 end
@@ -659,9 +684,9 @@ if get(hObject,'Value') == 0
     set(handles.percent_confidence_text,'Enable','off');
     set(handles.PI_percent_confidence,'Enable','off');
 else
-     set(handles.approx_and_PI_print,'Enable','on');
-     set(handles.percent_confidence_text,'Enable','on');
-     set(handles.PI_percent_confidence,'Enable','on');
+    set(handles.approx_and_PI_print,'Enable','on');
+    set(handles.percent_confidence_text,'Enable','on');
+    set(handles.PI_percent_confidence,'Enable','on');
 end
 
 
@@ -724,7 +749,7 @@ else
     approx_path=get(handles.appPath,'String');
     if isempty(approx_path)==0
         [approx_path,~,~] = fileparts(approx_path);
-%         approx_path=extractBefore(approx_path,find(approx_path == '\', 1, 'last'));
+        %         approx_path=extractBefore(approx_path,find(approx_path == '\', 1, 'last'));
     else
         approx_path=pwd;
     end
@@ -861,3 +886,49 @@ function input_save_FLAG_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of input_save_FLAG
+
+
+% --- Executes when selected object is changed in modepannel.
+function modepannel_SelectionChangedFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in modepannel
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if handles.bal_mode.Value==1 %Change GUI for balance Calibration
+    %Approximation pannel changes
+    handles.app_l1.Visible='On';
+    handles.app_l2.Visible='On';
+    handles.app_l3.Visible='On';
+    handles.app_l4.String='Voltage Array:';
+    handles.a11.Visible='On';
+    handles.a12.Visible='On';
+    handles.a21.Visible='On';
+    handles.a22.Visible='On';
+    handles.a31.Visible='On';
+    handles.a32.Visible='On';
+    %Uncertainty pannel options
+    handles.loadPI_FLAGcheck.String='Calculate Prediction Interval of Loads';
+    %Output pannel options
+    handles.excel_FLAGcheck.String='Print Load Approximation csv Files';
+    handles.approx_and_PI_print.String='Print Load w/ Prediction Interval xlsx File';
+    
+elseif handles.gen_mode.Value==1
+    %Approximation pannel changes
+    handles.app_l1.Visible='Off';
+    handles.app_l2.Visible='Off';
+    handles.app_l3.Visible='Off';
+    handles.app_l4.String='Input Array:';
+    handles.a11.Visible='Off';
+    handles.a12.Visible='Off';
+    handles.a21.Visible='Off';
+    handles.a22.Visible='Off';
+    handles.a31.Visible='Off';
+    handles.a32.Visible='Off';
+    %Uncertainty pannel options
+    handles.loadPI_FLAGcheck.String='Calculate Prediction Interval of Outputs';
+    %Output pannel options
+    handles.excel_FLAGcheck.String='Print Output Approximation csv Files';
+    handles.approx_and_PI_print.String='Print Output w/ Prediction Interval xlsx File';
+end
+if ~isempty(handles.appPath.String)
+    appPath_Callback(handles.appPath, eventdata, handles);
+end

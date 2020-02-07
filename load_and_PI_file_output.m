@@ -18,11 +18,7 @@ function []=load_and_PI_file_output(aprxINminGZ,loadPI,pointID,series1,series2,l
 warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission') %Surpress warnings
 description=[upper(section), ' APPROXIMATION WITH PREDICTION INTERVAL']; %Text description for command window output
 try %Check current section and determine filename accordingly
-    if contains(section,'VALID')==1 %If in validation section
-        filename=[section,' Tare Corrected Load Approximation w PI.xlsx'];
-    elseif contains(section,'APPROX')==1 %If in approximation section
-        filename=[section, ' Global Load Approximation w PI.xlsx'];
-    end
+    filename=[section,' Approximation w PI.xlsx'];
     fullpath=fullfile(output_location,filename); %Full path for file output
     
     top_row=[{'Point ID','Series1','Series2'},loadlist]; %Top label row
@@ -49,20 +45,16 @@ catch ME %Catch if unable to write to xlsx
     %attempt to print only approximation .csv file
     
     %Determine filename
-    if contains(section,'VALID')==1 %If in validation section
-        filename=[section,' Tare Corrected Load Approximation.csv'];
-    elseif contains(section,'APPROX')==1 %If in approximation section
-        filename=[section, ' Global Load Approximation.csv'];
-    end
+    filename=[section,' Approximation.csv'];
     
     approxinput=aprxINminGZ; %Load approximation output
-    description=[upper(section),' ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION']; %Description for command window output
+    description=[upper(section),' APPROXIMATION']; %Description for command window output
     print_approxcsv(filename,approxinput,description,pointID,series1,series2,loadlist,output_location); %Write approximation output file
 end
 
 
 if xlsx==1 %If xlsx file was written
-
+    
     try %Rename excel sheets and delete extra sheets, only possible on PC
         [~,sheets]=xlsfinfo(fullpath);
         s = what;
@@ -78,8 +70,13 @@ if xlsx==1 %If xlsx file was written
             end
         end
         
-        ewb.Worksheets.Item(1).Name = 'Load Approximation'; %rename 1st sheet
-        ewb.Worksheets.Item(2).Name = 'Load Approximation w_PI'; %rename 2nd sheet
+        if contains(section,'Load')==1
+            ewb.Worksheets.Item(1).Name = 'Load Approximation'; %rename 1st sheet
+            ewb.Worksheets.Item(2).Name = 'Load Approximation w_PI'; %rename 2nd sheet
+        else
+            ewb.Worksheets.Item(1).Name = 'Output Approximation'; %rename 1st sheet
+            ewb.Worksheets.Item(2).Name = 'Output Approximation w_PI'; %rename 2nd sheet
+        end
         ewb.Worksheets.Item(3).Name = 'Prediction Interval'; %rename 3rd sheet
         
         ewb.Save % # save to the same file

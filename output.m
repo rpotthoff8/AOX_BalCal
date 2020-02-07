@@ -1,4 +1,4 @@
-function [] = output(section,FLAGS,targetRes,loadCapacities,fileName,numpts,nseries0,tares,tares_STDDEV,loadlist,series,excessVec0,voltdimFlag,loaddimFlag,voltagelist,reslist,numBasis,pointID,series2,output_location,REPORT_NO,algebraic_model,uniqueOut)
+function [] = output(section,FLAGS,targetRes,fileName,numpts,nseries0,loadlist,series,excessVec0,voltdimFlag,loaddimFlag,voltagelist,reslist,numBasis,pointID,series2,output_location,REPORT_NO,algebraic_model,uniqueOut)
 %Function creates all the outputs for the calibration and validation ALG
 %and GRBF sections.  First common section runs for all sections.  Following
 %sections run for specific section outputs
@@ -48,46 +48,53 @@ for k=1:length(targetRes(1,:))
     minTargets(k) = min(targetRes(:,k));
     tR2(k) = targetRes(:,k)'*targetRes(:,k);     % AJM 6_12_19
 end
-perGoop = 100*(goop./loadCapacities);
 davariance = var(targetRes);
 gee = mean(targetRes);
 standardDev10 = std(targetRes);
 standardDev = standardDev10';
-stdDevPercentCapacity = 100*(standardDev'./loadCapacities);
 ratioGoop = goop./standardDev';
 ratioGoop(isnan(ratioGoop)) = realmin;
 twoSigma = standardDev'.*2;
+if FLAGS.mode==1
+    perGoop = 100*(goop./loadCapacities);
+    stdDevPercentCapacity = 100*(standardDev'./loadCapacities);
+end
 
 %% START PRINT OUT PERFORMANCE INFORMATION TO CSV or command window
 if FLAGS.print == 1 || FLAGS.disp==1
     %Initialize cell arrays
     empty_cells=cell(1,loaddimFlag+1);
-    Header_cells=cell(9,loaddimFlag+1);
+    Header_cells=cell(10,loaddimFlag+1);
     output_name=cell(1,loaddimFlag+1);
     load_line=[cell(1),loadlist(1:loaddimFlag)];
     
     %Define Header section
     Header_cells{1,1}=char(strcat(section, {' '},'Results'));
-    Header_cells{2,1}=char(strcat('REPORT NO:',{' '},REPORT_NO));
-    Header_cells{3,1}=char(strcat(strtok(section),{' '}, 'Input File:',{' '},fileName));
+    if FLAGS.mode==1
+        Header_cells{2,1}='Software Mode: FORCE BALANCE CALIBRATION';
+    elseif FLAGS.mode==2
+        Header_cells{2,1}='Software Mode: GENERAL FUNCTION APPROXIMATION';
+    end
+    Header_cells{3,1}=char(strcat('REPORT NO:',{' '},REPORT_NO));
+    Header_cells{4,1}=char(strcat(strtok(section),{' '}, 'Input File:',{' '},fileName));
     if FLAGS.balOut == 1
-        Header_cells{4,1}='Calibration Outliers Flagged: TRUE';
+        Header_cells{5,1}='Calibration ALG Outliers Flagged: TRUE';
     else
-        Header_cells{4,1}='Calibration Outliers Flagged: FALSE';
+        Header_cells{5,1}='Calibration ALG Outliers Flagged: FALSE';
     end
     if FLAGS.zeroed == 1
-        Header_cells{5,1}='Calibration Outliers Removed: TRUE';
+        Header_cells{6,1}='Calibration ALG Outliers Removed: TRUE';
     else
-        Header_cells{5,1}='Calibration Outliers Removed: FALSE';
+        Header_cells{6,1}='Calibration ALG Outliers Removed: FALSE';
     end
-    Header_cells{6,1}=char(strcat('Algebraic Model Used:',{' '},algebraic_model));
-    Header_cells{7,1}=char(strcat('Number of Datapoints:',{' '},string(numpts)));
+    Header_cells{7,1}=char(strcat('Algebraic Model Used:',{' '},algebraic_model));
+    Header_cells{8,1}=char(strcat('Number of Datapoints:',{' '},string(numpts)));
     if FLAGS.balCal == 2
-        Header_cells{8,1}='GRBF Addition Performed: TRUE';
-        Header_cells{9,1}=char(strcat('Number GRBFs:',{' '},string(numBasis)));
+        Header_cells{9,1}='GRBF Addition Performed: TRUE';
+        Header_cells{10,1}=char(strcat('Number GRBFs:',{' '},string(numBasis)));
     else
-        Header_cells{8,1}='GRBF Addition Performed: FALSE';
-        Header_cells{9,1}='Number GRBFs: N/A';
+        Header_cells{9,1}='GRBF Addition Performed: FALSE';
+        Header_cells{10,1}='Number GRBFs: N/A';
     end
     csv_output=[Header_cells;empty_cells];
     %Command window printing;
@@ -99,39 +106,48 @@ if FLAGS.print == 1 || FLAGS.disp==1
         end
         fprintf('\n')
     end
-    
-    %Statistics output section
-    output_name{1}='Percent Load Capacity of Residual Standard Deviation';
-    section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+      
+    %Call outputs 'Load' for balance calibration, otherwise only 'Load'
+    if FLAGS.mode==1
+        outLabel='Load';
+    else
+        outLabel='Output';
     end
     
-    output_name{1}='Tares';
-    section_out=[{'Series'},loadlist(1:loaddimFlag);num2cell([(1:nseries0)', tares])];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
+    if FLAGS.mode==1
+        %Statistics output section
+        output_name{1}='Percent Load Capacity of Residual Standard Deviation';
+        section_out=[load_line;cell(1),num2cell(stdDevPercentCapacity)];
+        csv_output=[csv_output;output_name;section_out;empty_cells];
+        %Command window printing;
+        if FLAGS.disp==1
+            fprintf(output_name{:})
+            fprintf('\n')
+            disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+        end
+        
+        output_name{1}='Tares';
+        section_out=[{'Series'},loadlist(1:loaddimFlag);num2cell([(1:nseries0)', tares])];
+        csv_output=[csv_output;output_name;section_out;empty_cells];
+        %Command window printing;
+        if FLAGS.disp==1
+            fprintf(output_name{:})
+            fprintf('\n')
+            disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
+        end
+        
+        output_name{1}='Tares Standard Deviation';
+        section_out=[{'Series'},loadlist(1:loaddimFlag);num2cell([(1:nseries0)', tares_STDDEV])];
+        csv_output=[csv_output;output_name;section_out;empty_cells];
+        %Command window printing;
+        if FLAGS.disp==1
+            fprintf(output_name{:})
+            fprintf('\n')
+            disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
+        end
     end
     
-    output_name{1}='Tares Standard Deviation';
-    section_out=[{'Series'},loadlist(1:loaddimFlag);num2cell([(1:nseries0)', tares_STDDEV])];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,1:end),'VariableNames',section_out(1,1:end)))
-    end
-    
-    output_name{1}='Mean Load Residual Squared';
+    output_name{1}=['Mean ' outLabel,' Residual Squared'];
     section_out=[load_line;cell(1),num2cell((resSquare'./numpts)')];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -141,17 +157,19 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Percent Load Capacity of Maximum Residual';
-    section_out=[load_line;cell(1),num2cell(perGoop)];
-    csv_output=[csv_output;output_name;section_out;empty_cells];
-    %Command window printing;
-    if FLAGS.disp==1
-        fprintf(output_name{:})
-        fprintf('\n')
-        disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+    if FLAGS.mode==1
+        output_name{1}='Percent Load Capacity of Maximum Residual';
+        section_out=[load_line;cell(1),num2cell(perGoop)];
+        csv_output=[csv_output;output_name;section_out;empty_cells];
+        %Command window printing;
+        if FLAGS.disp==1
+            fprintf(output_name{:})
+            fprintf('\n')
+            disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
+        end
     end
     
-    output_name{1}='Maximum Load Residual';
+    output_name{1}=['Maximum ',outLabel,' Residual'];
     section_out=[load_line;cell(1),num2cell(maxTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -161,7 +179,7 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Minimum Load Residual';
+    output_name{1}=['Minimum ',outLabel,' Residual'];
     section_out=[load_line;cell(1),num2cell(minTargets)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -171,7 +189,7 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Load Residual 2*(standard deviation)';
+    output_name{1}=[outLabel,' Residual 2*(standard deviation)'];
     section_out=[load_line;cell(1),num2cell(twoSigma)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -181,7 +199,7 @@ if FLAGS.print == 1 || FLAGS.disp==1
         disp(cell2table(section_out(2:end,2:end),'VariableNames',section_out(1,2:end)))
     end
     
-    output_name{1}='Ratio (Maximum Load Residual)/(Load Residual Standard Deviation)';
+    output_name{1}=['Ratio (Maximum ',outLabel,' Residual)/(',outLabel,' Residual Standard Deviation)'];
     section_out=[load_line;cell(1),num2cell(ratioGoop)];
     csv_output=[csv_output;output_name;section_out;empty_cells];
     %Command window printing;
@@ -299,8 +317,13 @@ end
 
 %% Residual vs datapoint plot
 if FLAGS.res == 1
-    figure('Name',char(strcat(section,{' '},'Model; Residuals of Load Versus Data Point Index')),'NumberTitle','off','WindowState','maximized')
-    plotResPages(series, targetRes, loadCapacities, stdDevPercentCapacity, loadlist)
+    if FLAGS.mode==1
+         figure('Name',char(strcat(section,{' '},'Model; Residuals of Load Versus Data Point Index')),'NumberTitle','off','WindowState','maximized')
+        plotResPages(series, targetRes, loadlist, stdDevPercentCapacity, loadCapacities)
+    else
+        figure('Name',char(strcat(section,{' '},'Model; Residuals of Output Versus Data Point Index')),'NumberTitle','off','WindowState','maximized')
+        plotResPages(series, targetRes, loadlist, standardDev)
+    end
 end
 
 %% OUTPUT HISTOGRAM PLOTS
@@ -365,138 +388,70 @@ if strcmp(section,{'Calibration Algebraic'})==1
                 fprintf('\n')
             end
         end
-              
+        
     end
     %%% ANOVA Stats AJM 6_8_19
     
-    if FLAGS.calc_balfit==1
-        %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
-        totalnum = size(balfitxcalib,1);
-        totalnumcoeffs = [1:totalnum];
-        totalnumcoeffs2 = [2:totalnum+1];
-        dsof = numpts-nterms-1;
+    if FLAGS.BALFIT_Matrix==1
+        [leftColumn_coeff,~]=customMatrix_labels(loadlist,voltagelist,voltdimFlag,loaddimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
         
-        balfitaprxIN = balfitcomIN*balfitxcalib;
-        balfittargetRes = balfittargetMatrix-balfitaprxIN;
+        Header_cells=cell(15,voltdimFlag);
+        Coeff_cells=cell(numel(leftColumn_coeff),voltdimFlag);
+        leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_OUT_CAPACITY'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'}];
+        leftColumn=[leftColumn_head;leftColumn_coeff];
         
-        for k=1:length(balfittargetRes(1,:))
-            [balfitgoop(k),balfitkstar(k)] = max(abs(balfittargetRes(:,k)));
-            balfitgoopVal(k) = abs(balfittargetRes(kstar(k),k));
-            balfittR2(k) = balfittargetRes(:,k)'*balfittargetRes(:,k);     % AJM 6_12_19
-        end
+        Header_cells(1,1)={'REGRESSION_COEFFICIENT_MATRIX'};
+        Header_cells(2,1)={balance_type};
+        Header_cells(3,1)={description};
+        Header_cells(4,1)={'AOX_BalCal'};
+        Header_cells(5,1)={REPORT_NO};
+        Header_cells(6,:)=voltagelist(1:voltdimFlag);
+        Header_cells(7,:)=voltunits(1:voltdimFlag)';
+        Header_cells(8,:)=num2cell(min(excessVec0));
+        Header_cells(9,:)=num2cell(max(excessVec0));
+        Header_cells(10,:)=num2cell(gageCapacities);
         
-        balfitdavariance = var(balfittargetRes);
-        balfitgee = mean(balfittargetRes);
-        balfitstandardDev10 = std(balfittargetRes);
-        balfitstandardDev = balfitstandardDev10';
-        
-        voltagestatlist = {'Voltage', 'Sum_Sqrs', 'PRESS_Stat', 'DOF', 'Mean_Sqrs', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
-        balfitregresslist = {'Term_Index','Term_Name', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
-        
-        %balfitinterceptlist = ['Intercept', '0', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'];
-        balfitinterceptlist = [1, 0, 0, 0, 0, 0, 0];
-        
-        BALFIT_STAT_VOLTAGE_1=cell(loaddimFlag,1);
-        BALFIT_REGRESS_COEFFS_1=cell(loaddimFlag,1);
-        Term_Names=customMatrix_labels(loadlist,voltagelist,voltdimFlag,loaddimFlag,FLAGS.model,'loads'); %Get label names for custom equation matrix
-        if FLAGS.anova==1
-            for k=1:loaddimFlag
-                BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig;
-                balfitANOVA01(:,:) = [totalnumcoeffs2; balfitANOVA(k).beta'; ANOVA(k).beta_CI'; balfitANOVA(k).T'; balfitANOVA(k).p_T'; balfitANOVA(k).VIF'; 1.0*balfitANOVA(k).sig']';
-                balfitANOVA_intercept1(1,:) = balfitinterceptlist(1,:);
-                balfitANOVA1([1:nterms+1],:) = num2cell([balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)]);
-                toplayer2(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
-                BALFIT_STAT_VOLTAGE_1{k} = array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10));
-                BALFIT_REGRESS_COEFFS_1{k} = cell2table([balfitANOVA1(1:nterms+1,1),[{'INTERCEPT'};Term_Names],balfitANOVA1(1:nterms+1,2:end)],'VariableNames',balfitregresslist);
-            end
+        for chan_i=1:loaddimFlag
+            Header_cells(11,1)=loadlist(chan_i);
+            Header_cells(12,1)=loadunits(chan_i);
+            Header_cells(13,1)=num2cell(min(targetMatrix0(:,chan_i)));
+            Header_cells(14,1)=num2cell(max(targetMatrix0(:,chan_i)));
+            Header_cells(15,1)=num2cell(loadCapacities(chan_i));
+            Coeff_cells(:,1)=num2cell(coeff(:,chan_i));
             
-            if FLAGS.BALFIT_ANOVA==1
-                warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
-                filename = 'BALFIT_ANOVA_STATS.xlsx';
-                fullpath=fullfile(output_location,filename);
-                try
-                    delete(char(fullpath))
-                    for k=1:loaddimFlag
-                        writetable(BALFIT_STAT_VOLTAGE_1{k},fullpath,'Sheet',k,'Range','A1');
-                        writetable(BALFIT_REGRESS_COEFFS_1{k},fullpath,'Sheet',k,'Range','A4');
-                    end
-                    fprintf('\nBALFIT ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n');
-                    %filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
-                    %dlmwrite(filename,BALFIT_RECOMM_ALG_EQN,'precision','%.8f');
-                catch ME
-                    fprintf('\nUNABLE TO PRINT BALFIT ANOVA STATISTICS FILE. ');
-                    if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
-                        fprintf('ENSURE "'); fprintf(char(filename)); fprintf('" IS NOT OPEN AND TRY AGAIN');
-                    end
-                    fprintf('\n')
-                end
-                warning('on',  'MATLAB:DELETE:Permission'); warning('on', 'MATLAB:xlswrite:AddSheet'); warning('on', 'MATLAB:DELETE:FileNotFound')
-            end
-            
-        end
-        
-        if FLAGS.BALFIT_Matrix==1
-            [leftColumn_coeff,voltRow]=customMatrix_labels(loadlist,voltagelist,voltdimFlag,loaddimFlag,FLAGS.model,'loads'); %Get label names for custom equation matrix
-            Header_cells=cell(18,loaddimFlag);
-            dash_row=cell(1,loaddimFlag);
-            dash_row(:,:)={'- - - - - - - -'};
-            dash_row{1,1}=repmat('- ',1,round(15*loaddimFlag/2));
-            Header_cells(1,1)={'DATA_REDUCTION_MATRIX_IN_AMES_FORMAT'};
-            Header_cells(2,1)={balance_type};
-            Header_cells(3,1)={description};
-            Header_cells(4,1)={'AOX_BalCal'};
-            Header_cells(5,1)={REPORT_NO};
-            Header_cells(6,1)={'Primary Load Iteration Method'};
-            Header_cells(7,:)=loadlist(1:loaddimFlag);
-            Header_cells(8,:)=loadunits(1:loaddimFlag);
-            Header_cells(9,:)=num2cell(min(targetMatrix0));
-            Header_cells(10,:)=num2cell(max(targetMatrix0));
-            Header_cells(11,:)=num2cell(loadCapacities);
-            Header_cells(12,:)=voltRow;
-            Header_cells(13,:)=voltunits(1:loaddimFlag)';
-            Header_cells(14,:)=num2cell(min(excessVec0));
-            Header_cells(15,:)=num2cell(max(excessVec0));
-            Header_cells(16,:)={'DEFINED'};
-            Header_cells(17:18,:)=num2cell(balfit_regress_matrix(1:2,:));
-            leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'ITERATION_METHOD'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_SENSITIVITY'};{'NATURAL_ZERO'};{'INTERCEPT'}];
-            leftColumn=[leftColumn_head;{'D0[TRANSPONSE (C1INV)]'};voltRow;{'D1[MATRIX IS NOT USED]'};leftColumn_coeff(1:loaddimFlag);'D2[TRANSPOSE(C1INVC2)]';leftColumn_coeff(loaddimFlag+1:end)];
-            D0=balfit_regress_matrix(3:2+loaddimFlag,:);
-            D1=balfit_regress_matrix(3+loaddimFlag:2+2*loaddimFlag,:);
-            D2=balfit_regress_matrix(3+2*loaddimFlag:end,:);
-            
-            content=[Header_cells;dash_row;num2cell(D0);dash_row;num2cell(D1);dash_row;num2cell(D2)];
+            content=[Header_cells;Coeff_cells];
             balfit_matrix=[leftColumn,content];
             
             % Text file to output data
-            filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.txt';
+            filename = [loadlist{chan_i},'_BALFIT_REGRESSION_COEFFICIENT_MATRIX_IN_AMES_FORMAT.txt'];
             fullpath=fullfile(output_location,filename);
-            description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
+            description=[loadlist{chan_i},' BALFIT REGRESSION COEFFICIENT MATRIX IN AMES FORMAT'];
             
             try
                 % Open file for writing
                 fid = fopen(fullpath, 'w');
-                header_lines=[1:6];
-                text_lines=[7,8,12,13,16];
-                dash_lines=[19,19+loaddimFlag+1,19+2*loaddimFlag+2];
+                header_lines=[1:5];
+                text_lines=[6,7,11,12];
+                loadCap_lines=15;
+                print_through=sum(~cellfun(@isempty,content),2);
                 
                 for i=1:size(content,1) %Printing to text file
-                    fprintf(fid,'%23s',leftColumn{i});
+                    fprintf(fid,'%18s',leftColumn{i});
                     if ismember(i,header_lines) %Printing header cells
                         fprintf(fid, ' %s \r\n', content{i,1});
                     elseif ismember(i,text_lines) %Printing text only lines
-                        for j=1:size(content,2)
+                        for j=1:print_through(i)
                             fprintf(fid, ' %14s', content{i,j});
                         end
                         fprintf(fid,'\r\n');
-                    elseif ismember(i,dash_lines) %Printing dashed break lines
-                        dash_length=num2str(15*loaddimFlag);
-                        dash_format=" %"+dash_length+"s";
-                        for j=1:1
-                            fprintf(fid, char(dash_format), content{i,1});
+                    elseif ismember(i,loadCap_lines) %Printing load capacity line
+                        for j=1:print_through(i)
+                            A_str = sprintf('%.3f',content{i,j});
+                            fprintf(fid, ' %14s', A_str);
                         end
                         fprintf(fid,'\r\n');
                     else %Printing numerical results in scientific notation
-                        for j=1:size(content,2)
+                        for j=1:print_through(i)
                             A_str = sprintf('% 10.6e',content{i,j});
                             exp_portion=extractAfter(A_str,'e');
                             num_portion=extractBefore(A_str,'e');
@@ -520,12 +475,18 @@ if strcmp(section,{'Calibration Algebraic'})==1
             end
         end
     end
+
     
     if FLAGS.excel == 1
         %Output calibration load approximation
-        filename = 'CALIB ALG Tare Corrected Load Approximation.csv';
+        if FLAGS.mode==1
+            filename = 'CALIB ALG Tare Corrected Load Approximation.csv';
+            description='CALIBRATION ALGEBRAIC MODEL LOAD APPROXIMATION';
+        else
+            filename = 'CALIB ALG Output Approximation.csv';
+            description='CALIBRATION ALGEBRAIC MODEL OUTPUT APPROXIMATION';
+        end
         approxinput=aprxIN;
-        description='CALIBRATION ALGEBRAIC MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
     end
     
@@ -557,9 +518,14 @@ if strcmp(section,{'Calibration GRBF'})==1
         
         
         %Output calibration load approximation
-        filename = 'CALIB GRBF Tare Corrected Load Approximation.csv';
+        if FLAGS.mode==1
+            filename = 'CALIB GRBF Tare Corrected Load Approximation.csv';
+            description='CALIBRATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
+        else
+            filename = 'CALIB GRBF Output Approximation.csv';
+            description='CALIBRATION ALGEBRAIC+GRBF MODEL OUTPUT APPROXIMATION';
+        end
         approxinput=aprxINminTARE2;
-        description='CALIBRATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
         
         %Output GRBF Widths
@@ -617,14 +583,23 @@ end
 if strcmp(section,{'Validation Algebraic'})==1
     %OUTPUTING APPROXIMATION WITH PI FILE
     if FLAGS.approx_and_PI_print==1
-        section='VALID ALG';
+        if FLAGS.mode==1
+            section='VALID ALG Tare Corrected Load';
+        else
+            section='VALID ALG Output';
+        end
         load_and_PI_file_output(aprxINminTAREvalid,loadPI_valid,pointID,series,series2,loadlist,output_location,section)
         
         %OUTPUTING APPROXIMATION FILE
     elseif FLAGS.excel == 1
-        filename = 'VALID ALG Tare Corrected Load Approximation.csv';
+        if FLAGS.mode==1
+            filename = 'VALID ALG Tare Corrected Load Approximation.csv';
+            description='VALIDATION ALGEBRAIC MODEL LOAD APPROXIMATION';
+        else
+            filename = 'VALID ALG Output Approximation.csv';
+            description='VALIDATION ALGEBRAIC MODEL OUTPUT APPROXIMATION';            
+        end
         approxinput=aprxINminTAREvalid;
-        description='VALIDATION ALGEBRAIC MODEL GLOBAL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
     end
 end
@@ -633,15 +608,25 @@ end
 if strcmp(section,{'Validation GRBF'})==1
     %OUTPUTING APPROXIMATION WITH PI FILE
     if FLAGS.approx_and_PI_print==1
-        section='VALID GRBF';
+        if FLAGS.mode==1
+            section='VALID GRBF Tare Corrected Load';
+        else
+            section='VALID GRBF Output';
+        end
         load_and_PI_file_output(aprxINminTARE2valid,loadPI_valid_GRBF,pointID,series,series2,loadlist,output_location,section)
         
         
     elseif FLAGS.excel == 1
         %Output validation load approximation
-        filename = 'VALID GRBF Tare Corrected Load Approximation.csv';
+        if FLAGS.mode==1
+            filename = 'VALID GRBF Tare Corrected Load Approximation.csv';
+            description='VALIDATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
+        else
+            filename = 'VALID GRBF Output Approximation.csv';
+            description='VALIDATION ALGEBRAIC+GRBF MODEL OUTPUT APPROXIMATION';            
+        end
+
         approxinput=aprxINminTARE2valid;
-        description='VALIDATION ALGEBRAIC+GRBF MODEL LOAD APPROXIMATION';
         print_approxcsv(filename,approxinput,description,pointID,series,series2,loadlist,output_location);
         
     end
