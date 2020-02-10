@@ -430,18 +430,9 @@ if FLAGS.forward_recEqn==1
 end
 
 %% Resume calibration
-if FLAGS.tare_intercept==1
-    mean_Term_series=zeros(max(series),size(comIN,2));
-    for i=1:max(series)
-        mean_Term_series(i,2:end)=mean(comIN(series==i,2:end),1); %Determine mean for each input variable in series
-    end
-    comIN_TareC=comIN-mean_Term_series(series,:);
-else
-    comIN_TareC=comIN;
-end
 
 %Calculate xcalib (coefficients)
-[xcalib, ANOVA] = calc_xcalib(comIN_TareC       ,targetMatrix       ,series,...
+[xcalib, ANOVA] = calc_xcalib(comIN       ,targetMatrix       ,series,...
     nterms,nseries0,loaddimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
 
 % APPROXIMATION
@@ -458,6 +449,35 @@ else
     taresAllPoints=zeros(size(checkit));
     taretalstd=zeros(size(checkit));
 end
+
+
+tare_iterate=1;
+num_iterate=200;
+if tare_iterate==1
+    targetMatrix_tareC=targetMatrix+taresAllPoints;
+    for i=1:num_iterate
+        %Calculate xcalib (coefficients)
+        [xcalib, ANOVA] = calc_xcalib(comIN       ,targetMatrix_tareC       ,series,...
+            nterms,nseries0,loaddimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
+        
+        % APPROXIMATION
+        % define the approximation for inputs minus global zeros (global load
+        % approximation)
+        aprxIN = comIN0*xcalib;
+        aprxINminGZ=aprxIN;
+        
+        checkit=aprxIN-targetMatrix_tareC;
+        if FLAGS.tare_intercept==1 %If including Tare loads
+            % SOLVE FOR TARES BY TAKING THE MEAN
+            [taresAllPoints_temp,taretalstd] = meantare(series,checkit);
+        end
+
+        targetMatrix_tareC=targetMatrix_tareC+taresAllPoints_temp;
+        
+    end
+    taresAllPoints=targetMatrix_tareC-targetMatrix;
+end
+
 tares     = taresAllPoints(s_1st,:);
 tares_STDDEV = taretalstd(s_1st,:);
 
@@ -814,7 +834,7 @@ if FLAGS.balCal == 2
                     
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-                    rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
+%                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
                     
                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
                         comIN0_RBF_VIFtest(:,end)=rbfINminGZ_temp; %Define input matrix ('X') with new RBF, algebraic terms, and previous RBFs
@@ -890,19 +910,9 @@ if FLAGS.balCal == 2
             calc_channel=not(self_Terminate); %Calculate channels that have not been terminated
         end
         nterms_RBF=nterms+u*loaddimFlag; %New number of terms to solve for
-        
-        if FLAGS.tare_intercept==1
-            mean_Term_series_RBF=zeros(max(series),size(comIN0_RBF,2));
-            for i=1:max(series)
-                mean_Term_series_RBF(i,2:end)=mean(comIN0_RBF(series==i,2:end),1); %Determine mean for each input variable in series
-            end
-            comIN_TareC_RBF=comIN0_RBF-mean_Term_series_RBF(series,:);
-        else
-            comIN_TareC_RBF=comIN0_RBF;
-        end
-        
+               
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
-        [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN_TareC_RBF,targetMatrix0,series0,...
+        [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
         
         if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run for channels that have self terminated
@@ -1172,6 +1182,43 @@ if FLAGS.balCal == 2
         resStdHist(u+1,:)=std(targetRes2);
     end
         
+    if tare_iterate==1
+        targetMatrix_tareC=targetMatrix0+taretalRBF;
+        for i=1:num_iterate
+            %Calculate xcalib (coefficients)
+        [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix_tareC,series0,...
+            nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
+        
+            % APPROXIMATION
+            % define the approximation for inputs minus global zeros (global load
+            % approximation)
+            aprxIN2 = comIN0_RBF*xcalib_RBF;
+            aprxINminGZ2=aprxIN2;
+            
+            checkitRBF=aprxIN2-targetMatrix_tareC;
+            if FLAGS.tare_intercept==1 %If including Tare loads
+                % SOLVE FOR TARES BY TAKING THE MEAN
+                [taretalRBF_temp,taresGRBF_STDDEV_all] = meantare(series,checkitRBF);
+            end
+            
+            targetMatrix_tareC=targetMatrix_tareC+taretalRBF_temp;
+            
+        end
+        %Extract RBF coefficients
+        coeff_algRBFmodel=xcalib_RBF(1:nterms_RBF,:); %Algebraic and RBF coefficient matrix
+        coeff_algRBFmodel_alg=xcalib_RBF(1:nterms,:); %new algebraic coefficients
+        coeff_algRBFmodel_RBF_diag=xcalib_RBF(nterms+1:nterms_RBF,:); %new RBF coefficients, spaced on diagonals
+        %Extract only RBF coefficients in compact matrix
+        coeff_algRBFmodel_RBF=zeros(u,loaddimFlag);
+        for i=1:u
+            coeff_algRBFmodel_RBF(i,:)=diag(coeff_algRBFmodel_RBF_diag(1+loaddimFlag*(i-1):loaddimFlag*i,:));
+        end
+              
+        
+        taretalRBF=targetMatrix_tareC-targetMatrix;
+        taresGRBF     = taretalRBF(s_1st,:);
+    end
+    
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
