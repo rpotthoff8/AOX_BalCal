@@ -289,9 +289,9 @@ else
     FLAGS.model = 4;
 end
 
-if FLAGS.tare_intercept==1
-    customMatrix = [customMatrix; ones(nseries0,loaddimFlag)];
-end
+% if FLAGS.tare_intercept==1
+%     customMatrix = [customMatrix; ones(nseries0,loaddimFlag)];
+% end
 
 % Load (output) data labels if present, otherwise use default values.
 if exist('loadlabels','var')==0 || isempty(loadlabels)==1
@@ -357,7 +357,7 @@ nterms = 2*voltdimFlag*(voltdimFlag+2)+factorial(voltdimFlag)/factorial(voltdimF
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
-[comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,FLAGS.tare_intercept,voltagelist);
+[comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,0,voltagelist);
 
 %Define 'required' custom Matrix: minimum terms that must be included
 customMatrix_req=zeros(size(comIN0,2),loaddimFlag);
@@ -372,13 +372,15 @@ if FLAGS.glob_intercept==1 %If global intercept term is used
 elseif FLAGS.tare_intercept==1
     %Custom Matrix must include linear voltage from each respective
     %channel, and all series intercepts (for tares)
-    customMatrix_req(nterms+1:end,:)=1; %Must include series intercepts
+%     customMatrix_req(nterms+1:end,:)=1; %Must include series intercepts
 end
 
 %Creates vectors that will not have outliers removed
 series = series0;
 targetMatrix = targetMatrix0;
 comIN = comIN0;
+
+[~,s_1st]=unique(series);
 
 %% Use SVD to test for permitted math model
 if FLAGS.svd==1
@@ -428,17 +430,38 @@ if FLAGS.forward_recEqn==1
 end
 
 %% Resume calibration
+mean_Term_series=zeros(max(series),size(comIN,2));
+for i=1:max(series)
+    mean_Term_series(i,2:end)=mean(comIN(series==i,2:end),1); %Determine mean for each input variable in series
+end
+comIN_TareC=comIN-mean_Term_series(series,:);
+
 %Calculate xcalib (coefficients)
 [xcalib, ANOVA] = calc_xcalib(comIN_TareC       ,targetMatrix       ,series,...
     nterms,nseries0,loaddimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
 
 % APPROXIMATION
-% define the approximation for inputs minus global zeros (includes
-% intercept terms)
+% define the approximation for inputs minus global zeros (global load
+% approximation)
 aprxIN = comIN0*xcalib;
+aprxINminGZ=aprxIN;
+
+checkit=aprxIN-targetMatrix;
+if FLAGS.tare_intercept==1 %If including Tare loads
+    % SOLVE FOR TARES BY TAKING THE MEAN
+    [taresAllPoints,taretalstd] = meantare(series,checkit);
+else
+    taresAllPoints=zeros(size(checkit));
+    taretalstd=zeros(size(checkit));
+end
+tares     = taresAllPoints(s_1st,:);
+tares_STDDEV = taretalstd(s_1st,:);
+
+%Tare corrected approximation
+aprxINminTARE=aprxINminGZ-taresAllPoints;
 
 % RESIDUAL
-targetRes = targetMatrix0-aprxIN;
+targetRes = targetMatrix0-aprxINminTARE;
 
 % Identify Outliers After Filtering
 % (Threshold approach)
@@ -491,23 +514,23 @@ end
 
 % Splits xcalib into Coefficients and Intercepts (which are negative Tares)
 coeff = xcalib(1:nterms,:);
-if FLAGS.tare_intercept==1 %If tare loads were included in regression
-    tares = -xcalib(nterms+1:end,:);
-else
-    tares=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
-end
-intercepts=-tares;
-taretal=tares(series0,:);
-aprxINminGZ=aprxIN+taretal; %Approximation that does not include intercept terms
+% if FLAGS.tare_intercept==1 %If tare loads were included in regression
+%     tares = -xcalib(nterms+1:end,:);
+% else
+%     tares=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
+% end
+% intercepts=-tares;
+% taretal=tares(series0,:);
+% aprxINminGZ=aprxIN+taretal; %Approximation that does not include intercept terms
 
 %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
-if FLAGS.tare_intercept==1
-    [~,tares_STDDEV_all] = meantare(series0,aprxINminGZ-targetMatrix0);
-else
-    tares_STDDEV_all=zeros(size(targetMatrix0));
-end
-
-tares_STDDEV = tares_STDDEV_all(s_1st0,:);
+% if FLAGS.tare_intercept==1
+%     [~,tares_STDDEV_all] = meantare(series0,aprxINminGZ-targetMatrix0);
+% else
+%     tares_STDDEV_all=zeros(size(targetMatrix0));
+% end
+% 
+% tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 
 if out.model~=0 %If any algebraic terms included
     %OUTPUT FUNCTION
@@ -787,7 +810,7 @@ if FLAGS.balCal == 2
                     
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-                    %                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
+%                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
                     
                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
                         comIN0_RBF_VIFtest(:,end)=rbfINminGZ_temp; %Define input matrix ('X') with new RBF, algebraic terms, and previous RBFs
@@ -864,8 +887,14 @@ if FLAGS.balCal == 2
         end
         nterms_RBF=nterms+u*loaddimFlag; %New number of terms to solve for
         
+        mean_Term_series_RBF=zeros(max(series),size(comIN0_RBF,2));
+        for i=1:max(series)
+            mean_Term_series_RBF(i,2:end)=mean(comIN0_RBF(series==i,2:end),1); %Determine mean for each input variable in series
+        end
+        comIN_TareC_RBF=comIN0_RBF-mean_Term_series_RBF(series,:);
+        
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
-        [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
+        [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN_TareC_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
         
         if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run for channels that have self terminated
@@ -899,25 +928,21 @@ if FLAGS.balCal == 2
         %update the approximation
         aprxIN2=comIN0_RBF*xcalib_RBF;
         aprxIN2_Hist{u} = aprxIN2;
+        aprxINminGZ2=aprxIN2; %Approximation that does not include intercept terms
         
-        %Store tares
-        if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            taresGRBF = -xcalib_RBF(nterms+u*loaddimFlag+1:end,:);
+        checkitRBF=aprxIN2-targetMatrix0;
+        if FLAGS.tare_intercept==1 %If including Tare loads
+            % SOLVE FOR TARES BY TAKING THE MEAN
+            [taretalRBF,taresGRBF_STDDEV_all] = meantare(series,checkitRBF);
         else
-            taresGRBF=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
+            taretalRBF=zeros(size(checkitRBF));
+            taresGRBF_STDDEV_all=zeros(size(checkitRBF));
         end
-        taretalRBF=taresGRBF(series0,:);
-        aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
+        taresGRBF     = taretalRBF(s_1st,:);
+        taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st,:);
+        
         tareGRBFHist{u} = taresGRBF;
-        
-        %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
-        if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
-        else
-            taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
-        end
-        taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
-        
+               
         %Calculate tare corrected load approximation
         aprxINminTARE2=aprxINminGZ2-taretalRBF;
         
