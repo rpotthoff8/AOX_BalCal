@@ -326,3 +326,62 @@ fprintf('RMS between tare corrected approximation and F_prime: '); fprintf(num2s
 fprintf('RMS between calculated and true tares: '); fprintf(num2str(tare_RMS3C)); fprintf('\n');
 disp('Press ENTER to continue.');
 fprintf('\n');
+pause();
+
+%% 4th Approach: Regress coefficients, find tares as mean difference, add tares, resolve coefficients
+figure(3);
+
+% Normalize the data for a better conditioned matrix
+scale4 = max(abs(comIN));
+scale4(scale4==0)=1; %To avoid NaN for channels where RBFs have self-terminated
+comIN_4 = comIN./scale4;
+
+F_prime_tareC=F_prime;
+
+for i=1:80
+    i
+xcalib_4 = comIN_4\F_prime_tareC; %Solve for coefficients:
+xcalib_4 = xcalib_4./scale4'; % De-normalize the coefficients to be used with raw data
+coeff_4 = xcalib_4;
+
+%Calculate our approximation without tare correcting:
+aprxIN4 = comIN*coeff_4;
+
+%Find residual between F' and approximation:
+checkit4 = aprxIN4-F_prime_tareC;
+taresAllPoints4_temp = meantare(series,checkit4);
+
+F_prime_tareC=F_prime_tareC+taresAllPoints4_temp;
+taresAllPoints4=F_prime_tareC-F_prime;
+tares4=taresAllPoints4(s_1st);
+
+%Tare subtracted approximation to compare to F_prime
+aprxIN4_mTares=aprxIN4-taresAllPoints4;
+
+%Calculate true RMS and tare corrected RMS
+RMS4_true=sqrt(mean((aprxIN4-F_true).^2));
+RMS4_tareC=sqrt(mean((aprxIN4_mTares-F_prime).^2));
+%Calculate Tare RMS
+tare_RMS4=sqrt(mean((tares4-tares_true).^2));
+
+%Plot the approximation:
+subplot(3,2,1);
+scatter(V_in,aprxIN4,20,series,'filled');
+xlabel('V');
+ylabel('F approx');
+title('True load (F) Approximation 4');
+
+subplot(3,2,2);
+scatter(V_in,aprxIN4_mTares,20,series,'filled');
+xlabel('V');
+ylabel('F approx');
+title('Tare subracted (F prime) Approximation 4');
+
+disp('Approach 4 calculates coefficients without intercepts, then calculates tares as mean difference between approximation and F prime in each series')
+fprintf('RMS between global approximation and true global load: '); fprintf(num2str(RMS4_true)); fprintf('\n');
+fprintf('RMS between tare corrected approximation and F_prime: '); fprintf(num2str(RMS4_tareC)); fprintf('\n');
+fprintf('RMS between calculated and true tares: '); fprintf(num2str(tare_RMS4)); fprintf('\n');
+disp('Press ENTER to continue.');
+fprintf('\n');
+pause();
+end
