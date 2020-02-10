@@ -18,7 +18,7 @@ s=dimFlag;
 %    y=dot(residvec,residvec);
 
 phi=((eps^s)/(sqrt(pi^s)))*exp(-((eps^2)*(R_square))/h^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-% phi=phi-mean(phi); %Phi bias is mean value for phi
+phi=phi-mean(phi); %Phi bias is mean value for phi
 b=dot(phi,residvec); %Projection of phi onto residual
 z=dot(phi,phi); %Square of the magnitude of phi vector
 

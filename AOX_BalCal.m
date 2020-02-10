@@ -430,11 +430,15 @@ if FLAGS.forward_recEqn==1
 end
 
 %% Resume calibration
-mean_Term_series=zeros(max(series),size(comIN,2));
-for i=1:max(series)
-    mean_Term_series(i,2:end)=mean(comIN(series==i,2:end),1); %Determine mean for each input variable in series
+if FLAGS.tare_intercept==1
+    mean_Term_series=zeros(max(series),size(comIN,2));
+    for i=1:max(series)
+        mean_Term_series(i,2:end)=mean(comIN(series==i,2:end),1); %Determine mean for each input variable in series
+    end
+    comIN_TareC=comIN-mean_Term_series(series,:);
+else
+    comIN_TareC=comIN;
 end
-comIN_TareC=comIN-mean_Term_series(series,:);
 
 %Calculate xcalib (coefficients)
 [xcalib, ANOVA] = calc_xcalib(comIN_TareC       ,targetMatrix       ,series,...
@@ -810,7 +814,7 @@ if FLAGS.balCal == 2
                     
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-%                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
+                    rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
                     
                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
                         comIN0_RBF_VIFtest(:,end)=rbfINminGZ_temp; %Define input matrix ('X') with new RBF, algebraic terms, and previous RBFs
@@ -887,11 +891,15 @@ if FLAGS.balCal == 2
         end
         nterms_RBF=nterms+u*loaddimFlag; %New number of terms to solve for
         
-        mean_Term_series_RBF=zeros(max(series),size(comIN0_RBF,2));
-        for i=1:max(series)
-            mean_Term_series_RBF(i,2:end)=mean(comIN0_RBF(series==i,2:end),1); %Determine mean for each input variable in series
+        if FLAGS.tare_intercept==1
+            mean_Term_series_RBF=zeros(max(series),size(comIN0_RBF,2));
+            for i=1:max(series)
+                mean_Term_series_RBF(i,2:end)=mean(comIN0_RBF(series==i,2:end),1); %Determine mean for each input variable in series
+            end
+            comIN_TareC_RBF=comIN0_RBF-mean_Term_series_RBF(series,:);
+        else
+            comIN_TareC_RBF=comIN0_RBF;
         end
-        comIN_TareC_RBF=comIN0_RBF-mean_Term_series_RBF(series,:);
         
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
         [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN_TareC_RBF,targetMatrix0,series0,...
