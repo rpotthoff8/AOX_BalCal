@@ -35,7 +35,8 @@ for i=1:size(dainputs,2)
 end
 R_square=sum(dist.^2,3); %Eqn 17 from Javier's notes: squared distance between each point
 
-comIN_RBF=((eps_long.^voltdimFlag)/(sqrt(pi^voltdimFlag))).*exp(-((eps_long.^2).*(R_square))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
+comIN_RBF=exp(-((eps_long.^2).*(R_square))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
+% comIN_RBF=((eps_long.^voltdimFlag)/(sqrt(pi^voltdimFlag))).*exp(-((eps_long.^2).*(R_square))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 % comIN_RBF=comIN_RBF-mean(comIN_RBF,1);
 
 end
