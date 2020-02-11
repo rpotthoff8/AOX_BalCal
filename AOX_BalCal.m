@@ -347,7 +347,7 @@ if FLAGS.mode==1 %If in balance calibration mode
     globalZeros = mean(natzeros,1);
     % Subtracts global zeros from signal.
     dainputs0 = excessVec0 - globalZeros;
-else %If in general functino approximation mode
+else %If in general function approximation mode
     dainputs0 = excessVec0; %No 'natural zeros'
 end
 
@@ -358,6 +358,10 @@ nterms = 2*voltdimFlag*(voltdimFlag+2)+factorial(voltdimFlag)/factorial(voltdimF
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
 [comIN0,high,high_CELL] = balCal_algEqns(FLAGS.model,dainputs0,series0,FLAGS.tare_intercept,voltagelist);
+if FLAGS.tare_intercept==1
+    dainputs_zero=zeros(1,voltdimFlag); %Artificial datapoint at all zero voltage
+    comIN_zero = balCal_algEqns(FLAGS.model,dainputs_zero,1,0,voltagelist); %Algebraic combination terms of zero point
+end
 
 %Define 'required' custom Matrix: minimum terms that must be included
 customMatrix_req=zeros(size(comIN0,2),loaddimFlag);
@@ -873,19 +877,10 @@ if FLAGS.balCal == 2
             xcalib_RBF(end-nseries0:end,self_Terminate)=xcalib_RBF_last(end-nseries0:end,self_Terminate);
         end
         xcalib_RBF_last=xcalib_RBF;
-        %Extract RBF coefficients
-        coeff_algRBFmodel=xcalib_RBF(1:nterms_RBF,:); %Algebraic and RBF coefficient matrix
-        coeff_algRBFmodel_alg=xcalib_RBF(1:nterms,:); %new algebraic coefficients
-        coeff_algRBFmodel_RBF_diag=xcalib_RBF(nterms+1:nterms_RBF,:); %new RBF coefficients, spaced on diagonals
-        %Extract only RBF coefficients in compact matrix
-        coeff_algRBFmodel_RBF=zeros(u,loaddimFlag);
-        for i=1:u
-            coeff_algRBFmodel_RBF(i,:)=diag(coeff_algRBFmodel_RBF_diag(1+loaddimFlag*(i-1):loaddimFlag*i,:));
-        end
         
         %Store basis parameters in Hist variables
         epsHist(u,not(self_Terminate)) = eps(not(self_Terminate));
-        cHist_tot{u} = coeff_algRBFmodel;
+%         cHist_tot{u} = coeff_algRBFmodel;
         centerIndexHist(u,not(self_Terminate)) = centerIndexLoop(not(self_Terminate));
         for s=1:loaddimFlag
             if self_Terminate(s)==0
@@ -896,19 +891,36 @@ if FLAGS.balCal == 2
             end
         end
         
-        %update the approximation
-        aprxIN2=comIN0_RBF*xcalib_RBF;
-        aprxIN2_Hist{u} = aprxIN2;
         
-        %Store tares
+        %Find and Store tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            taresGRBF = -xcalib_RBF(nterms+u*loaddimFlag+1:end,:);
+            %Each series intercept includes 2 components: 1 portion shifts
+            %the surface to the 'reality' of 0 load=0 voltage.  The second
+            %portion provides a shift for the tare loads. The 'reality
+            %shift' is a global intercept that must be applied to each
+            %series.  The second portion of the shift is different in each
+            %series based on the tare load applied. Therefore, by finding
+            %the shift required for our RBF surface alone to match the
+            %condition of 0 load at 0 voltage, we can split the shift into
+            %its 2 portions. 
+            seriesShift = xcalib_RBF(nterms+u*loaddimFlag+1:end,:); 
+            comIN_zero_RBF=create_comIN_RBF(dainputs_zero,epsHist(1:u,:),center_daHist(1:u,:,:),h_GRBF); %Generate comIN for RBFs at zero voltage
+            comIN_zero_algRBF=[comIN_zero, comIN_zero_RBF]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
+            currentZero=comIN_zero_algRBF*xcalib_RBF(1:nterms_RBF,:); %Current load predicted for zero voltage without series shift
+            realityShift=-currentZero; %Extract portion of each series shift that shifts to the reality of 0 voltage=0 voltage
+            tareShift=seriesShift-realityShift; %Remainder of series shift accounts for tares
+            taresGRBF=-tareShift; %Negative of tare shifts are tare loads
+            
+            %Update xcalib by splitting intercepts into global reality
+            %shift and series specific tare shift
+            xcalib_RBF(1,:)=realityShift; %Include global intercept for reality shift
+            xcalib_RBF(nterms+u*loaddimFlag+1:end,:)=tareShift; %Series specific intercepts are for tares
+            
         else
             taresGRBF=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
         end
         taretalRBF=taresGRBF(series0,:);
-        aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
-        tareGRBFHist{u} = taresGRBF;
+                tareGRBFHist{u} = taresGRBF;
         
         %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
@@ -918,6 +930,23 @@ if FLAGS.balCal == 2
         end
         taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
         
+        %Extract RBF coefficients
+        coeff_algRBFmodel=xcalib_RBF(1:nterms_RBF,:); %Algebraic and RBF coefficient matrix
+        coeff_algRBFmodel_alg=xcalib_RBF(1:nterms,:); %new algebraic coefficients
+        coeff_algRBFmodel_RBF_diag=xcalib_RBF(nterms+1:nterms_RBF,:); %new RBF coefficients, spaced on diagonals
+        %Extract only RBF coefficients in compact matrix
+        coeff_algRBFmodel_RBF=zeros(u,loaddimFlag);
+        for i=1:u
+            coeff_algRBFmodel_RBF(i,:)=diag(coeff_algRBFmodel_RBF_diag(1+loaddimFlag*(i-1):loaddimFlag*i,:));
+        end        
+        
+        %Store basis parameters in Hist variables
+        cHist_tot{u} = coeff_algRBFmodel;
+        
+        %update the approximation
+        aprxIN2=comIN0_RBF*xcalib_RBF;
+        aprxIN2_Hist{u} = aprxIN2;
+        aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include series intercept terms
         %Calculate tare corrected load approximation
         aprxINminTARE2=aprxINminGZ2-taretalRBF;
         
