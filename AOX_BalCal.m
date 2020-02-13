@@ -200,6 +200,12 @@ if exist('gageCapacities','var')==0 || any(gageCapacities==0)
     end
 end
 
+%Check if load capacities are provided
+if FLAGS.mode==1 && (exist('loadCapacities','var')==0 || any(loadCapacities==0))
+    loadCapacities=max(abs(targetMatrix0),[],1);
+    warning('Unable to read load capacities for calibration data. Using maximum absolute value of applied loads as load capacity.');
+end
+
 series0 = series;
 series20=series2;
 pointID0=pointID;
@@ -511,7 +517,6 @@ if FLAGS.tare_intercept==1
 else
     tares_STDDEV_all=zeros(size(targetMatrix0));
 end
-
 tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 
 if out.model~=0 %If any algebraic terms included
@@ -559,9 +564,9 @@ if FLAGS.balVal == 1
     
     load(out.savePathval,'-mat'); %Load validation data
     if FLAGS.mode~=1 %If not in balance calibration mode
-        seriesvalid=ones(size(excessVecvalid,1),1);
+        %All data is from same series
+        seriesvalid=ones(size(excessVecvalid,1),1); 
         series2valid=ones(size(excessVecvalid,1),1);
-
     end
     [validSeries,s_1stV,~] = unique(seriesvalid); %Define series for validation data
     
@@ -569,11 +574,11 @@ if FLAGS.balVal == 1
     [numptsvalid,voltdimFlagvalid] = size(excessVecvalid); %Number of datapoints and voltage channels
     loaddimFlagvalid=size(targetMatrixvalid,2); %Dimension of load input (desired output variable)
     
-    if exist( 'pointIDvalid', 'var')==0
+    if exist( 'pointIDvalid', 'var')==0 %Create standard point ID labels if they don't exist
         pointIDvalid=cellstr([repmat('P-',numptsvalid,1),num2str((1:numptsvalid)')]);
     end
     
-    if voltdimFlag~=voltdimFlagvalid || loaddimFlag~= loaddimFlagvalid
+    if voltdimFlag~=voltdimFlagvalid || loaddimFlag~= loaddimFlagvalid %Check if mismatch between calibration and validation data.  If so, exit program
         fprintf('\n  ');
         fprintf('\n MISMATCH IN CALIBRATION/VALIDATION DATA DIMENSIONS.  UNABLE TO PROCEED.\n');
         fprintf('\n');
@@ -892,39 +897,25 @@ if FLAGS.balCal == 2
                 %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
             end
         end
-        
-        
+                
         %Find and Store tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            %Each series intercept includes 2 components: 1 portion shifts
-            %the surface to the 'reality' of 0 load=0 voltage.  The second
-            %portion provides a shift for the tare loads. The 'reality
-            %shift' is a global intercept that must be applied to each
-            %series.  The second portion of the shift is different in each
-            %series based on the tare load applied. Therefore, by finding
-            %the shift required for our RBF surface alone to match the
-            %condition of 0 load at 0 voltage, we can split the shift into
-            %its 2 portions. 
-            seriesShift = xcalib_RBF(nterms+u*loaddimFlag+1:end,:); 
-            comIN_zero_RBF=create_comIN_RBF(dainputs_zero,epsHist(1:u,:),center_daHist(1:u,:,:),h_GRBF); %Generate comIN for RBFs at zero voltage
-            comIN_zero_algRBF=[comIN_zero, comIN_zero_RBF]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
-            currentZero=comIN_zero_algRBF*xcalib_RBF(1:nterms_RBF,:); %Current load predicted for zero voltage without series shift
-            realityShift=-currentZero; %Extract portion of each series shift that shifts to the reality of 0 voltage=0 voltage
-            tareShift=seriesShift-realityShift; %Remainder of series shift accounts for tares
-            taresGRBF=-tareShift; %Negative of tare shifts are tare loads
-            
-            %Update xcalib by splitting intercepts into global reality
-            %shift and series specific tare shift
-            xcalib_RBF(1,:)=realityShift; %Include global intercept for reality shift
-            xcalib_RBF(nterms+u*loaddimFlag+1:end,:)=tareShift; %Series specific intercepts are for tares
-            
+            [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist(1:u,:),center_daHist(1:u,:,:),h_GRBF); %Calculate tares from series specific intercepts           
         else
             taresGRBF=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
         end
         taretalRBF=taresGRBF(series0,:);
-                tareGRBFHist{u} = taresGRBF;
+        tareGRBFHist{u} = taresGRBF;
+        
+        %update the approximation
+        aprxIN2=comIN0_RBF*xcalib_RBF; %Approximation including series intercepts
+        aprxIN2_Hist{u} = aprxIN2;
+        aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include series intercept terms
+        %Calculate tare corrected load approximation
+        aprxINminTARE2=aprxINminGZ2-taretalRBF;
         
         %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
+        % Find Standard Deviation of mean tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
             [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
         else
@@ -944,13 +935,6 @@ if FLAGS.balCal == 2
         
         %Store basis parameters in Hist variables
         cHist_tot{u} = coeff_algRBFmodel;
-        
-        %update the approximation
-        aprxIN2=comIN0_RBF*xcalib_RBF;
-        aprxIN2_Hist{u} = aprxIN2;
-        aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include series intercept terms
-        %Calculate tare corrected load approximation
-        aprxINminTARE2=aprxINminGZ2-taretalRBF;
         
         %Calculate and store residuals
         targetRes2 = targetMatrix0-aprxINminTARE2;
@@ -1038,7 +1022,7 @@ if FLAGS.balCal == 2
             end
         end
         
-        if all(self_Terminate)==1 %Check if all channels have self terminated
+        if all(self_Terminate) %Check if all channels have self terminated
             %Trim Variables
             aprxIN2_Hist(u+1:end)=[];
             tareGRBFHist(u+1:end)=[];
@@ -1101,19 +1085,59 @@ if FLAGS.balCal == 2
             customMatrix_RBF=[ones(nterms,loaddimFlag);RBF_custom;ones(nseries0,loaddimFlag)];
         end
         
+        %Trim comIN
+        comIN0_RBF(:,nterms_RBF+1:nterms+u*loaddimFlag)=[];
+        %Zero out parameters for trimmed RBFs in each channel
+        for s=1:loaddimFlag 
+            epsHist(final_RBFs_added(s)+1:end,s) = 0;
+            centerIndexHist(final_RBFs_added(s)+1:end,s) = 0;
+            center_daHist(final_RBFs_added(s)+1:end,:,s)=0; %Variable stores the voltages of the RBF centers.
+            %Dim 1= RBF #
+            %Dim 2= Channel for voltage
+            %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
+        end
+        %Trim RBF property variables
+        epsHist(max(final_RBFs_added)+1:end,:) = [];
+        centerIndexHist(max(final_RBFs_added)+1:end,:) = [];
+        center_daHist(max(final_RBFs_added)+1:end,:,:)=[];
+             
         %New flag structure for calc_xcalib
+        FLAGS_RBF=FLAGS; %Initialize as global flag structure
         FLAGS_RBF.model=4; %Calculate with custom model
         FLAGS_RBF.anova=FLAGS.anova; %Calculate ANOVA based on user preference
         FLAGS_RBF.test_FLAG=0; %Calculate VIF
         calc_channel=ones(1,loaddimFlag); %Calculate stats for every channel
         nterms_RBF=nterms+max(final_RBFs_added)*loaddimFlag; %New number of terms to solve for
         
-        %Trim comIN
-        comIN0_RBF(:,nterms_RBF+1:nterms+u*loaddimFlag)=[];
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
         [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
         
+        %Find and Store tares
+        if FLAGS.tare_intercept==1 %If tare loads were included in regression
+            [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist,center_daHist,h_GRBF); %Calculate tares from series specific intercepts
+        else
+            taresGRBF=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
+        end
+        taretalRBF=taresGRBF(series0,:);
+        tareGRBFHist{u+1} = taresGRBF;
+        
+        %update the approximation
+        aprxIN2=comIN0_RBF*xcalib_RBF; %Approximation including series intercepts
+        aprxIN2_Hist{u+1} = aprxIN2;
+        aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include series intercept terms
+        %Calculate tare corrected load approximation
+        aprxINminTARE2=aprxINminGZ2-taretalRBF;
+        
+        %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
+        % Find Standard Deviation of mean tares
+        if FLAGS.tare_intercept==1 %If tare loads were included in regression
+            [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
+        else
+            taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
+        end
+        taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
+                
         %Extract RBF coefficients
         coeff_algRBFmodel=xcalib_RBF(1:nterms_RBF,:); %Algebraic and RBF coefficient matrix
         coeff_algRBFmodel_alg=xcalib_RBF(1:nterms,:); %new algebraic coefficients
@@ -1126,42 +1150,7 @@ if FLAGS.balCal == 2
         
         %Update basis parameters in Hist variables
         cHist_tot{u+1} = coeff_algRBFmodel;
-        for s=1:loaddimFlag
-            epsHist(final_RBFs_added(s)+1:end,s) = 0;
-            centerIndexHist(final_RBFs_added(s)+1:end,s) = 0;
-            center_daHist(final_RBFs_added(s)+1:end,:,s)=0; %Variable stores the voltages of the RBF centers.
-            %Dim 1= RBF #
-            %Dim 2= Channel for voltage
-            %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
-        end
-        %Trim Variables
-        epsHist(max(final_RBFs_added)+1:end,:) = [];
-        centerIndexHist(max(final_RBFs_added)+1:end,:) = [];
-        center_daHist(max(final_RBFs_added)+1:end,:,:)=[];
-        
-        %update the approximation
-        aprxIN2=comIN0_RBF*xcalib_RBF;
-        aprxIN2_Hist{u+1} = aprxIN2;
-        if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            taresGRBF = -xcalib_RBF(nterms_RBF+1:end,:);
-        else
-            taresGRBF=zeros(nseries0,loaddimFlag);
-        end
-        taretalRBF=taresGRBF(series0,:);
-        aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include intercept terms
-        tareGRBFHist{u+1} = taresGRBF;
-        
-        %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
-        if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            [~,taresGRBF_STDDEV_all] = meantare(series0,aprxINminGZ2-targetMatrix0);
-        else
-            taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
-        end
-        taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
-        
-        %Calculate tare corrected load approximation
-        aprxINminTARE2=aprxINminGZ2-taretalRBF;
-        
+
         %Calculate and store residuals
         targetRes2 = targetMatrix0-aprxINminTARE2;
         newRes2 = targetRes2'*targetRes2;
@@ -1281,6 +1270,16 @@ if FLAGS.balApprox == 1
         natzerosapprox=0;
     end
     
+    if voltdimFlag~=size(excessVecapprox,2) %Check if mismatch between calibration and approximation data.  If so, exit program
+        fprintf('\n  ');
+        fprintf('\n MISMATCH IN CALIBRATION/APPROXIMATION DATA DIMENSIONS.  UNABLE TO PROCEED.\n');
+        fprintf('\n');
+        if isdeployed % Optional, use if you want the non-deployed version to not exit immediately
+            input('Press enter to finish and close');
+        end
+        return; %Quit run
+    end
+    
     if exist( 'pointIDvalid', 'var')==0
         pointIDapprox=cellstr([repmat('P-',size(excessVecapprox,1),1),num2str((1:size(excessVecapprox,1))')]);
     end
@@ -1331,3 +1330,52 @@ runTime=toc;
 if isdeployed % Optional, use if you want the non-deployed version to not exit immediately
     input('Press enter to finish and close');
 end
+
+
+
+
+
+function [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist,center_daHist,h_GRBF)
+%Function calculates tare loads for load model including RBFs. This is
+%accomplished by calculating all coefficients simultaneously including
+%series specific intercepts.  The tares are then extracted from the series
+%specific intercepts.
+
+%Each series intercept includes 2 components: 1 portion shifts
+%the surface to the 'reality' of 0 load=0 voltage.  The second
+%portion provides a shift for the tare loads. The 'reality
+%shift' is a global intercept that must be applied to each
+%series.  The second portion of the shift is different in each
+%series based on the tare load applied. Therefore, by finding
+%the shift required for our RBF surface alone to match the
+%condition of 0 load at 0 voltage, we can split the shift into
+%its 2 portions.
+
+%INPUTS:
+%  xcalib_RBF = Coefficient matrix including series specific intercepts
+%  nterms_RBF  =  Number of predictor variable terms including RBFs
+%  dainputs_zero  =  Vector of zero voltages
+%  comIN_zero  =  Matrix of algebraic predictor variables at zero voltage
+%  epsHist  =  Epsilon (width control) values for RBFs
+%  center_daHist = Center locations for RBFs
+%  h_GRBF = h values for RBFs (controls width)
+
+%OUTPUTS:
+%  y = Merit Value for success in RBF fitting residuals.  Object of optimization is to minimize y
+
+seriesShift = xcalib_RBF(nterms_RBF+1:end,:);
+comIN_zero_RBF=create_comIN_RBF(dainputs_zero,epsHist,center_daHist,h_GRBF); %Generate comIN for RBFs at zero voltage
+comIN_zero_algRBF=[comIN_zero, comIN_zero_RBF]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
+currentZero=comIN_zero_algRBF*xcalib_RBF(1:nterms_RBF,:); %Current load predicted for zero voltage without series shift
+realityShift=-currentZero; %Extract portion of each series shift that shifts to the reality of 0 voltage=0 voltage
+tareShift=seriesShift-realityShift; %Remainder of series shift accounts for tares
+taresGRBF=-tareShift; %Negative of tare shifts are tare loads
+
+%Update xcalib by splitting intercepts into global reality
+%shift and series specific tare shift
+xcalib_RBF(1,:)=realityShift; %Include global intercept for reality shift
+xcalib_RBF(nterms_RBF+1:end,:)=tareShift; %Series specific intercepts are for tares
+end
+
+
+
