@@ -2707,7 +2707,7 @@ if handles.GRBF_defaultEps.Value==1
     handles.min_eps.Enable='off';
     handles.max_eps.Enable='off';
     handles.min_eps.String='0.07';
-    handles.max_eps.String='0.1';
+    handles.max_eps.String='1.0';
     set(handles.min_eps_text,'Enable','off');
     set(handles.max_eps_text,'Enable','off');
 else

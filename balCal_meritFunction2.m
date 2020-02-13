@@ -19,15 +19,23 @@ s=dimFlag;
 
 phi=exp(-((eps^2)*(R_square))/h^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 % phi=((eps^s)/(sqrt(pi^s)))*exp(-((eps^2)*(R_square))/h^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-
 % phi=phi-mean(phi); %Phi bias is mean value for phi
-b=dot(phi,residvec); %Projection of phi onto residual
-z=dot(phi,phi); %Square of the magnitude of phi vector
 
-p = residvec - (b/z)*phi; %Measure for remaining residual after adding phi
+% %%OLD
+% b=dot(phi,residvec); %Projection of phi onto residual
+% z=dot(phi,phi); %Square of the magnitude of phi vector
+% 
+% p = residvec - (b/z)*phi; %Measure for remaining residual after adding phi
+% 
+% y = dot(p,p); % Scalar value to be minimized
 
-y = dot(p,p); % Scalar value to be minimized
+%%NEW: 11 Feb 20
+comIN=[ones(length(phi) ,1) ,phi];
 
+c=comIN\residvec; %Solve for coefficient to best fit RBF to residuals
+
+resid_remain=residvec-comIN*c; %Remainder of residual after adding new basis
+y=dot(resid_remain,resid_remain); %RMS of remaining residual
 end
 
 %

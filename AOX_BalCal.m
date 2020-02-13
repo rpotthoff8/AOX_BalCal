@@ -192,6 +192,7 @@ if exist( 'pointID', 'var')==0
     pointID=cellstr([repmat('P-',size(excessVec0,1),1),num2str((1:size(excessVec0,1))')]);
 end
 
+%Check if gage capacities are provided
 if exist('gageCapacities','var')==0 || any(gageCapacities==0)
     gageCapacities=max(abs(excessVec0),[],1);
     if FLAGS.mode==1
@@ -788,7 +789,7 @@ if FLAGS.balCal == 2
                     
                     %find widths 'w' by optimization routine
                     eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,voltdimFlag),min_eps,max_eps );
-                    
+
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 %                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
