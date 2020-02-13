@@ -67,7 +67,7 @@ for i = 1:n_dim %subplot for each series
     if exist('loadCapacities','var')
         title(sprintf('Residual; %% of Load Capacity; Standard Deviation = %0.4f%%',stdDevPercentCapacity(i)));
     else
-        title(sprintf('Residual; Standard Deviation = %0.4f',stdDevPercentCapacity(i)));
+        title(sprintf('Residual; Standard Deviation = %0.4f%%',stdDevPercentCapacity(i)));
     end
     %     set(gcf,'Position',[100 50 825 min(r*175.5,900)]);
     hold off

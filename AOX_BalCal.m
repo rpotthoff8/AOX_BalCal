@@ -98,20 +98,17 @@ FLAGS.balOut = out.outlier;
 numSTD = out.numSTD;  %Number of St.D. for outlier threshold.
 %
 %TO REMOVE POTENTIAL OUTLIERS                               set FLAGS.zeroed = 1;
-if FLAGS.balOut==1
-    FLAGS.zeroed = out.zeroed;
-else
-    FLAGS.zeroed = 0;
-end
-
+FLAGS.zeroed = out.zeroed;
 %
 %ANOVA OPTIONS
 FLAGS.anova = out.anova;
 FLAGS.loadPI = out.anova; %Previous separate option in GUI, now PI is calculated for valid/approx automatically if ANOVA is performed
 if FLAGS.mode==1
     FLAGS.BALFIT_Matrix=out.BALFIT_Matrix;
+    FLAGS.BALFIT_ANOVA=out.BALFIT_ANOVA;
 else
     FLAGS.BALFIT_Matrix=0;
+    FLAGS.BALFIT_ANOVA=0;
 end
 FLAGS.Rec_Model=out.Rec_Model;
 anova_pct=out.anova_pct;
@@ -213,6 +210,12 @@ pointID0=pointID;
 nseries0 = length(s_1st0);
 [numpts0, voltdimFlag] = size(excessVec0); %Size of voltage input (input variables)
 loaddimFlag=size(targetMatrix0,2); %Dimension of load input (desired output variable)
+
+if loaddimFlag==voltdimFlag && FLAGS.BALFIT_Matrix==1 %If number of voltage channels is equal to load channels
+    FLAGS.calc_balfit=1; %Possible to calculate balfit statistics
+else
+    FLAGS.calc_balfit=0; %If mismatch, not possible
+end
 
 % Loads:
 % loadlabes, voltlabels (if they exist)
@@ -316,11 +319,8 @@ if exist('loadlabels','var')==0 || isempty(loadlabels)==1
         end
     end
 else
-    %Extract volt and load labels as portion of label cells before space or (
-    splitlist= cellfun(@(x) strsplit(x,{' ','('}),loadlabels,'UniformOutput',false);
-    loadlist = cellfun(@(x) x{1},splitlist,'UniformOutput',false);
-    splitlist= cellfun(@(x) strsplit(x,{' ','('}),voltlabels,'UniformOutput',false);
-    voltagelist = cellfun(@(x) x{1},splitlist,'UniformOutput',false);
+    loadlist = loadlabels;
+    voltagelist = voltlabels;
 end
 reslist = strcat('res',loadlist);
 % Voltage data labels if present, otherwise use default values.
@@ -386,7 +386,16 @@ elseif FLAGS.tare_intercept==1
     customMatrix_req(nterms+1:end,:)=1; %Must include series intercepts
 end
 
-%Creates vectors that will not have outliers removed
+%%% Balfit Stats and Regression Coeff Matrix
+if FLAGS.calc_balfit==1
+    balfitdainputs0 = targetMatrix0;
+    balfittargetMatrix0 = balCal_algEqns(3,dainputs0,series0,0);
+    balfittargetMatrix0=balfittargetMatrix0(:,2:end);
+    balfitcomIN0 = balCal_algEqns(FLAGS.model,balfitdainputs0,series0,FLAGS.tare_intercept);
+    %%% Balfit Stats and Regression Coeff Matrix
+end
+
+%Creates vectors that will not have outliers removed for balfit
 series = series0;
 targetMatrix = targetMatrix0;
 comIN = comIN0;
@@ -443,6 +452,12 @@ end
 [xcalib, ANOVA] = calc_xcalib(comIN       ,targetMatrix       ,series,...
     nterms,nseries0,loaddimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
 
+if FLAGS.calc_balfit==1
+    %Calculate balfit coefficeints
+    [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,...
+        nterms,nseries0,voltdimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT');
+end
+
 % APPROXIMATION
 % define the approximation for inputs minus global zeros (includes
 % intercept terms)
@@ -489,7 +504,14 @@ if FLAGS.balOut == 1
         %Calculate xcalib (coefficients)
         [xcalib,ANOVA] = calc_xcalib(comIN0,targetMatrix0,series0,...
             nterms,nseries0,loaddimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
-               
+        
+        if FLAGS.calc_balfit==1
+            %%% Balfit Stats and Regression Coeff Matrix
+            [balfitxcalib, balfitANOVA] = calc_xcalib(balfitcomIN0,balfittargetMatrix0,series,...
+                nterms,nseries0,voltdimFlag,FLAGS,customMatrix,anova_pct,voltagelist,'BALFIT');
+            %%% Balfit Stats and Matrix
+        end
+        
         % APPROXIMATION
         % define the approximation for inputs minus global zeros (includes
         % intercept terms)
@@ -519,6 +541,16 @@ else
 end
 tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 
+if FLAGS.calc_balfit==1
+    %%% Balfit Stats and Regression Coeff Matrix
+    balfit_C1INV = xcalib((1:voltdimFlag), :);
+    balfit_D1 = zeros(voltdimFlag,voltdimFlag);
+    balfit_INTERCEPT = globalZeros;
+    balfit_C1INVC2 = balfitxcalib((voltdimFlag+1:nterms), :)*balfit_C1INV;
+    balfit_regress_matrix = [globalZeros ; balfit_INTERCEPT ; balfit_C1INV ; balfit_D1 ; balfit_C1INVC2 ];
+    %%% Balfit Stats and Matrix
+end
+
 if out.model~=0 %If any algebraic terms included
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, algebraic section
@@ -542,7 +574,17 @@ if out.model~=0 %If any algebraic terms included
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         end
-               
+        
+        if FLAGS.calc_balfit==1
+            newStruct=struct('balfitcomIN',balfitcomIN0,...
+                'balfitxcalib',balfitxcalib,...
+                'balfittargetMatrix',balfittargetMatrix0,...
+                'balfitANOVA',balfitANOVA,...
+                'balfit_regress_matrix',balfit_regress_matrix);
+            uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+                [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        end
+        
         %Output results from calibration algebraic section
         output(section,FLAGS,targetRes,fileName,numpts0,nseries0,...
             loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
@@ -650,7 +692,7 @@ if FLAGS.balVal == 1
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         
         if FLAGS.mode==1
-            newStruct=struct('loadCapacities',loadCapacitiesvalid,...
+            newStruct=struct('loadCapacitiesvalid',loadCapacitiesvalid,...
                 'tares',taresvalid,'tares_STDDEV',tares_STDEV_valid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
@@ -1243,7 +1285,7 @@ if FLAGS.balCal == 2
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         
         if FLAGS.mode==1
-            newStruct=struct('loadCapacities',loadCapacitiesvalid,'tares',taresGRBFvalid,'tares_STDDEV',taresGRBFSTDEVvalid);
+            newStruct=struct('loadCapacitiesvalid',loadCapacitiesvalid,'tares',taresGRBFvalid,'tares_STDDEV',taresGRBFSTDEVvalid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         end

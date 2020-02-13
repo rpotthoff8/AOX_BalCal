@@ -388,70 +388,138 @@ if strcmp(section,{'Calibration Algebraic'})==1
                 fprintf('\n')
             end
         end
-        
+              
     end
     %%% ANOVA Stats AJM 6_8_19
     
-    if FLAGS.BALFIT_Matrix==1
-        [leftColumn_coeff,~]=customMatrix_labels(loadlist,voltagelist,voltdimFlag,loaddimFlag,FLAGS.model,'voltages'); %Get label names for custom equation matrix
+    if FLAGS.calc_balfit==1
+        %%% Balfit Stats and Regression Coeff Matrix AJM 5_31_19
+        totalnum = size(balfitxcalib,1);
+        totalnumcoeffs = [1:totalnum];
+        totalnumcoeffs2 = [2:totalnum+1];
+        dsof = numpts-nterms-1;
         
-        Header_cells=cell(15,voltdimFlag);
-        Coeff_cells=cell(numel(leftColumn_coeff),voltdimFlag);
-        leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_OUT_CAPACITY'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'}];
-        leftColumn=[leftColumn_head;leftColumn_coeff];
+        balfitaprxIN = balfitcomIN*balfitxcalib;
+        balfittargetRes = balfittargetMatrix-balfitaprxIN;
         
-        Header_cells(1,1)={'REGRESSION_COEFFICIENT_MATRIX'};
-        Header_cells(2,1)={balance_type};
-        Header_cells(3,1)={description};
-        Header_cells(4,1)={'AOX_BalCal'};
-        Header_cells(5,1)={REPORT_NO};
-        Header_cells(6,:)=voltagelist(1:voltdimFlag);
-        Header_cells(7,:)=voltunits(1:voltdimFlag)';
-        Header_cells(8,:)=num2cell(min(excessVec0));
-        Header_cells(9,:)=num2cell(max(excessVec0));
-        Header_cells(10,:)=num2cell(gageCapacities);
+        for k=1:length(balfittargetRes(1,:))
+            [balfitgoop(k),balfitkstar(k)] = max(abs(balfittargetRes(:,k)));
+            balfitgoopVal(k) = abs(balfittargetRes(kstar(k),k));
+            balfittR2(k) = balfittargetRes(:,k)'*balfittargetRes(:,k);     % AJM 6_12_19
+        end
         
-        for chan_i=1:loaddimFlag
-            Header_cells(11,1)=loadlist(chan_i);
-            Header_cells(12,1)=loadunits(chan_i);
-            Header_cells(13,1)=num2cell(min(targetMatrix0(:,chan_i)));
-            Header_cells(14,1)=num2cell(max(targetMatrix0(:,chan_i)));
-            Header_cells(15,1)=num2cell(loadCapacities(chan_i));
-            Coeff_cells(:,1)=num2cell(coeff(:,chan_i));
+        balfitdavariance = var(balfittargetRes);
+        balfitgee = mean(balfittargetRes);
+        balfitstandardDev10 = std(balfittargetRes);
+        balfitstandardDev = balfitstandardDev10';
+        
+        voltagestatlist = {'Voltage', 'Sum_Sqrs', 'PRESS_Stat', 'DOF', 'Mean_Sqrs', 'F_Value', 'P_Value', 'R_sq', 'Adj_R_sq', 'PRESS_R_sq'};
+        balfitregresslist = {'Term_Index','Term_Name', 'Coeff_Value', 'CI_95cnt', 'T_Stat', 'P_Value', 'VIF_A', 'Signif'};
+        
+        %balfitinterceptlist = ['Intercept', '0', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'];
+        balfitinterceptlist = [1, 0, 0, 0, 0, 0, 0];
+        
+        BALFIT_STAT_VOLTAGE_1=cell(loaddimFlag,1);
+        BALFIT_REGRESS_COEFFS_1=cell(loaddimFlag,1);
+        Term_Names=customMatrix_labels(loadlist,voltagelist,voltdimFlag,loaddimFlag,FLAGS.model,'loads'); %Get label names for custom equation matrix
+        if FLAGS.anova==1
+            for k=1:loaddimFlag
+                BALFIT_RECOMM_ALG_EQN(:,k) = 1.0*balfitANOVA(k).sig;
+                balfitANOVA01(:,:) = [totalnumcoeffs2; balfitANOVA(k).beta'; ANOVA(k).beta_CI'; balfitANOVA(k).T'; balfitANOVA(k).p_T'; balfitANOVA(k).VIF'; 1.0*balfitANOVA(k).sig']';
+                balfitANOVA_intercept1(1,:) = balfitinterceptlist(1,:);
+                balfitANOVA1([1:nterms+1],:) = num2cell([balfitANOVA_intercept1(1,:); balfitANOVA01([1:nterms],:)]);
+                toplayer2(k,:) = [voltagelist(k), balfittR2(1,k), balfitANOVA(k).PRESS, dsof, balfitgee(1,k), balfitANOVA(k).F, balfitANOVA(k).p_F, balfitANOVA(k).R_sq, balfitANOVA(k).R_sq_adj, balfitANOVA(k).R_sq_p];
+                BALFIT_STAT_VOLTAGE_1{k} = array2table(toplayer2(k,:),'VariableNames',voltagestatlist(1:10));
+                BALFIT_REGRESS_COEFFS_1{k} = cell2table([balfitANOVA1(1:nterms+1,1),[{'INTERCEPT'};Term_Names],balfitANOVA1(1:nterms+1,2:end)],'VariableNames',balfitregresslist);
+            end
             
-            content=[Header_cells;Coeff_cells];
+            if FLAGS.BALFIT_ANOVA==1
+                warning('off', 'MATLAB:xlswrite:AddSheet'); warning('off', 'MATLAB:DELETE:FileNotFound'); warning('off',  'MATLAB:DELETE:Permission')
+                filename = 'BALFIT_ANOVA_STATS.xlsx';
+                fullpath=fullfile(output_location,filename);
+                try
+                    delete(char(fullpath))
+                    for k=1:loaddimFlag
+                        writetable(BALFIT_STAT_VOLTAGE_1{k},fullpath,'Sheet',k,'Range','A1');
+                        writetable(BALFIT_REGRESS_COEFFS_1{k},fullpath,'Sheet',k,'Range','A4');
+                    end
+                    fprintf('\nBALFIT ANOVA STATISTICS FILE: '); fprintf(filename); fprintf('\n');
+                    %filename = 'BALFIT_RECOMM_CustomEquationMatrixTemplate.csv';
+                    %dlmwrite(filename,BALFIT_RECOMM_ALG_EQN,'precision','%.8f');
+                catch ME
+                    fprintf('\nUNABLE TO PRINT BALFIT ANOVA STATISTICS FILE. ');
+                    if (strcmp(ME.identifier,'MATLAB:table:write:FileOpenInAnotherProcess'))
+                        fprintf('ENSURE "'); fprintf(char(filename)); fprintf('" IS NOT OPEN AND TRY AGAIN');
+                    end
+                    fprintf('\n')
+                end
+                warning('on',  'MATLAB:DELETE:Permission'); warning('on', 'MATLAB:xlswrite:AddSheet'); warning('on', 'MATLAB:DELETE:FileNotFound')
+            end
+            
+        end
+        
+        if FLAGS.BALFIT_Matrix==1
+            [leftColumn_coeff,voltRow]=customMatrix_labels(loadlist,voltagelist,voltdimFlag,loaddimFlag,FLAGS.model,'loads'); %Get label names for custom equation matrix
+            Header_cells=cell(18,loaddimFlag);
+            dash_row=cell(1,loaddimFlag);
+            dash_row(:,:)={'- - - - - - - -'};
+            dash_row{1,1}=repmat('- ',1,round(15*loaddimFlag/2));
+            Header_cells(1,1)={'DATA_REDUCTION_MATRIX_IN_AMES_FORMAT'};
+            Header_cells(2,1)={balance_type};
+            Header_cells(3,1)={description};
+            Header_cells(4,1)={'AOX_BalCal'};
+            Header_cells(5,1)={REPORT_NO};
+            Header_cells(6,1)={'Primary Load Iteration Method'};
+            Header_cells(7,:)=loadlist(1:loaddimFlag);
+            Header_cells(8,:)=loadunits(1:loaddimFlag);
+            Header_cells(9,:)=num2cell(min(targetMatrix0));
+            Header_cells(10,:)=num2cell(max(targetMatrix0));
+            Header_cells(11,:)=num2cell(loadCapacities);
+            Header_cells(12,:)=voltRow;
+            Header_cells(13,:)=voltunits(1:loaddimFlag)';
+            Header_cells(14,:)=num2cell(min(excessVec0));
+            Header_cells(15,:)=num2cell(max(excessVec0));
+            Header_cells(16,:)={'DEFINED'};
+            Header_cells(17:18,:)=num2cell(balfit_regress_matrix(1:2,:));
+            leftColumn_head=[{'FILE_TYPE'};{'BALANCE_NAME'};{'DESCRIPTION'};{'PREPARED_BY'};{'REPORT_NO'};{'ITERATION_METHOD'};{'LOAD_NAME'};{'LOAD_UNIT'};{'LOAD_MINIMUM'};{'LOAD_MAXIMUM'};{'LOAD_CAPACITY'};{'GAGE_OUT_NAME'};{'GAGE_OUT_UNIT'};{'GAGE_OUT_MINIMUM'};{'GAGE_OUT_MAXIMUM'};{'GAGE_SENSITIVITY'};{'NATURAL_ZERO'};{'INTERCEPT'}];
+            leftColumn=[leftColumn_head;{'D0[TRANSPONSE (C1INV)]'};voltRow;{'D1[MATRIX IS NOT USED]'};leftColumn_coeff(1:loaddimFlag);'D2[TRANSPOSE(C1INVC2)]';leftColumn_coeff(loaddimFlag+1:end)];
+            D0=balfit_regress_matrix(3:2+loaddimFlag,:);
+            D1=balfit_regress_matrix(3+loaddimFlag:2+2*loaddimFlag,:);
+            D2=balfit_regress_matrix(3+2*loaddimFlag:end,:);
+            
+            content=[Header_cells;dash_row;num2cell(D0);dash_row;num2cell(D1);dash_row;num2cell(D2)];
             balfit_matrix=[leftColumn,content];
             
             % Text file to output data
-            filename = [loadlist{chan_i},'_BALFIT_REGRESSION_COEFFICIENT_MATRIX_IN_AMES_FORMAT.txt'];
+            filename = 'BALFIT_DATA_REDUCTION_MATRIX_IN_AMES_FORMAT.txt';
             fullpath=fullfile(output_location,filename);
-            description=[loadlist{chan_i},' BALFIT REGRESSION COEFFICIENT MATRIX IN AMES FORMAT'];
+            description='BALFIT DATA REDUCTION MATRIX IN AMES FORMAT';
             
             try
                 % Open file for writing
                 fid = fopen(fullpath, 'w');
-                header_lines=[1:5];
-                text_lines=[6,7,11,12];
-                loadCap_lines=15;
-                print_through=sum(~cellfun(@isempty,content),2);
+                header_lines=[1:6];
+                text_lines=[7,8,12,13,16];
+                dash_lines=[19,19+loaddimFlag+1,19+2*loaddimFlag+2];
                 
                 for i=1:size(content,1) %Printing to text file
-                    fprintf(fid,'%18s',leftColumn{i});
+                    fprintf(fid,'%23s',leftColumn{i});
                     if ismember(i,header_lines) %Printing header cells
                         fprintf(fid, ' %s \r\n', content{i,1});
                     elseif ismember(i,text_lines) %Printing text only lines
-                        for j=1:print_through(i)
+                        for j=1:size(content,2)
                             fprintf(fid, ' %14s', content{i,j});
                         end
                         fprintf(fid,'\r\n');
-                    elseif ismember(i,loadCap_lines) %Printing load capacity line
-                        for j=1:print_through(i)
-                            A_str = sprintf('%.3f',content{i,j});
-                            fprintf(fid, ' %14s', A_str);
+                    elseif ismember(i,dash_lines) %Printing dashed break lines
+                        dash_length=num2str(15*loaddimFlag);
+                        dash_format=" %"+dash_length+"s";
+                        for j=1:1
+                            fprintf(fid, char(dash_format), content{i,1});
                         end
                         fprintf(fid,'\r\n');
                     else %Printing numerical results in scientific notation
-                        for j=1:print_through(i)
+                        for j=1:size(content,2)
                             A_str = sprintf('% 10.6e',content{i,j});
                             exp_portion=extractAfter(A_str,'e');
                             num_portion=extractBefore(A_str,'e');
@@ -475,7 +543,6 @@ if strcmp(section,{'Calibration Algebraic'})==1
             end
         end
     end
-
     
     if FLAGS.excel == 1
         %Output calibration load approximation
