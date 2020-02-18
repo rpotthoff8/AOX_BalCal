@@ -12,6 +12,7 @@ function plotResPages(series, targetRes, loadlist, stdDevPercentCapacity, loadCa
 %OUTPUTS:
 % []
 
+loadlist=cellfun(@(x) strrep(x,'_','\_'),loadlist,'UniformOutput',false);
 n_data = size(targetRes,1); %Number of datapoint
 n_dim = size(targetRes,2); %Number of dimensions (channels) in data
 

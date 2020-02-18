@@ -343,7 +343,7 @@ if FLAGS.hist == 1
         hold on
         plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
         hold off
-        xlabel(['\Delta',loadlist{k0},'/\sigma']);
+        xlabel(['\Delta',strrep(loadlist{k0},'_','\_'),'/\sigma']);
     end
 end
 %END SAME

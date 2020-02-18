@@ -37,7 +37,6 @@ fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh, Javier Villarreal, 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       USER INPUT SECTION
 
-
 out = AOX_GUI; %Call GUI
 if out.cancel == 1
     return
@@ -296,13 +295,23 @@ else
     FLAGS.model = 4;
 end
 
+%Display warning if included term is not possible with data dimensions
+if exist('termInclude','var')
+    if voltdimFlag<2 && any(termInclude([5,6,7,8,11,12]))
+        warning('Less than 2 input data dimensions. Unable to create interaction terms: F*G, |F*G|, F*|G|, |F|*G, F*G*G, F*G*H')
+    elseif voltdimFlag<3 && any(termInclude(12))
+        warning('Less than 3 input data dimensions. Unable to create interaction term: F*G*H')
+    end
+end
+
+%If including series specific (tare) intercepts, add to bottom of customMatrix
 if FLAGS.tare_intercept==1
     customMatrix = [customMatrix; ones(nseries0,loaddimFlag)];
 end
 
 % Load (output) data labels if present, otherwise use default values.
 if exist('loadlabels','var')==0 || isempty(loadlabels)==1
-    if FLAGS.mode==1 %If in balance calibration mode
+    if FLAGS.mode==1 && loaddimFlag<= 10 && voltdimFlag<=10 %If in balance calibration mode
         loadlist = {'NF','BM','S1','S2','RM','AF','PLM', 'PCM', 'MLM', 'MCM'};
         voltagelist = {'rNF','rBM','rS1','rS2','rRM','rAF','rPLM','rPCM','rMLM','rMCM'};
     else %If in general approximation mode
@@ -323,8 +332,9 @@ else
     voltagelist = cellfun(@(x) x{1},splitlist,'UniformOutput',false);
 end
 reslist = strcat('res',loadlist);
+
 % Voltage data labels if present, otherwise use default values.
-if exist('loadunits','var')==0 
+if exist('loadunits','var')==0
     if FLAGS.mode==1 && loaddimFlag<=10 && voltdimFlag<=10 %If in balance calibration mode
         loadunits = {'lbs','in-lbs','lbs','lbs','in-lbs','lbs','in-lbs', 'in-lbs', 'in-lbs', 'in-lbs'};
         voltunits = {'microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V','microV/V'};
@@ -360,7 +370,8 @@ end
 
 % The Custom model calculates all terms, and then excludes them in
 % the calibration process as determined by the customMatrix.
-nterms = 2*voltdimFlag*(voltdimFlag+2)+factorial(voltdimFlag)/factorial(voltdimFlag-2)+factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3))+1;
+% nterms = 2*voltdimFlag*(voltdimFlag+2)+factorial(voltdimFlag)/factorial(voltdimFlag-2)+factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3))+1;
+nterms = size(customMatrix,1);
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
@@ -410,9 +421,9 @@ if FLAGS.high_con>0 %If enforcing hierarchy constraint
             warning('Permitted Math Model is not hierarchically supported. Unable to enforce hierarchy constraint in ALG Model Refinement.');
             break
         end
-    end
-    
+    end 
 end
+
 %% Find suggested Eqn using Reference Balfit B29 method
 if FLAGS.sugEqnLeg==1
     [customMatrix_sug, FLAGS]=modelOpt_suggested(VIFthresh, customMatrix, customMatrix_req, loaddimFlag, nterms, comIN0, sig_pct, targetMatrix0, high, FLAGS);
@@ -489,7 +500,7 @@ if FLAGS.balOut == 1
         %Calculate xcalib (coefficients)
         [xcalib,ANOVA] = calc_xcalib(comIN0,targetMatrix0,series0,...
             nterms,nseries0,loaddimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
-               
+        
         % APPROXIMATION
         % define the approximation for inputs minus global zeros (includes
         % intercept terms)
@@ -523,30 +534,30 @@ if out.model~=0 %If any algebraic terms included
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, algebraic section
     section={'Calibration Algebraic'};
-        newStruct=struct('aprxIN',aprxIN,...
-            'coeff',coeff,...
-            'nterms',nterms,...
-            'ANOVA',ANOVA,...
-            'targetMatrix0',targetMatrix0,...
-            'loadunits',{loadunits(:)},...
-            'voltunits',{voltunits(:)},...
-            'description',description,...
-            'gageCapacities',gageCapacities);
+    newStruct=struct('aprxIN',aprxIN,...
+        'coeff',coeff,...
+        'nterms',nterms,...
+        'ANOVA',ANOVA,...
+        'targetMatrix0',targetMatrix0,...
+        'loadunits',{loadunits(:)},...
+        'voltunits',{voltunits(:)},...
+        'description',description,...
+        'gageCapacities',gageCapacities);
+    uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+    
+    if FLAGS.mode==1 %Outputs for balance calibration mode
+        newStruct=struct('loadCapacities',loadCapacities,...
+            'tares',tares, 'balance_type',balance_type,...
+            'tares_STDDEV',tares_STDDEV);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-        
-        if FLAGS.mode==1 %Outputs for balance calibration mode
-            newStruct=struct('loadCapacities',loadCapacities,...
-                'tares',tares, 'balance_type',balance_type,...
-                'tares_STDDEV',tares_STDDEV);
-            uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-                [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-        end
-               
-        %Output results from calibration algebraic section
-        output(section,FLAGS,targetRes,fileName,numpts0,nseries0,...
-            loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
-            reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
+    end
+    
+    %Output results from calibration algebraic section
+    output(section,FLAGS,targetRes,fileName,numpts0,nseries0,...
+        loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
+        reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
 else
     fprintf('   NO ALGEBRAIC MODEL INCLUDED \n');
 end
@@ -565,7 +576,7 @@ if FLAGS.balVal == 1
     load(out.savePathval,'-mat'); %Load validation data
     if FLAGS.mode~=1 %If not in balance calibration mode
         %All data is from same series
-        seriesvalid=ones(size(excessVecvalid,1),1); 
+        seriesvalid=ones(size(excessVecvalid,1),1);
         series2valid=ones(size(excessVecvalid,1),1);
     end
     [validSeries,s_1stV,~] = unique(seriesvalid); %Define series for validation data
@@ -593,7 +604,7 @@ if FLAGS.balVal == 1
         globalZerosvalid = mean(natzerosvalid,1);
         % Subtract the Global Zeros from the Inputs and Local Zeros
         dainputsvalid = excessVecvalid-globalZerosvalid;
-    
+        
         %load capacities
         loadCapacitiesvalid(loadCapacitiesvalid == 0) = realmin;
     else
@@ -602,7 +613,7 @@ if FLAGS.balVal == 1
     
     %find number of series0; this will tell us the number of tares
     nseriesvalid = max(seriesvalid);
-          
+    
     % Call the Algebraic Subroutine
     comINvalid = balCal_algEqns(FLAGS.model,dainputsvalid,seriesvalid,0); %Generate term combinations
     
@@ -794,10 +805,10 @@ if FLAGS.balCal == 2
                     
                     %find widths 'w' by optimization routine
                     eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,voltdimFlag),min_eps,max_eps );
-
+                    
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-%                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
+                    %                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
                     %                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
                     
                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
@@ -887,7 +898,7 @@ if FLAGS.balCal == 2
         
         %Store basis parameters in Hist variables
         epsHist(u,not(self_Terminate)) = eps(not(self_Terminate));
-%         cHist_tot{u} = coeff_algRBFmodel;
+        %         cHist_tot{u} = coeff_algRBFmodel;
         centerIndexHist(u,not(self_Terminate)) = centerIndexLoop(not(self_Terminate));
         for s=1:loaddimFlag
             if self_Terminate(s)==0
@@ -897,10 +908,10 @@ if FLAGS.balCal == 2
                 %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
             end
         end
-                
+        
         %Find and Store tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist(1:u,:),center_daHist(1:u,:,:),h_GRBF); %Calculate tares from series specific intercepts           
+            [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist(1:u,:),center_daHist(1:u,:,:),h_GRBF); %Calculate tares from series specific intercepts
         else
             taresGRBF=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
         end
@@ -931,7 +942,7 @@ if FLAGS.balCal == 2
         coeff_algRBFmodel_RBF=zeros(u,loaddimFlag);
         for i=1:u
             coeff_algRBFmodel_RBF(i,:)=diag(coeff_algRBFmodel_RBF_diag(1+loaddimFlag*(i-1):loaddimFlag*i,:));
-        end        
+        end
         
         %Store basis parameters in Hist variables
         cHist_tot{u} = coeff_algRBFmodel;
@@ -1088,7 +1099,7 @@ if FLAGS.balCal == 2
         %Trim comIN
         comIN0_RBF(:,nterms_RBF+1:nterms+u*loaddimFlag)=[];
         %Zero out parameters for trimmed RBFs in each channel
-        for s=1:loaddimFlag 
+        for s=1:loaddimFlag
             epsHist(final_RBFs_added(s)+1:end,s) = 0;
             centerIndexHist(final_RBFs_added(s)+1:end,s) = 0;
             center_daHist(final_RBFs_added(s)+1:end,:,s)=0; %Variable stores the voltages of the RBF centers.
@@ -1100,7 +1111,7 @@ if FLAGS.balCal == 2
         epsHist(max(final_RBFs_added)+1:end,:) = [];
         centerIndexHist(max(final_RBFs_added)+1:end,:) = [];
         center_daHist(max(final_RBFs_added)+1:end,:,:)=[];
-             
+        
         %New flag structure for calc_xcalib
         FLAGS_RBF=FLAGS; %Initialize as global flag structure
         FLAGS_RBF.model=4; %Calculate with custom model
@@ -1137,7 +1148,7 @@ if FLAGS.balCal == 2
             taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
         end
         taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
-                
+        
         %Extract RBF coefficients
         coeff_algRBFmodel=xcalib_RBF(1:nterms_RBF,:); %Algebraic and RBF coefficient matrix
         coeff_algRBFmodel_alg=xcalib_RBF(1:nterms,:); %new algebraic coefficients
@@ -1150,7 +1161,7 @@ if FLAGS.balCal == 2
         
         %Update basis parameters in Hist variables
         cHist_tot{u+1} = coeff_algRBFmodel;
-
+        
         %Calculate and store residuals
         targetRes2 = targetMatrix0-aprxINminTARE2;
         newRes2 = targetRes2'*targetRes2;
@@ -1158,35 +1169,35 @@ if FLAGS.balCal == 2
         resSquareHist(u+1,:) = resSquare2;
         resStdHist(u+1,:)=std(targetRes2);
     end
-        
+    
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
-        newStruct=struct('aprxINminTARE2',aprxINminTARE2,...
-            'epsHist',epsHist,...
-            'coeff_algRBFmodel_RBF',coeff_algRBFmodel_RBF,...
-            'centerIndexHist',centerIndexHist,...
-            'center_daHist',center_daHist,...
-            'ANOVA',ANOVA,...
-            'ANOVA_GRBF', ANOVA_GRBF,...
-            'coeff_algRBFmodel_alg',coeff_algRBFmodel_alg,...
-            'h_GRBF',h_GRBF,...
-            'numBasis',max(final_RBFs_added),...
-            'nterms',nterms+max(final_RBFs_added)*loaddimFlag,...
-            'coeff_algRBFmodel',coeff_algRBFmodel,...
-            'coeff',coeff);
+    newStruct=struct('aprxINminTARE2',aprxINminTARE2,...
+        'epsHist',epsHist,...
+        'coeff_algRBFmodel_RBF',coeff_algRBFmodel_RBF,...
+        'centerIndexHist',centerIndexHist,...
+        'center_daHist',center_daHist,...
+        'ANOVA',ANOVA,...
+        'ANOVA_GRBF', ANOVA_GRBF,...
+        'coeff_algRBFmodel_alg',coeff_algRBFmodel_alg,...
+        'h_GRBF',h_GRBF,...
+        'numBasis',max(final_RBFs_added),...
+        'nterms',nterms+max(final_RBFs_added)*loaddimFlag,...
+        'coeff_algRBFmodel',coeff_algRBFmodel,...
+        'coeff',coeff);
+    uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
+        [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+    
+    if FLAGS.mode==1
+        newStruct=struct('loadCapacities',loadCapacities,'tares',taresGRBF,'tares_STDDEV',taresGRBFSTDEV);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-        
-        if FLAGS.mode==1
-        newStruct=struct('loadCapacities',loadCapacities,'tares',taresGRBF,'tares_STDDEV',taresGRBFSTDEV);
-                uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
-            [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-        end
-        
-        output(section,FLAGS,targetRes2,fileName,numpts0,nseries0,...
-            loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
-            reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
+    end
+    
+    output(section,FLAGS,targetRes2,fileName,numpts0,nseries0,...
+        loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
+        reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
     %END CALIBRATION GRBF SECTION
     
     %%
@@ -1247,10 +1258,10 @@ if FLAGS.balCal == 2
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         end
-            
-            output(section,FLAGS,targetRes2valid,fileNamevalid,numptsvalid,nseriesvalid,...
-                loadlist,seriesvalid,excessVecvalid,voltdimFlagvalid,loaddimFlagvalid,voltagelist,...
-                reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
+        
+        output(section,FLAGS,targetRes2valid,fileNamevalid,numptsvalid,nseriesvalid,...
+            loadlist,seriesvalid,excessVecvalid,voltdimFlagvalid,loaddimFlagvalid,voltagelist,...
+            reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
     end
     %END GRBF SECTION FOR VALIDATION
 end

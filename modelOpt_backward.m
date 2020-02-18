@@ -76,7 +76,7 @@ for i=1:loaddimFlag %Loop through all channels
         customMatrix_hist(:,1)=customMatrix_opt(:,1); %First model is required model
         for j=2:num_test(i) %Loop through each # terms from current number to max number
             
-            %Possible terms to be subtracted are those in current model that are not in permitted model
+            %Possible terms to be subtracted are those in current model that are not in required model
             pos_sub=zeros(size(customMatrix_opt,1),1); %Initialize as zeros
             pos_sub(~boolean(customMatrix_req(:,i)))=customMatrix_opt(~boolean(customMatrix_req(:,i)),i); %Vector of terms that can be subtracted
             

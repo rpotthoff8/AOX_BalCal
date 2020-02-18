@@ -25,8 +25,8 @@ for j = 1:ind_n_dim
         cc = corrcoef(ind_var(:,j),dep_var(:,k));
         subplot(ind_n_dim,dep_n_dim,it_in)
         plot(ind_var(:,j),dep_var(:,k),'.')
-        title(cc(2))
-        xlabel(ind_label{j}); ylabel(dep_label{k});
+        title(cc(2), 'Interpreter', 'none')
+        xlabel(ind_label{j}, 'Interpreter', 'none'); ylabel(dep_label{k}, 'Interpreter', 'none');
         set(gca,'xtick',[],'ytick',[])
         ccmat(j,k) = cc(2);
     end

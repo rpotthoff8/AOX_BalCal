@@ -38,13 +38,24 @@ block2=cell(voltdimFlag,1);
 block3=cell(voltdimFlag,1);
 block4=cell(voltdimFlag,1);
 block5=cell(voltdimFlag,1);
-block6=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
-block7=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
-block8=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
-block9=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
+if voltdimFlag>=2
+    block6=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
+    block7=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
+    block8=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
+    block9=cell(((voltdimFlag-1)*voltdimFlag)/2,1);
+else
+    block6=[];
+    block7=[];
+    block8=[];
+    block9=[];
+end
 block10=cell(voltdimFlag,1);
 block11=cell(voltdimFlag,1);
-block13=cell(factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3)),1);
+if voltdimFlag>=3
+    block13=cell(factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3)),1);
+else
+    block13=[];
+end
 %write text for variable names and combinations for terms 1:11, 13
 for i=1:voltdimFlag
     block2(i)=leftlist(i);
@@ -52,30 +63,38 @@ for i=1:voltdimFlag
     block4(i)=strcat(leftlist(i),'*',leftlist(i));
     block5(i)=strcat(leftlist(i),'*|',leftlist(i),'|');
     
+    if voltdimFlag>=2
     for j=i+1:voltdimFlag
         block6(count5)=strcat(leftlist(i),'*',leftlist(j));
         block7(count5)=strcat('|',leftlist(i),'*',leftlist(j),'|');
         block8(count5)=strcat(leftlist(i),'*|',leftlist(j),'|');
         block9(count5)=strcat('|',leftlist(i),'|*',leftlist(j));
         count5=count5+1;
+        if voltdimFlag>=3
         for k=j+1:voltdimFlag
             block13(count13)=strcat(leftlist(i),'*',leftlist(j),'*',leftlist(k));
             count13=count13+1;
         end
+        end
+    end
     end
     block10(i)=strcat(leftlist(i),'*',leftlist(i),'*',leftlist(i));
     block11(i)=strcat('|',leftlist(i),'*',leftlist(i),'*',leftlist(i),'|');
 end
 
 %write text for variable names and combinations for term 12 (F*G*G)
-block12=cell(factorial(voltdimFlag)/factorial(voltdimFlag-2),1);
-count=1;
-for i=1:voltdimFlag
-    j_ind=setdiff([1:voltdimFlag],i); %Indices for inner loop
-    for j=1:length(j_ind)
-        block12(count)=strcat(leftlist(i),'*',leftlist(j_ind(j)),'*',leftlist(j_ind(j)));
-        count=count+1;
+if voltdimFlag>=2
+    block12=cell(factorial(voltdimFlag)/factorial(voltdimFlag-2),1);
+    count=1;
+    for i=1:voltdimFlag
+        j_ind=setdiff([1:voltdimFlag],i); %Indices for inner loop
+        for j=1:length(j_ind)
+            block12(count)=strcat(leftlist(i),'*',leftlist(j_ind(j)),'*',leftlist(j_ind(j)));
+            count=count+1;
+        end
     end
+else
+    block12=[];
 end
 
 %Select Terms based on model type selected

@@ -122,7 +122,7 @@ fprintf(' Complete. \n')
 if all_support==1
     fprintf('   All tested predictor variable terms are supported by data. No terms eliminated. \n');
 else
-    fprintf('   Linear dependence found between predictor variable terms. Terms eliminated to ensure non-singularity.\n');
+    warning('   Linear dependence found between predictor variable terms. Terms eliminated to ensure non-singularity.');
 end
 
 end
