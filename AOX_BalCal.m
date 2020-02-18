@@ -372,6 +372,9 @@ end
 % the calibration process as determined by the customMatrix.
 % nterms = 2*voltdimFlag*(voltdimFlag+2)+factorial(voltdimFlag)/factorial(voltdimFlag-2)+factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3))+1;
 nterms = size(customMatrix,1);
+if FLAGS.tare_intercept==1
+    nterms=nterms-nseries0;
+end
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
