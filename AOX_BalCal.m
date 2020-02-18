@@ -372,6 +372,9 @@ end
 % the calibration process as determined by the customMatrix.
 % nterms = 2*voltdimFlag*(voltdimFlag+2)+factorial(voltdimFlag)/factorial(voltdimFlag-2)+factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3))+1;
 nterms = size(customMatrix,1);
+if FLAGS.tare_intercept==1
+    nterms=nterms-nseries0;
+end
 
 % Creates the algebraic combination terms of the inputs.
 % Also creates intercept terms; a different intercept for each series.
@@ -695,7 +698,11 @@ if FLAGS.balCal == 2
     uniqueOut=struct();
     
     %Initialize Variables
-    targetRes2=targetRes;
+    if out.model~=0
+        targetRes2=targetRes;
+    else
+        targetRes2=targetMatrix0;
+    end
     aprxINminGZ2 = aprxINminGZ;
     aprxIN2_Hist = cell(numBasis,1);
     tareGRBFHist = cell(numBasis,1);
@@ -712,7 +719,23 @@ if FLAGS.balCal == 2
     resStdHist=zeros(numBasis,loaddimFlag);
     dist=zeros(size(dainputs0,1),size(dainputs0,1),size(dainputs0,2));
     
+    %Datapoints defined be input values and desire output value
+%     orthog_in=zeros(numpts0,voltdimFlag+1,loaddimFlag);
+    orthog_in=zeros(numpts0,voltdimFlag+2,loaddimFlag);
+    for i=1:loaddimFlag
+        orthog_in(:,:,i)=[dainputs0,targetMatrix0(:,i),targetRes2(:,i)];
+%         orthog_in(:,:,i)=[dainputs0,targetMatrix0(:,i)];
+        orthog_max=max(abs(orthog_in(:,:,i)),[],1);
+        orthog_in(:,:,i)=orthog_in(:,:,i)./orthog_max;
+    end
+    orthog_in=orthog_in./(vecnorm(orthog_in,2,2));
     
+    resolve_num=0;
+    numBlock=round(numBasis/(resolve_num+1));
+    resolve_i=numBlock*(1:resolve_num);
+    solve_i=[resolve_i,numBasis];
+    
+        
     for i=1:size(dainputs0,2)
         dist(:,:,i)=dainputs0(:,i)'-dainputs0(:,i); %solve distance between each datapoint in each dimension, Eqn 16 from Javier's notes
     end
@@ -794,11 +817,30 @@ if FLAGS.balCal == 2
                 VIF_good=0; %Initialize Flag for if VIF is acceptable
                 while VIF_good==0 %Repeat until VIF is acceptable
                     
+                    if u==1
                     %PLACE CENTER BASED ON LOCATION OF MAX RESIDUAL
                     targetRes2_find=targetRes2;
                     targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reached max number of RBFs
                     [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s))); %Place RBF at max residual location
                     count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1; %Advance count for center location
+                    else
+                        %Determine RBF placement by orthogonality with
+                        %current center locations. 
+                        %If a vector is orthogonal to the current set of
+                        %vectors it's dot product will be 0 with all
+                        %current vectors.  We are interested in finding the
+                        %maximum of the dot product between each potential
+                        %new vector and the current vector.  Then we pick
+                        %the new vector with the minimum value. 
+                        %https://www.math.drexel.edu/~jwd25/LM_SPRING_07/lectures/lecture7.html
+%                         max_dot=zeros(size(orthog_in,1),1);
+                        max_dot2=max(orthog_in(centerIndexHist(1:u-1,s),:,s)*orthog_in(:,:,s)',[],1);
+%                        for i=1:size(orthog_in,1)
+%                            max_dot(i)=max(orthog_in(centerIndexHist(1:u-1,s),:,s)*orthog_in(i,:,s)');
+%                        end
+                       [~,centerIndexLoop(s)] = min(max_dot2); %Place RBF datapoint most orthogonal to current set
+                       count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1; %Advance count for center location
+                    end
                     
                     %DEFINE DISTANCE BETWEEN RBF CENTER AND OTHER DATAPOINTS
                     eta(:,s)=R_square(:,centerIndexLoop(s)); %Distance squared between RBF center and datapoints
@@ -806,11 +848,16 @@ if FLAGS.balCal == 2
                     %find widths 'w' by optimization routine
                     eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,voltdimFlag),min_eps,max_eps );
                     
+                    
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
                     %                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
                     %                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
                     
+                    comIN_temp=[ones(length(rbfINminGZ_temp) ,1) ,rbfINminGZ_temp];
+                    c_temp=comIN_temp\targetRes2(:,s); %Solve for coefficient to best fit RBF to residuals
+                    targetRes2(:,s)=targetRes2(:,s)-comIN_temp*c_temp;
+                     
                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
                         comIN0_RBF_VIFtest(:,end)=rbfINminGZ_temp; %Define input matrix ('X') with new RBF, algebraic terms, and previous RBFs
                         customMatrix_RBF_VIFtest=[customMatrix_RBF(:,s);1]; %Define customMatrix for solving terms with new RBF
@@ -838,7 +885,7 @@ if FLAGS.balCal == 2
                 end %END loop for iterating until good VIF
                 rbfINminGZ(:,u,s)=rbfINminGZ_temp; %Store temp RBF
             end
-        end
+        end %END loop for each output channel at iteration
         
         %Make custom Matrix to solve for only RBF coefficinets in correct channel
         RBF_custom=repmat(eye(loaddimFlag,loaddimFlag),u,1);
@@ -886,9 +933,13 @@ if FLAGS.balCal == 2
         end
         nterms_RBF=nterms+u*loaddimFlag; %New number of terms to solve for
         
+        if any(ismember(u,solve_i))
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
         [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
+        else
+            xcalib_RBF=zeros(size(comIN0_RBF,2),loaddimFlag);
+        end
         
         if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run for channels that have self terminated
             xcalib_RBF(1:size(xcalib_RBF_last,1)-nseries0,self_Terminate)=xcalib_RBF_last(1:end-nseries0,self_Terminate);
@@ -948,11 +999,24 @@ if FLAGS.balCal == 2
         cHist_tot{u} = coeff_algRBFmodel;
         
         %Calculate and store residuals
-        targetRes2 = targetMatrix0-aprxINminTARE2;
-        newRes2 = targetRes2'*targetRes2;
-        resSquare2 = diag(newRes2);
-        resSquareHist(u,:) = resSquare2;
-        resStdHist(u,:)=std(targetRes2);
+        if any(ismember(u,solve_i))
+            targetRes2 = targetMatrix0-aprxINminTARE2;
+            newRes2 = targetRes2'*targetRes2;
+            resSquare2 = diag(newRes2);
+            resSquareHist(u,:) = resSquare2;
+            resStdHist(u,:)=std(targetRes2);
+            
+            %Datapoints defined be input values and desire output value
+            %             orthog_in=zeros(numpts0,voltdimFlag+1,loaddimFlag);
+            orthog_in=zeros(numpts0,voltdimFlag+2,loaddimFlag);
+            for i=1:loaddimFlag
+                orthog_in(:,:,i)=[dainputs0,targetMatrix0(:,i),targetRes2(:,i)];
+                %                 orthog_in(:,:,i)=[dainputs0,targetMatrix0(:,i)];
+                orthog_max=max(abs(orthog_in(:,:,i)),[],1);
+                orthog_in(:,:,i)=orthog_in(:,:,i)./orthog_max;
+            end
+            orthog_in=orthog_in./(vecnorm(orthog_in,2,2));
+        end
         
         %Validation Error Self-Termination Check: use new ALG+RBF model to
         %determine standard deviation of residuals for validation data
