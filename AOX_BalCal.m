@@ -424,7 +424,7 @@ if FLAGS.high_con>0 %If enforcing hierarchy constraint
             warning('Permitted Math Model is not hierarchically supported. Unable to enforce hierarchy constraint in ALG Model Refinement.');
             break
         end
-    end 
+    end
 end
 
 %% Find suggested Eqn using Reference Balfit B29 method
@@ -534,6 +534,17 @@ end
 tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 
 if out.model~=0 %If any algebraic terms included
+    
+    if FLAGS.tare_intercept==1 %Check for tare load estimate agreement
+        y_hat_PI=zeros(size(targetRes));
+        if FLAGS.anova==1 %Extract load PI from ANOVA structure
+            for i=1:loaddimFlag
+                y_hat_PI(:,i)=ANOVA(i).y_hat_PI;
+            end
+        end
+        tareCheck(targetMatrix0,aprxINminGZ,series0,tares,FLAGS,targetRes,y_hat_PI,pointID0);
+    end
+    
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, algebraic section
     section={'Calibration Algebraic'};
@@ -655,6 +666,12 @@ if FLAGS.balVal == 1
             newStruct=struct('loadPI_valid',loadPI_valid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        else
+            loadPI_valid=zeros(size(aprxINvalid));
+        end
+        
+        if FLAGS.tare_intercept==1
+            tareCheck(targetMatrixvalid,aprxINminGZvalid,seriesvalid,taresvalid,FLAGS,targetResvalid,loadPI_valid,pointIDvalid);
         end
         
         %OUTPUT FUNCTION
@@ -1173,6 +1190,16 @@ if FLAGS.balCal == 2
         resStdHist(u+1,:)=std(targetRes2);
     end
     
+    if FLAGS.tare_intercept==1 %Check for tare load estimate agreement
+        y_hat_PI2=zeros(size(targetRes));
+        if FLAGS.anova==1 %Extract load PI from ANOVA structure
+            for i=1:loaddimFlag
+                y_hat_PI2(:,i)=ANOVA_GRBF(i).y_hat_PI;
+            end
+        end
+        tareCheck(targetMatrix0,aprxINminGZ2,series0,taresGRBF,FLAGS,targetRes2,y_hat_PI2,pointID0);
+    end
+    
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
@@ -1247,6 +1274,12 @@ if FLAGS.balCal == 2
             newStruct=struct('loadPI_valid_GRBF',loadPI_valid_GRBF);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
+        else
+            loadPI_valid_GRBF=zeros(size(aprxINminTARE2valid));
+        end
+        
+        if FLAGS.tare_intercept==1
+            tareCheck(targetMatrixvalid,aprxINminGZ2valid,seriesvalid,taresGRBFvalid,FLAGS,targetRes2valid,loadPI_valid_GRBF,pointIDvalid);
         end
         
         %OUTPUT FUNCTION
@@ -1391,5 +1424,55 @@ xcalib_RBF(1,:)=realityShift; %Include global intercept for reality shift
 xcalib_RBF(nterms_RBF+1:end,:)=tareShift; %Series specific intercepts are for tares
 end
 
+function []=tareCheck(targetMatrix0,aprxINminGZ,series0,tares,FLAGS,targetRes,load_PI,pointID0)
+%Check for agreement between tare loads calculated and tare load.
+%Essentially checking residuals at tare load datapoints (typically first
+%point in each series).  Flag if residual is large at these points
 
+%INPUTS:
+%  targetMatrix0 = Provided target loads
+%  aprxINminGZ  =  Global load approximation
+%  series0  =  Series vector
+%  tares  =  Calculated tare loads
+%  FLAGS  =  Structure of global flags
+%  targetRes = Matrix of residuals for load estimates
+%  load_PI = Prediction Interval for load approximations
+
+%OUTPUTS:
+%  NONE
+
+%datapoint estimates
+
+tareLoad_points=find(all(targetMatrix0==0,2)); %Find tare load datapoints: datapoints where no target load is present
+tareDif=aprxINminGZ(tareLoad_points,:)-tares(series0(tareLoad_points),:); %Find difference between calculated tare loads and global load approximation at tare load datapoints
+
+%Define acceptable margin for difference between tare loads and
+%load approximation
+if FLAGS.anova==1
+    tareMargin=load_PI(tareLoad_points,:);
+else
+    tareMargin=2*std(targetRes);
+end
+
+[probTare_r,probTare_c]=find(abs(tareDif)>tareMargin); %Find points outside of allowable margin
+probSeries=series0(tareLoad_points(probTare_r)); %Find series for problem tares
+probID=pointID0(tareLoad_points(probTare_r)); %Find point IDs for problem tares
+
+probTable=cell2table([num2cell(probTare_c),num2cell(probSeries),probID,num2cell(tareDif(abs(tareDif)>tareMargin))],'VariableNames',{'Channel','Series','Point ID','Tare Difference'}); %Table of possible problem tare datapoints
+
+if ~isempty(probTare_r) %If any problem tares found
+    if FLAGS.anova==1
+        fprintf('\nDifference between tare load estimates and load approximation at tare load datapoints > Load Prediction Interval:\n');
+    else
+        fprintf('\nDifference between tare load estimates and load approximation at tare load datapoints > 2*residual standard deviation: \n');
+    end
+    disp(probTable);
+%     fprintf('Possible issue with tare load estimates in following series: ');
+%     probSeries_str = sprintf('%.0f,' , probSeries); %Convert list of problem series to comma deliminated string
+%     probSeries_str = probSeries_str(1:end-1);% strip final comma
+%     fprintf(probSeries_str); fprintf('\n');
+    
+    warning('Disagreement between calculated series intercept tare loads and tare load datapoints.  Check results.');
+end
+end
 
