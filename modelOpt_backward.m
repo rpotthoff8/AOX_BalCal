@@ -66,11 +66,21 @@ search_metric=zeros(max(num_test), loaddimFlag); %Matrix for storing seach metri
 %     VIF_blacklist=zeros(size(customMatrix_opt)); %Matrix for tracking terms that violate VIF limit
 % end
 
+if high_con==1
+    high_sup=false(max(num_test),loaddimFlag); %Initialize variable for tracking if model is hierarchically supported
+end
+
 for i=1:loaddimFlag %Loop through all channels
     if opt_channel(i)==1 %If optimization is turned on
         %Check initial (required) math model
         [VIF_met(1,i),VIF_max(1,i),sig_all(1,i),P_max(1,i),search_metric(1,i)]=test_combo(comIN0(:,boolean(customMatrix_opt(:,i))), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, FLAGS);
         VIF_elev_met(1,i)=VIF_max(1,i)<=VIFthresh_elev; %Check if model meets elevated VIF threshold
+        
+        if high_con==1
+            sup_terms_mat=high(boolean(customMatrix_opt(1:nterms,i)),:); %Rows from hierarchy matrix for included terms. columns with '1' are needed to support variable
+            sup_terms=any(sup_terms_mat,1); %Row vector with 1s for terms needed to support included terms
+            high_sup(1,i)=all(customMatrix_opt(boolean(sup_terms),i));
+        end
         
         customMatrix_hist=zeros(size(customMatrix_opt,1),num_test(i)); %Matrix for storing custom matrix used
         customMatrix_hist(:,1)=customMatrix_opt(:,1); %First model is required model
@@ -80,16 +90,16 @@ for i=1:loaddimFlag %Loop through all channels
             pos_sub=zeros(size(customMatrix_opt,1),1); %Initialize as zeros
             pos_sub(~boolean(customMatrix_req(:,i)))=customMatrix_opt(~boolean(customMatrix_req(:,i)),i); %Vector of terms that can be subtracted
             
-%             if VIF_stop_flag==1 %If terminating search based on VIF limit
-%                 pos_sub(boolean(VIF_blacklist(:,i)))=0; %Don't add terms that are on 'blacklist' for exceeding VIF threshold
-%             end
+            %             if VIF_stop_flag==1 %If terminating search based on VIF limit
+            %                 pos_sub(boolean(VIF_blacklist(:,i)))=0; %Don't add terms that are on 'blacklist' for exceeding VIF threshold
+            %             end
             
             
             if high_con==2 %If enforcing hierarchy constraint during search
                 %Terms are only possible for subtraction if they are not
                 %supporting any other term
                 sup_Terms_mat=high(boolean(customMatrix_opt(1:nterms,i)),:); %Matrix of terms that are needed to support current terms
-%                 sup_diff=sup_Terms-customMatrix_opt(1:nterms,i)';
+                %                 sup_diff=sup_Terms-customMatrix_opt(1:nterms,i)';
                 sup_Terms_vec=any(sup_Terms_mat,1); %Find terms that are supporting any other terms
                 pos_sub(boolean(sup_Terms_vec))=0; %Remove terms that are supporting from possibilities to subtract
             end
@@ -115,7 +125,7 @@ for i=1:loaddimFlag %Loop through all channels
                 %Test math model with new term subtracted
                 [VIF_met_temp(k),VIF_max_temp(k),sig_all_temp(k),P_max_temp(k),search_metric_temp(k)]=test_combo(comIN0(:,boolean(customMatrix_opt_temp)), targetMatrix0(:,i), anova_pct, VIFthresh, nseries, FLAGS);
                 VIF_elev_met_temp(k)=VIF_max_temp(k)<=VIFthresh_elev; %Check if model meets elevated VIF threshold
-
+                
                 %                 if VIF_stop_flag==1 && VIF_met_temp(k)==0 %If adding term violates VIF limit
                 %                     VIF_blacklist(pos_sub_idx(k),i)=1; %Add term to blacklist.  Will not try to add again
                 %                 end
@@ -139,6 +149,13 @@ for i=1:loaddimFlag %Loop through all channels
             
             %Pick best term to add to move forward
             customMatrix_opt(pos_sub_idx(Idx_best),i)=0; %Remove term from customMatrix
+            
+            if high_con==1 %Check if model is supported
+                sup_terms_mat=high(boolean(customMatrix_opt(1:nterms,i)),:); %Rows from hierarchy matrix for included terms. columns with '1' are needed to support variable
+                sup_terms=any(sup_terms_mat,1); %Row vector with 1s for terms needed to support included terms
+                high_sup(j,i)=all(customMatrix_opt(boolean(sup_terms),i));
+            end
+            
             %Store results
             customMatrix_hist(:,j)=customMatrix_opt(:,i); %Store custom matrix
             VIF_met(j,i)=VIF_met_temp(Idx_best);
@@ -148,22 +165,27 @@ for i=1:loaddimFlag %Loop through all channels
             P_max(j,i)=P_max_temp(Idx_best);
             search_metric(j,i)=search_metric_temp(Idx_best);
             
+            
         end
         %Now select math model that minimizes search metric and meets both
         %constraints:
-       
-        cMeet_Idx=find(all([VIF_met(:,i),sig_all(:,i)],2)); %Index of tests that met both VIF and significance constraint tests
+        if high_con==1 %If enforcing hierarchy constraint after, only consider models that are also supported hierarchially
+            cMeet_Idx=find(all([VIF_met(:,i),sig_all(:,i),high_sup(:,i)],2)); %Index of tests that met both VIF and significance constraint tests
+        else
+            cMeet_Idx=find(all([VIF_met(:,i),sig_all(:,i)],2)); %Index of tests that met both VIF and significance constraint tests
+        end
+        
         if ~isempty(cMeet_Idx) %If any tests met both constraints
             [~,k_best]=min(search_metric(cMeet_Idx,i)); %Index of best search metric out of those meeting constraints
             Idx_best=cMeet_Idx(k_best); %Index of best search metric for all possible
             %Pick best term to add to move forward
             customMatrix_opt(:,i)=customMatrix_hist(:,Idx_best); %Add term to customMatrix
             
-            if high_con==1 %If enforcing hierarchy constraint after, add in terms needed to support model
-                sup_terms_mat=high(boolean(customMatrix_opt(1:nterms,i)),:); %Rows from hierarchy matrix for included terms. columns with '1' are needed to support variable
-                sup_terms=any(sup_terms_mat,1); %Row vector with 1s for terms needed to support included terms
-                customMatrix_opt(boolean(sup_terms),i)=1; %Include all terms needed to support currently included terms
-            end
+%             if high_con==1 %If enforcing hierarchy constraint after, add in terms needed to support model
+%                 sup_terms_mat=high(boolean(customMatrix_opt(1:nterms,i)),:); %Rows from hierarchy matrix for included terms. columns with '1' are needed to support variable
+%                 sup_terms=any(sup_terms_mat,1); %Row vector with 1s for terms needed to support included terms
+%                 customMatrix_opt(boolean(sup_terms),i)=1; %Include all terms needed to support currently included terms
+%             end
         else %No math models met both constraints: Return error message and do not optimize channel
             fprintf('\nERROR: Unable to find math model that meets constraints for channel '); fprintf(num2str(i)); fprintf('.\n');
             opt_channel(i)=0;
