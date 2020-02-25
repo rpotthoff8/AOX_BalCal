@@ -119,7 +119,11 @@ y_bar = sum(y)/n;  %I'm aware mean() exists, writing equations out for clarity)
 SSR = sum((y_hat-y_bar).^2);
 
 % NOTE: for MSR, the dof = k (not including intercept term)
-dof_r = k-1;
+if FLAGS.glob_intercept==1 || FLAGS.tare_intercept==1
+    dof_r = k-1;
+else
+    dof_r=k;
+end
 MSR = SSR/dof_r;
 
 %F-statistic, F = MSR/MSE
