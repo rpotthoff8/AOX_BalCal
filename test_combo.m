@@ -1,4 +1,4 @@
-function [VIF_met, VIF_max, sig_all, P_max ,search_metric,VIF,sig]=test_combo(X,y,pct, VIFthresh, nseries, FLAGS)
+function [VIF_met, VIF_max, sig_all, P_max ,search_metric,VIF,sig,p_T, PRESS, F]=test_combo(X,y,pct, VIFthresh, nseries, FLAGS)
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not
@@ -22,6 +22,8 @@ function [VIF_met, VIF_max, sig_all, P_max ,search_metric,VIF,sig]=test_combo(X,
 % sig_all = Boolean: if all terms (not including tare intercepts) are significant
 % P_max = Value of max coefficient P value
 % search_metric = Return value for search metric
+% VIF = Vector for VIF of for each term
+% sig = Vector of significance for each term
 
 search_metric_flag=FLAGS.search_metric;
 VIF_stop_flag=FLAGS.VIF_stop;
@@ -106,11 +108,6 @@ y_hat = H*y;
 % The error e = y - y_hat
 e = y - y_hat;
 
-if search_metric_flag==2
-    sqrt_e_mean_sq=sqrt(mean(e.^2));
-    search_metric=sqrt_e_mean_sq;
-end
-
 %% Covariance matrix and standard error
 % The covariance matrix is calculated as C = sigma_hat^2 (X' X)^-1
 % sigma_hat is an estimate of the variance (std dev), based on the MSE
@@ -133,6 +130,10 @@ end
 MSE = SSE/dof_e;
 sigma_hat_sq = MSE;
 
+if search_metric_flag==2
+    search_metric=sqrt(MSE);
+end
+
 C = sigma_hat_sq*invXtX;
 
 % The standard error of each variable is then the square root of it's
@@ -140,7 +141,7 @@ C = sigma_hat_sq*invXtX;
 se = sqrt(diag(C));
 
 %% Hypothesis testing (t-testing and F-testing)
-if search_metric_flag==3
+
     % The F statistic is defined as F_0 = MSR/MSE, where MSR is the mean square
     % of the regression.
     %First we'll need the mean value of y.
@@ -153,6 +154,7 @@ if search_metric_flag==3
     
     %F-statistic, F = MSR/MSE
     F = MSR/MSE;
+ if search_metric_flag==3   
     search_metric=-F;
 end
 % p_F = 1 - fcdf(F,dof_r,dof_e);
@@ -229,9 +231,10 @@ sig = ~((T<T_cr) & (T>-T_cr));
 
 % The PRESS residuals can be obtained using the diagonal elements of the
 % hat matrix.
-if search_metric_flag==1
+
     e_p = e./(1-diag(H));
     PRESS = sum(e_p.^2);
+    if search_metric_flag==1
     search_metric=PRESS;
 end
 
