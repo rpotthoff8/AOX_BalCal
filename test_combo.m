@@ -1,4 +1,4 @@
-function [VIF_met, VIF_max, sig_all, P_max ,search_metric,VIF,sig]=test_combo(X,y,pct, VIFthresh, nseries, FLAGS)
+function [VIF_met, VIF_max, sig_all, P_max ,search_metric,VIF,sig,p_T]=test_combo(X,y,pct, VIFthresh, nseries, FLAGS)
 % Statistical function collection.
 % Reference: http://reliawiki.org/index.php/Multiple_Linear_Regression_Analysis
 % These equations are not yet directly used by the code, and they are not
@@ -44,6 +44,7 @@ else
         P_max = 0;
         search_metric= Inf;
         sig=0;
+        p_T=0;
         return
     end
 end
@@ -106,11 +107,6 @@ y_hat = H*y;
 % The error e = y - y_hat
 e = y - y_hat;
 
-if search_metric_flag==2
-    sqrt_e_mean_sq=sqrt(mean(e.^2));
-    search_metric=sqrt_e_mean_sq;
-end
-
 %% Covariance matrix and standard error
 % The covariance matrix is calculated as C = sigma_hat^2 (X' X)^-1
 % sigma_hat is an estimate of the variance (std dev), based on the MSE
@@ -132,6 +128,10 @@ if dof_e<0
 end
 MSE = SSE/dof_e;
 sigma_hat_sq = MSE;
+
+if search_metric_flag==2
+    search_metric=sqrt(MSE);
+end
 
 C = sigma_hat_sq*invXtX;
 
