@@ -63,7 +63,6 @@ sig_all=false(max(num_test),loaddimFlag); %Matrix for storing if all terms are s
 P_max=zeros(max(num_test),loaddimFlag); %Matrix for storing max coefficeint p_value at each # terms
 search_metric=zeros(max(num_test), loaddimFlag); %Matrix for storing seach metric value at each # terms
 term_elim_hist=zeros(max(num_test), loaddimFlag);
-
 % if VIF_stop_flag==1
 %     VIF_blacklist=zeros(size(customMatrix_opt)); %Matrix for tracking terms that violate VIF limit
 % end
@@ -86,6 +85,7 @@ for i=1:loaddimFlag %Loop through all channels
         
         customMatrix_hist=zeros(size(customMatrix_opt,1),num_test(i)); %Matrix for storing custom matrix used
         customMatrix_hist(:,1)=customMatrix_opt(:,1); %First model is required model
+        cMeet_Idx=[];
         for j=2:num_test(i) %Loop through each # terms from current number to max number
             
             %Possible terms to be subtracted are those in current model that are not in required model
@@ -146,7 +146,13 @@ for i=1:loaddimFlag %Loop through all channels
                 %                 end
             end
             
-            cMeet_Idx=find(all([VIF_met_temp,sig_all_temp],2)); %Index of tests that met both VIF and significance constraint tests
+            search_metric_temp(isinf(search_metric_temp))=Inf; %Set negative infinity to positive infinity
+            
+            if isempty(cMeet_Idx) && high_con==1
+                cMeet_Idx=find(all([VIF_met_temp,sig_all_temp,high_sup_temp],2)); %Index of tests that met both VIF and significance constraint tests
+            else
+                cMeet_Idx=find(all([VIF_met_temp,sig_all_temp],2)); %Index of tests that met both VIF and significance constraint tests
+            end
             
             if high_con==1
                 c2Meet_Idx=find(all([sig_all_temp,VIF_elev_met_temp,high_sup_temp],2)); %Index of tests that met both significance constraint test and elevated VIF test
@@ -157,6 +163,7 @@ for i=1:loaddimFlag %Loop through all channels
                 c3Meet_Idx=find(VIF_elev_met_temp); %Index of terms that meet elevated VIF test
                 noCMeet_Idx=find(search_metric_temp);
             end
+            
             
             if ~isempty(cMeet_Idx) %If any tests met both constraints
                 [~,k_best]=min(search_metric_temp(cMeet_Idx)); %Index of best search metric out of those meeting constraints
@@ -228,6 +235,9 @@ for i=1:loaddimFlag %Loop through all channels
             term_elim_hist(j,i)=pos_sub_idx(Idx_best);
             
         end
+        
+        search_metric(isinf(search_metric))=Inf; %Set negative infinity to positive infinity
+        
         %Now select math model that minimizes search metric and meets both
         %constraints:
         if high_con==1 %If enforcing hierarchy constraint after, only consider models that are also supported hierarchially

@@ -114,6 +114,8 @@ for i=1:loaddimFlag %Loop through all channels
                 end
             end
             
+            search_metric_temp(isinf(search_metric_temp))=Inf; %Set negative infinity to positive infinity
+            
             cMeet_Idx=find(all([VIF_met_temp,sig_all_temp],2)); %Index of tests that met both VIF and significance constraint tests
             if ~isempty(cMeet_Idx) %If any tests met both constraints
                 [~,k_best]=min(search_metric_temp(cMeet_Idx)); %Index of best search metric out of those meeting constraints
@@ -146,6 +148,8 @@ for i=1:loaddimFlag %Loop through all channels
         %Now select math model that minimizes search metric and meets both
         %constraints:
        
+        search_metric(isinf(search_metric))=Inf; %Set negative infinity to positive infinity
+        
         cMeet_Idx=find(all([VIF_met(:,i),sig_all(:,i)],2)); %Index of tests that met both VIF and significance constraint tests
         if ~isempty(cMeet_Idx) %If any tests met both constraints
             [~,k_best]=min(search_metric(cMeet_Idx,i)); %Index of best search metric out of those meeting constraints
