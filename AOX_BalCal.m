@@ -1116,6 +1116,16 @@ if FLAGS.balCal == 2
             customMatrix_RBF=[ones(nterms,loaddimFlag);RBF_custom;ones(nseries0,loaddimFlag)];
         end
         
+        
+        %New flag structure for calc_xcalib
+        FLAGS_RBF=FLAGS; %Initialize as global flag structure
+        FLAGS_RBF.model=4; %Calculate with custom model
+        FLAGS_RBF.anova=FLAGS.anova; %Calculate ANOVA based on user preference
+        FLAGS_RBF.test_FLAG=0; %Calculate VIF
+        calc_channel=ones(1,loaddimFlag); %Calculate stats for every channel
+        nterms_RBF=nterms+max(final_RBFs_added)*loaddimFlag; %New number of terms to solve for
+        
+        
         %Trim comIN
         comIN0_RBF(:,nterms_RBF+1:nterms+u*loaddimFlag)=[];
         %Zero out parameters for trimmed RBFs in each channel
@@ -1132,13 +1142,6 @@ if FLAGS.balCal == 2
         centerIndexHist(max(final_RBFs_added)+1:end,:) = [];
         center_daHist(max(final_RBFs_added)+1:end,:,:)=[];
         
-        %New flag structure for calc_xcalib
-        FLAGS_RBF=FLAGS; %Initialize as global flag structure
-        FLAGS_RBF.model=4; %Calculate with custom model
-        FLAGS_RBF.anova=FLAGS.anova; %Calculate ANOVA based on user preference
-        FLAGS_RBF.test_FLAG=0; %Calculate VIF
-        calc_channel=ones(1,loaddimFlag); %Calculate stats for every channel
-        nterms_RBF=nterms+max(final_RBFs_added)*loaddimFlag; %New number of terms to solve for
         
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
         [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
