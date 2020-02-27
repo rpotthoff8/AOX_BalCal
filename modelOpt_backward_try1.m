@@ -68,8 +68,8 @@ for i=1:loaddimFlag
         %Initial check on term significance
         sig_iter=zeros(size(customMatrix,1),1); %Initialize sig vector
         p_iter=zeros(size(customMatrix,1),1); %Initialize coefficeint p value vector
-        [sig_iter(boolean(customMatrix_P2(:,i))),p_iter(boolean(customMatrix_P2(:,i)))]=sig_check(comIN0(:,boolean(customMatrix_P2(:,i))),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
-        if all(sig_iter(boolean(customMatrix_P2(:,i))))
+        [sig_iter(logical(customMatrix_P2(:,i))),p_iter(logical(customMatrix_P2(:,i)))]=sig_check(comIN0(:,logical(customMatrix_P2(:,i))),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
+        if all(sig_iter(logical(customMatrix_P2(:,i))))
             insig=0; %All terms already significant
         else
             insig=1; %Insignificant terms are present in model
@@ -82,11 +82,11 @@ for i=1:loaddimFlag
             p_iter_search(i)=0; %Zero out corresponding linear voltage so it will not be selected for removal
             [maxp_iter,maxI]=max(p_iter_search); %Find index of max coefficient p value out of allowable selections (not tare intercepts or linear voltages from corresponding channel)
             
-            if all(sig_iter(boolean(customMatrix_P2(1:nterms,i)))) && ~all(sig_iter(boolean(customMatrix_P2(:,i)))) %Check if all allowed terms have been removed (possible insignificant tare intercepts)
+            if all(sig_iter(logical(customMatrix_P2(1:nterms,i)))) && ~all(sig_iter(logical(customMatrix_P2(:,i)))) %Check if all allowed terms have been removed (possible insignificant tare intercepts)
                 fprintf('       Error occured in Phase 2.');
                 fprintf(' Possible insignificant tare intercept in channel: '); fprintf(num2str(i)); fprintf('.\n');
                 break
-            elseif maxp_iter==0 && ~all(sig_iter(boolean(customMatrix_P2(:,i)))) %Check if all allowed terms have been removed
+            elseif maxp_iter==0 && ~all(sig_iter(logical(customMatrix_P2(:,i)))) %Check if all allowed terms have been removed
                 fprintf('       Error occured in Phase 2.');
                 fprintf(' Unable to optimize channel: '); fprintf(num2str(i)); fprintf('.\n');
                 optChannel(i)=0; %Mark unable to optimize for channel
@@ -95,15 +95,15 @@ for i=1:loaddimFlag
             
             customMatrix_P2(maxI,i)=0; %Eliminate term with highest p value
             if high_con==1 %If enforcing hierarchy constraint
-                customMatrix_P2(boolean(high(:,maxI)),i)=0; %Removes terms that required variable for support
+                customMatrix_P2(logical(high(:,maxI)),i)=0; %Removes terms that required variable for support
             end
             
             sig_iter=zeros(size(customMatrix,1),1); %Reset sig vector
             p_iter=zeros(size(customMatrix,1),1); %Reset coefficeint p value vector
-            [sig_iter(boolean(customMatrix_P2(:,i))),p_iter(boolean(customMatrix_P2(:,i)))]=sig_check(comIN0(:,boolean(customMatrix_P2(:,i))),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
+            [sig_iter(logical(customMatrix_P2(:,i))),p_iter(logical(customMatrix_P2(:,i)))]=sig_check(comIN0(:,logical(customMatrix_P2(:,i))),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
             P2_maxP_hist(termOut_count,i)=max(p_iter); %Store new max p value
             
-            if all(sig_iter(boolean(customMatrix_P2(:,i)))) %If all model terms are significant now
+            if all(sig_iter(logical(customMatrix_P2(:,i)))) %If all model terms are significant now
                 insig=0; %Flip flag. Constraint has been met
             else
                 termOut_count=termOut_count+1; %Advance counter
@@ -134,7 +134,7 @@ for i=1:loaddimFlag %Loop through each load channel
     if optChannel(i)==1 %If channel should be optimized
         nterms_iter=sum(customMatrix_P4(:,i)); %Count of current number of terms included
         cTerms_idx=find(customMatrix_P4(:,i)); %Index of current included terms
-        searchMetric_hist(1,i)=press_check(comIN0(:,boolean(customMatrix_P4(:,i))),targetMatrix0(:,i)); %Check PRESS for initial model
+        searchMetric_hist(1,i)=press_check(comIN0(:,logical(customMatrix_P4(:,i))),targetMatrix0(:,i)); %Check PRESS for initial model
         cTerms_idx_hist{1,i}=cTerms_idx; %Store initial index of included terms
         
         test_count=2;
@@ -149,16 +149,16 @@ for i=1:loaddimFlag %Loop through each load channel
                 customMatrix_iter=customMatrix_P4(:,i); %Initialize as current P4 matrix
                 customMatrix_iter(cTerms_idx_test(j))=0; %Eliminate selected term
                 if high_con==1 %If enforcing hierarchy constraint
-                    customMatrix_iter(boolean(high(:,cTerms_idx_test(j))))=0; %Removes terms that required variable for support
+                    customMatrix_iter(logical(high(:,cTerms_idx_test(j))))=0; %Removes terms that required variable for support
                 end
                 customMatrix_comp{j}=customMatrix_iter; %Store custom matrix
                 
                 sig_temp=zeros(size(customMatrix,1),1); %Initialize sig vector
-                sig_temp(boolean(customMatrix_iter))=sig_check(comIN0(:,boolean(customMatrix_iter)),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
-                if ~all(sig_temp(boolean(customMatrix_iter(1:nterms,i)))) %If not all included terms are significant
+                sig_temp(logical(customMatrix_iter))=sig_check(comIN0(:,logical(customMatrix_iter)),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
+                if ~all(sig_temp(logical(customMatrix_iter(1:nterms,i)))) %If not all included terms are significant
                     searchMetric_comp(j)=Inf; %Dont consider search metric
                 else
-                    searchMetric_comp(j)=press_check(comIN0(:,boolean(customMatrix_iter)),targetMatrix0(:,i)); %Check search metric (PRESS) for term combination
+                    searchMetric_comp(j)=press_check(comIN0(:,logical(customMatrix_iter)),targetMatrix0(:,i)); %Check search metric (PRESS) for term combination
                 end
             end
             
@@ -180,7 +180,7 @@ for i=1:loaddimFlag %Loop through each load channel
 end
 
 customMatrix_rec=customMatrix; %Initialize recommended custom matrix as provided custom matrix
-customMatrix_rec(:,boolean(optChannel))=customMatrix_P4(:,boolean(optChannel)); %Set optimized channels to P4 Results
+customMatrix_rec(:,logical(optChannel))=customMatrix_P4(:,logical(optChannel)); %Set optimized channels to P4 Results
 
 fprintf('Recommended Equation Search Complete. \n ')
 end
@@ -206,7 +206,7 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
         
         %Initial check on VIF
         vif_iter=zeros(size(customMatrix,1),1); %Initialize VIF vector
-        vif_iter(boolean(customMatrix_Px(:,i)))=vif_dl(comIN0(:,boolean(customMatrix_Px(:,i)))); %Calculate VIF for all initial included terms
+        vif_iter(logical(customMatrix_Px(:,i)))=vif_dl(comIN0(:,logical(customMatrix_Px(:,i)))); %Calculate VIF for all initial included terms
         Px_maxVIF_init(i)=max(vif_iter); %Store initial max VIF
         if Px_maxVIF_init(i)>VIFthresh %If initial max VIF is over elevated threshold
             vifHigh=1; %Flag for if max VIF is too high
@@ -229,11 +229,11 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
             end
             customMatrix_Px(maxI,i)=0; %Eliminate term with highest VIF
             if high_con==1 %If enforcing hierarchy constraint
-                customMatrix_Px(boolean(high(:,maxI)),i)=0; %Removes terms that required variable for support
+                customMatrix_Px(logical(high(:,maxI)),i)=0; %Removes terms that required variable for support
             end
             
             vif_iter=zeros(size(customMatrix,1),1); %Reset VIF vector
-            vif_iter(boolean(customMatrix_Px(:,i)))=vif_dl(comIN0(:,boolean(customMatrix_Px(:,i)))); %Calculate VIF for all new included terms
+            vif_iter(logical(customMatrix_Px(:,i)))=vif_dl(comIN0(:,logical(customMatrix_Px(:,i)))); %Calculate VIF for all new included terms
             Px_maxVIF_hist(termOut_count,i)=max(vif_iter); %Store new max VIF
             
             if calcThrough~=loaddimFlag && maxI<= loaddimFlag %If calculating not full number of channels (for time savings) but eliminated a linear voltage term

@@ -417,9 +417,9 @@ end
 if FLAGS.high_con>0 %If enforcing hierarchy constraint
     for i=1:loaddimFlag
         incTerms=customMatrix(1:nterms,i); %Terms included in permitted model
-        supTerms=any(high(boolean(customMatrix(1:nterms,i)),:),1); %Terms needed for variable support
+        supTerms=any(high(logical(customMatrix(1:nterms,i)),:),1); %Terms needed for variable support
         
-        if any(~incTerms(boolean(supTerms))) %If any terms needed for support are not included in the permitted model
+        if any(~incTerms(logical(supTerms))) %If any terms needed for support are not included in the permitted model
             FLAGS.high_con=0; %Cannot enforce hierarchy constraint
             warning('Permitted Math Model is not hierarchically supported. Unable to enforce hierarchy constraint in ALG Model Refinement.');
             break

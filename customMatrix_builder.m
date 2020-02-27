@@ -6,7 +6,7 @@ function customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag, 
 
 %INPUTS:
 %  voltdimFlag = Number of voltage data channels
-%  termInclude = Boolean 1x12 vector for which algebraic term combinations should be included in model
+%  termInclude = logical 1x12 vector for which algebraic term combinations should be included in model
 %  loaddimFlag = Number of load data channels
 %  interceptFlag = Flag for if global intercept should be included in model 
 
@@ -41,7 +41,7 @@ end
 % nterms = 2*voltdimFlag*(voltdimFlag+2)+factorial(voltdimFlag)/factorial(voltdimFlag-2)+factorial(voltdimFlag)/(factorial(3)*factorial(voltdimFlag-3));
 nterms=max(cell2mat(termIndex));
 customMatrix=zeros(nterms,loaddimFlag);
-customMatrix(cell2mat(termIndex(boolean(termInclude))),:)=1;
+customMatrix(cell2mat(termIndex(logical(termInclude))),:)=1;
 
 %Add intercept flag to customMatrix
 if interceptFlag==1

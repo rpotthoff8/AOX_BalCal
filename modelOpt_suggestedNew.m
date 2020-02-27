@@ -117,7 +117,7 @@ if high_con==1 %If enforcing hierarchy constraint after
 end
 
 customMatrix_rec=customMatrix; %Initialize recommended custom matrix as provided custom matrix
-customMatrix_rec(:,boolean(opt_channel))=customMatrix_P4(:,boolean(opt_channel)); %Set optimized channels to P4 Results
+customMatrix_rec(:,logical(opt_channel))=customMatrix_P4(:,logical(opt_channel)); %Set optimized channels to P4 Results
 FLAGS.opt_channel=opt_channel; %Flag for if each channel should be optimized
 fprintf('Suggested Equation Search Complete. \n ')
 end
@@ -142,7 +142,7 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
         
         %Initial check on VIF
         vif_iter=zeros(size(customMatrix,1),1); %Initialize VIF vector
-        vif_iter(boolean([0;customMatrix_Px(2:end,i)]))=vif_dl(comIN0(:,boolean([0;customMatrix_Px(2:end,i)]))); %Calculate VIF for all initial included terms except global intercept
+        vif_iter(logical([0;customMatrix_Px(2:end,i)]))=vif_dl(comIN0(:,logical([0;customMatrix_Px(2:end,i)]))); %Calculate VIF for all initial included terms except global intercept
         vif_iter(1)=1; %Set VIF for intercept=1
         
         Px_maxVIF_init(i)=max(vif_iter); %Store initial max VIF
@@ -156,7 +156,7 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
         termOut_count=1;
         while vifHigh==1 %Remove terms until VIF threshold is met
             vif_iter_search=vif_iter; %initialize variable for searching for max VIF
-            vif_iter_search(boolean(min_eqn(:,i)))=0; %Zero out corresponding minimum eqn so it will not be selected for removal
+            vif_iter_search(logical(min_eqn(:,i)))=0; %Zero out corresponding minimum eqn so it will not be selected for removal
             [maxVIF_iter,maxI]=max(vif_iter_search); %Find index of max VIF out of allowable selections (not tare intercepts or linear voltages from corresponding channel)
             
             if maxVIF_iter<=VIFthresh %Check if all 'problem' terms have been removed
@@ -170,11 +170,11 @@ while i<=calcThrough %Loop through, calculating for each load channel if necessa
             end
             customMatrix_Px(maxI,i)=0; %Eliminate term with highest VIF
             if high_con==2 %If enforcing hierarchy constraint
-                customMatrix_Px(boolean(high(:,maxI)),i)=0; %Removes terms that required variable for support
+                customMatrix_Px(logical(high(:,maxI)),i)=0; %Removes terms that required variable for support
             end
             
             vif_iter=zeros(size(customMatrix,1),1); %Reset VIF vector
-            vif_iter(boolean([0;customMatrix_Px(2:end,i)]))=vif_dl(comIN0(:,boolean([0;customMatrix_Px(2:end,i)]))); %Calculate VIF for all new included terms except global intercept
+            vif_iter(logical([0;customMatrix_Px(2:end,i)]))=vif_dl(comIN0(:,logical([0;customMatrix_Px(2:end,i)]))); %Calculate VIF for all new included terms except global intercept
             vif_iter(1)=1; %Set VIF for global intercept=1
             Px_maxVIF_hist(termOut_count,i)=max(vif_iter); %Store new max VIF
             
@@ -217,8 +217,8 @@ for i=1:loaddimFlag
         %Initial check on term significance
         sig_iter=zeros(size(customMatrix,1),1); %Initialize sig vector
         p_iter=zeros(size(customMatrix,1),1); %Initialize coefficeint p value vector
-        [sig_iter(boolean(customMatrix_Px(:,i))),p_iter(boolean(customMatrix_Px(:,i)))]=sig_check(comIN0(:,boolean(customMatrix_Px(:,i))),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
-        if all(sig_iter(boolean(customMatrix_Px(:,i))))
+        [sig_iter(logical(customMatrix_Px(:,i))),p_iter(logical(customMatrix_Px(:,i)))]=sig_check(comIN0(:,logical(customMatrix_Px(:,i))),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
+        if all(sig_iter(logical(customMatrix_Px(:,i))))
             insig=0; %All terms already significant
         else
             insig=1; %Insignificant terms are present in model
@@ -228,14 +228,14 @@ for i=1:loaddimFlag
         termOut_count=1;
         while insig==1 %Remove terms until all are significant
             p_iter_search=p_iter; %initialize variable for searching for max p
-            p_iter_search(boolean(min_eqn(:,i)))=0; %Zero out corresponding min eqn terms it will not be selected for removal
+            p_iter_search(logical(min_eqn(:,i)))=0; %Zero out corresponding min eqn terms it will not be selected for removal
             [maxp_iter,maxI]=max(p_iter_search); %Find index of max coefficient p value out of allowable selections (not tare intercepts or linear voltages from corresponding channel)
             
-            if all(sig_iter(boolean(customMatrix_Px(1:nterms,i)))) && ~all(sig_iter(boolean(customMatrix_Px(:,i)))) %Check if all allowed terms have been removed (possible insignificant tare intercepts)
+            if all(sig_iter(logical(customMatrix_Px(1:nterms,i)))) && ~all(sig_iter(logical(customMatrix_Px(:,i)))) %Check if all allowed terms have been removed (possible insignificant tare intercepts)
                 fprintf('       Error occured in Phase 2.');
                 fprintf(' Possible insignificant tare intercept in channel: '); fprintf(num2str(i)); fprintf('.\n');
                 break
-            elseif maxp_iter==0 && ~all(sig_iter(boolean(customMatrix_Px(:,i)))) %Check if all allowed terms have been removed
+            elseif maxp_iter==0 && ~all(sig_iter(logical(customMatrix_Px(:,i)))) %Check if all allowed terms have been removed
                 fprintf('       Error occured in Phase 2.');
                 fprintf(' Unable to optimize channel: '); fprintf(num2str(i)); fprintf('.\n');
                 optChannel(i)=0; %Mark unable to optimize for channel
@@ -244,15 +244,15 @@ for i=1:loaddimFlag
             
             customMatrix_Px(maxI,i)=0; %Eliminate term with highest p value
             if high_con==2 %If enforcing hierarchy constraint
-                customMatrix_Px(boolean(high(:,maxI)),i)=0; %Removes terms that required variable for support
+                customMatrix_Px(logical(high(:,maxI)),i)=0; %Removes terms that required variable for support
             end
             
             sig_iter=zeros(size(customMatrix,1),1); %Reset sig vector
             p_iter=zeros(size(customMatrix,1),1); %Reset coefficeint p value vector
-            [sig_iter(boolean(customMatrix_Px(:,i))),p_iter(boolean(customMatrix_Px(:,i)))]=sig_check(comIN0(:,boolean(customMatrix_Px(:,i))),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
+            [sig_iter(logical(customMatrix_Px(:,i))),p_iter(logical(customMatrix_Px(:,i)))]=sig_check(comIN0(:,logical(customMatrix_Px(:,i))),targetMatrix0(:,i),anova_pct); %Calculate significance for all initial included terms
             Px_maxP_hist(termOut_count,i)=max(p_iter); %Store new max p value
             
-            if all(sig_iter(boolean(customMatrix_Px(:,i)))) %If all model terms are significant now
+            if all(sig_iter(logical(customMatrix_Px(:,i)))) %If all model terms are significant now
                 insig=0; %Flip flag. Constraint has been met
             else
                 termOut_count=termOut_count+1; %Advance counter
@@ -279,9 +279,9 @@ end
 for i=1:calcThrough %Loop through channels
     if optChannel(i)==1 %Check if channel model should be optimized
         %         inc_idx=find(customMatrix_P2(:,i)); %Find index of included terms for channel
-        sup_terms_mat=high(boolean(customMatrix_Px(1:nterms,i)),:); %Rows from hierarchy matrix for included terms. columns with '1' are needed to support variable
+        sup_terms_mat=high(logical(customMatrix_Px(1:nterms,i)),:); %Rows from hierarchy matrix for included terms. columns with '1' are needed to support variable
         sup_terms=any(sup_terms_mat,1); %Row vector with 1s for terms needed to support included terms
-        customMatrix_Px(boolean(sup_terms),i)=1; %Include all terms needed to support currently included terms
+        customMatrix_Px(logical(sup_terms),i)=1; %Include all terms needed to support currently included terms
     end
 end
 

@@ -121,7 +121,7 @@ termInclude(11)=handles.T11.Value;
 termInclude(12)=handles.T12.Value;
 
 if any(termInclude)
-    outStruct.termInclude = strcat(termList{boolean(termInclude)});  
+    outStruct.termInclude = strcat(termList{logical(termInclude)});  
 else
     outStruct.termInclude='Click to select terms';
 end

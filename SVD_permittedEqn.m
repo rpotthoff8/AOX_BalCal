@@ -81,7 +81,7 @@ svd_include=customMatrix_req; %Initialize vector for tracking which terms are su
 
 %Test if required terms are supported
 for i=1:loaddimFlag
-    rankIter=rank(comIN_svd(:,boolean(svd_include(:,i)))); %Using rank command (SVD) find rank of predictor variable matrix
+    rankIter=rank(comIN_svd(:,logical(svd_include(:,i)))); %Using rank command (SVD) find rank of predictor variable matrix
     if rankIter~=sum(svd_include(:,i)) %If required matrix is rank deficient
         opt_channel(i)=0; %Do not proceed further with channel
         fprintf('\n  Error calculating permitted math model for load channel '); fprintf(num2str(i)); fprintf('. Required math model terms are not supported.\n');
@@ -97,7 +97,7 @@ while j<= calcThrough
             if customMatrix(i,j)==1 %If term is included according to customMatrix for eqn
                 svd_include_test=svd_include(:,j); %Initialize test variable for iteration
                 svd_include_test(i)=1; %Include new term for this iteration
-                rankIter=rank(comIN_svd(:,boolean(svd_include_test))); %Using rank command (SVD) find rank of predictor variable matrix
+                rankIter=rank(comIN_svd(:,logical(svd_include_test))); %Using rank command (SVD) find rank of predictor variable matrix
                 if rankIter==sum(svd_include_test) %If rank is equal to number of terms
                     svd_include(i,j)=1; %Add term to supported terms
                 else %New matrix is rank deficient

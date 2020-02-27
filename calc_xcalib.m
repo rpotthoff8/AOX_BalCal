@@ -15,7 +15,7 @@ function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,lo
 %  anova_pct = Percent confidence level for ANOVA calculations
 %  labels = Load labels for each channel
 %  method = String for current section (ALG or RBF)
-%  calc_channel = Boolean vector for which channels coefficients should be solved for
+%  calc_channel = logical vector for which channels coefficients should be solved for
 
 %OUTPUTS:
 %  xcalib = Coefficient Matrix
@@ -44,7 +44,7 @@ xcalib = zeros(size(comIN,2),loaddimFlag);
 % This is to account for Custom Models, where the terms may be
 % different depending on the channel.
 
-calc_channel(boolean(calc_channel))=any(customMatrix(:,boolean(calc_channel)),1); %Calculate channel only if terms are included
+calc_channel(logical(calc_channel))=any(customMatrix(:,logical(calc_channel)),1); %Calculate channel only if terms are included
 anova_calc_channel=zeros(size(calc_channel));
 
 for k = 1:loaddimFlag
