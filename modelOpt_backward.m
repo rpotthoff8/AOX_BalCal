@@ -136,9 +136,9 @@ for i=1:loaddimFlag %Loop through all channels
                 VIF_elev_met_temp(k)=VIF_max_temp(k)<=VIFthresh_elev; %Check if model meets elevated VIF threshold
                 
                 if high_con==1
-                    sup_terms_mat=high(logical(customMatrix_opt_temp(1:nterms,i)),:); %Rows from hierarchy matrix for included terms. columns with '1' are needed to support variable
+                    sup_terms_mat=high(logical(customMatrix_opt_temp(1:nterms)),:); %Rows from hierarchy matrix for included terms. columns with '1' are needed to support variable
                     sup_terms=any(sup_terms_mat,1); %Row vector with 1s for terms needed to support included terms
-                    high_sup_temp(k)=all(customMatrix_opt_temp(logical(sup_terms),i));
+                    high_sup_temp(k)=all(customMatrix_opt_temp(logical(sup_terms)));
                 end
                 
                 %                 if VIF_stop_flag==1 && VIF_met_temp(k)==0 %If adding term violates VIF limit
