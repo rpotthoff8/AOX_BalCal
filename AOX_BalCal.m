@@ -413,16 +413,35 @@ if FLAGS.svd==1
 end
 
 %Check for if permitted math model is hierarchically supported.  If not,
-%unable to enforce hierarchy constraint in further model optimization
+%remove unsupported terms
 if FLAGS.high_con>0 %If enforcing hierarchy constraint
-    for i=1:loaddimFlag
+    identical_custom=all(~diff(customMatrix,1,2),'all'); %Check if customMatrix is identical for all channels
+    if identical_custom==1 %If custom equation identical for each channel
+        calcThrough=1; %only necessary to remove enforce hierarchy rule once
+    else
+        calcThrough=loaddimFlag; %Necessary to calculate for each channel seperate
+    end
+       
+    for i=1:calcThrough
         incTerms=customMatrix(1:nterms,i); %Terms included in permitted model
-        supTerms=any(high(logical(customMatrix(1:nterms,i)),:),1); %Terms needed for variable support
+        supTermsMatrix=high(logical(incTerms),:); %Matrix of terms needed to support variables: each row contains 1's for terms needed to support term
+        incTermsMatrix=repmat(incTerms',size(supTermsMatrix,1),1); %Matrix of included terms: each row is vector of terms that are included
         
-        if any(~incTerms(logical(supTerms))) %If any terms needed for support are not included in the permitted model
-            FLAGS.high_con=0; %Cannot enforce hierarchy constraint
-            warning('Permitted Math Model is not hierarchically supported. Unable to enforce hierarchy constraint in ALG Model Refinement.');
-            break
+        %Test to see if each of the included terms is supported by the required other included terms
+        termTest=ones(size(supTermsMatrix)); %Initialize matrix as ones
+        termTest(logical(supTermsMatrix))=incTermsMatrix(logical(supTermsMatrix)); %Test if needed support terms are included: if a support term is missing it will be 0 in that row.  If it is included or not needed the entry will be 1
+        
+        termSupported=all(termTest,2); %Create vector for if each term is supported
+        
+        if any(~termSupported) %If any terms needed for support are not included in the permitted model
+            if identical_custom==1
+                warning(strcat("All channel's Permitted Math Model are not hierarchically supported. Removing unsupported terms."));
+                customMatrix(~termSupported,:)=0; %Remove unsupported terms from customMatrix
+            else
+                warning(strcat("Channel ",num2str(i), " Permitted Math Model is not hierarchically supported. Removing unsupported terms."));
+                customMatrix(~termSupported,i)=0; %Remove unsupported terms from customMatrix
+            end
+            
         end
     end
 end
