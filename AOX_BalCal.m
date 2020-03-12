@@ -675,6 +675,7 @@ if FLAGS.balVal == 1
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminTAREvalid;
     std_targetResvalid=std(targetResvalid);
+    RMS_targetResvalid=sqrt(mean(targetResvalid.^2,1));
     
     if out.model~=0 %If any algebraic terms included
         %CALCULATE PREDICTION INTERVAL FOR POINTS
@@ -775,21 +776,21 @@ if FLAGS.balCal == 2
     self_Terminate=false(1,loaddimFlag); %Logical vector that stores if RBF addition has been terminated in each channel
     RBFs_added=zeros(1,loaddimFlag); %Count of how many RBFs have been added in each channel
     if FLAGS.valid_selfTerm==1 %If RBF addition will be terminated based on validation data error
-        resStdHistvalid=zeros(numBasis,loaddimFlag); %History of valid data residual standard deviation vs RBF number
+        resRMSHistvalid=zeros(numBasis,loaddimFlag); %History of valid data residual standard deviation vs RBF number
         period_change=zeros(numBasis,loaddimFlag); %Storge for Change in validation standard deviation over last 'n' additions
         period_length=max([10,0.1*numBasis]); %CHANGE?: Length of period for self termination
         comINvalid_RBF=zeros(size(dainputsvalid,1),numBasis*loaddimFlag);
     end
     if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If RBF addition will be terminated based on VIF or Prediction interval
-        calib_PI_rms_Hist=zeros(numBasis,loaddimFlag); %History of prediction interval RMS vs RBF number
+        calib_PI_mean_Hist=zeros(numBasis,loaddimFlag); %History of prediction interval RMS vs RBF number
         period_change=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length=max([10,0.1*numBasis]); %CHANGE?: Length of period for self termination
+        period_length=min([100,max([10,0.1*numBasis])]); %CHANGE?: Length of period for self termination
         if out.model~=0
             [loadPI_ALG]=calc_PI(ANOVA,anova_pct,comIN0(:,1:nterms),aprxIN); %Calculate prediction interval for loads with algebraic model
         else
             loadPI_ALG=Inf(size(targetMatrix0));
         end
-        calib_ALG_PI_rms=sqrt(sum((loadPI_ALG).^2,1)/numpts0); %RMS for calibration PI
+        calib_ALG_PI_mean=mean(loadPI_ALG,1); %RMS for calibration PI
     end
     
     if FLAGS.VIF_selfTerm==1 %Initialize variables for self terminating based on VIF
@@ -810,7 +811,7 @@ if FLAGS.balCal == 2
         end
         if all(self_Terminate)==1 %Check if all channels have self terminated
             fprintf(strcat('\n All Channels Reached VIF termination criteria with Algebraic Model, no RBFs will be added')); %Output message
-            calib_PI_rms_Hist=calib_ALG_PI_rms;
+            calib_PI_mean_Hist=calib_ALG_PI_mean;
         end
         
         %Initialize customMatrix for solving terms
@@ -865,7 +866,7 @@ if FLAGS.balCal == 2
                                 rbfINminGZ_temp=0; %Zero out new RBF since VIF limit not met
                                 fprintf(strcat('\n Channel'," ", string(s), ' Reached VIF termination criteria, # RBF=',string(u-1))); %Output message
                                 if all(self_Terminate) %If all channels have now terminated
-                                    calib_PI_rms_Hist(u:end,:)=[]; %Trim history variable
+                                    calib_PI_mean_Hist(u:end,:)=[]; %Trim history variable
                                 end
                                 break %Exit while loop
                             end
@@ -1017,15 +1018,15 @@ if FLAGS.balCal == 2
             targetRes2valid = targetMatrixvalid-aprxINminTARE2valid;      %0=b-Ax
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
-            resStdHistvalid(u,:)=std(targetRes2valid);
+            resRMSHistvalid(u,:)=sqrt(mean(targetRes2valid.^2,1));
             
             %Self termination criteria
             %Calculate period_change, the difference between the minimum
             %error in the last n iterations and the error n+1 iterations ago
             if u>period_length
-                period_change(u,:)=min(resStdHistvalid(u-(period_length-1):u,:))-resStdHistvalid(u-period_length,:);
+                period_change(u,:)=min(resRMSHistvalid(u-(period_length-1):u,:))-resRMSHistvalid(u-period_length,:);
             elseif u==period_length
-                period_change(u,:)=min(resStdHistvalid(1:u,:))-std_targetResvalid;
+                period_change(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
             end
             
             %Self Terminate if validation error has only gotten worse over
@@ -1044,9 +1045,9 @@ if FLAGS.balCal == 2
             [loadPI_GRBF_iter]=calc_PI(ANOVA_GRBF,anova_pct,comIN0_RBF(:,1:nterms_RBF),aprxIN2,calc_channel); %Calculate prediction interval for loads
             for i=1:loaddimFlag
                 if self_Terminate(i)==1 %If channel is self terminated, use PI RMS from previous iteration
-                    calib_PI_rms_Hist(u,i)=calib_PI_rms_Hist(u-1,i);
+                    calib_PI_mean_Hist(u,i)=calib_PI_mean_Hist(u-1,i);
                 else
-                    calib_PI_rms_Hist(u,i)=sqrt(sum((loadPI_GRBF_iter(:,i)).^2)/numpts0); %RMS for calibration PI
+                    calib_PI_mean_Hist(u,i)=mean(loadPI_GRBF_iter(:,i),1); %RMS for calibration PI
                 end
             end
             
@@ -1054,9 +1055,9 @@ if FLAGS.balCal == 2
             %Calculate period_change, the difference between the minimum
             %PI in the last n iterations and the PI n+1 iterations ago
             if u>period_length
-                period_change(u,:)=min(calib_PI_rms_Hist(u-(period_length-1):u,:))-calib_PI_rms_Hist(u-period_length,:);
+                period_change(u,:)=min(calib_PI_mean_Hist(u-(period_length-1):u,:))-calib_PI_mean_Hist(u-period_length,:);
             elseif u==period_length
-                period_change(u,:)=min(calib_PI_rms_Hist(1:u,:))-calib_ALG_PI_rms;
+                period_change(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
             end
             
             %Self Terminate if validation error has only gotten worse over
@@ -1066,7 +1067,7 @@ if FLAGS.balCal == 2
                     fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
                     self_Terminate(i)=1;
                     if all(self_Terminate) %If all the channels have now been self-terminated
-                        calib_PI_rms_Hist(u+1:end,:)=[];  %Trim storage variable
+                        calib_PI_mean_Hist(u+1:end,:)=[];  %Trim storage variable
                     end
                 end
             end
@@ -1097,7 +1098,7 @@ if FLAGS.balCal == 2
         min_validSTD_num=zeros(1,loaddimFlag);
         for i=1:loaddimFlag
             %Find RBF number for lowest Validation STD
-            [~,min_validSTD_num(i)]=min([std_targetResvalid(i);resStdHistvalid(1:u,i)],[],1);
+            [~,min_validSTD_num(i)]=min([RMS_targetResvalid(i);resRMSHistvalid(1:u,i)],[],1);
             min_validSTD_num(i)=min_validSTD_num(i)-1;
             fprintf(strcat('\n Channel'," ", string(i), ' Final # RBF=',string(min_validSTD_num(i))));
         end
@@ -1114,7 +1115,7 @@ if FLAGS.balCal == 2
         final_calibPI_rms=zeros(1,loaddimFlag);
         for i=1:loaddimFlag
             %Find RBF number for lowest Validation STD
-            [final_calibPI_rms(i),min_calibPI_num(i)]=min([calib_ALG_PI_rms(i);calib_PI_rms_Hist(1:end,i)],[],1);
+            [final_calibPI_rms(i),min_calibPI_num(i)]=min([calib_ALG_PI_mean(i);calib_PI_mean_Hist(1:end,i)],[],1);
             min_calibPI_num(i)=min_calibPI_num(i)-1;
             fprintf(strcat('\n Channel'," ", string(i), ' Final # RBF=',string(min_calibPI_num(i))));
         end
