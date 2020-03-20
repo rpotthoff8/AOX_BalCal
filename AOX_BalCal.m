@@ -731,6 +731,12 @@ if FLAGS.balCal == 2
     
     fprintf('\n ********** Starting Calibration GRBF Calculations **********\n')
     
+    %Check to ensure max # RBFs <= number datapoints
+    if numBasis>numpts0
+        warning(strcat('Input Max # GRBF > # Calibration datapoints. Setting # GRBF = # Calibration datapoints (',num2str(numpts0),')'))
+        numBasis=numpts0;
+    end
+    
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
     
@@ -762,14 +768,10 @@ if FLAGS.balCal == 2
     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
     h_GRBF=sqrt(max(min(R_square_find))); %Point spacing parameter
-    %     eps_min=0.1; %Fasshauer pg 234, large epsilon= 'spiky'
-    %     eps_max=1.0;
-    %     min_eps=0.07; %Fasshauer pg 234, large epsilon= 'spiky'
-    %     max_eps=.1;
     
-    max_mult=5; %CHANGE
-    maxPer=ceil(max_mult*numBasis/size(dainputs0,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
-    %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
+%     max_mult=5; %CHANGE
+%     maxPer=ceil(max_mult*numBasis/size(dainputs0,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
+%     %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     maxPer=1;
     
     %Initialize self terminate variables:
