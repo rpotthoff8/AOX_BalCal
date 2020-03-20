@@ -25,7 +25,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 05-Feb-2020 11:37:16
+% Last Modified by GUIDE v2.5 20-Mar-2020 15:01:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -208,6 +208,7 @@ outStruct.basis = str2num(get(handles.numBasisIn,'String'));
 outStruct.selfTerm_str=handles.selfTerm_pop.String(handles.selfTerm_pop.Value);
 outStruct.min_eps=str2num(handles.min_eps.String);
 outStruct.max_eps=str2num(handles.max_eps.String);
+outStruct.GRBF_VIF_thresh=str2num(handles.RBF_VIF_thresh.String);
 
 outStruct.intercept=handles.intercept_pop.Value;
 
@@ -653,6 +654,7 @@ if get(hObject,'Value') == 1
     set(handles.eps_note,'Enable','on');
     set(handles.eps_title,'Enable','on');
     GRBF_defaultEps_Callback(handles.GRBF_defaultEps, eventdata, handles);
+    selfTerm_pop_Callback(handles.selfTerm_pop, eventdata, handles);
     
     %set(handles.loglog_FLAGcheck,'Enable','on');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','on');
@@ -668,6 +670,8 @@ else
     set(handles.max_eps,'Enable','off');
     set(handles.eps_note,'Enable','off');
     set(handles.eps_title,'Enable','off');
+    handles.RBF_VIF_thresh.Enable='off';
+    handles.RBF_VIF_thresh_text.Enable='off';   
     
     %set(handles.loglog_FLAGcheck,'Enable','off');
     %set(handles.grbfcoeff_FLAGcheck,'Enable','off');
@@ -2194,7 +2198,13 @@ function selfTerm_pop_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns selfTerm_pop contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from selfTerm_pop
-
+if strcmp(handles.selfTerm_pop.String(handles.selfTerm_pop.Value),'VIF + Prediction Interval Termination')
+    handles.RBF_VIF_thresh.Enable='on';
+    handles.RBF_VIF_thresh_text.Enable='on';
+else
+    handles.RBF_VIF_thresh.Enable='off';
+    handles.RBF_VIF_thresh_text.Enable='off';   
+end
 
 % --- Executes during object creation, after setting all properties.
 function selfTerm_pop_CreateFcn(hObject, eventdata, handles)
@@ -2317,7 +2327,7 @@ default.basis = get(handles.numBasisIn,'String');
 default.GRBF_defaultEps=handles.GRBF_defaultEps.Value;
 default.min_eps=handles.min_eps.String;
 default.max_eps=handles.max_eps.String;
-
+default.GRBF_maxVIF=handles.RBF_VIF_thresh.String;
 
 %default.grbf_coeff = get(handles.grbfcoeff_FLAGcheck,'Value');
 %default.loglog = get(handles.loglog_FLAGcheck,'Value');
@@ -2441,6 +2451,8 @@ if exist(fullfileName,'file')
         set(handles.GRBF_defaultEps, 'Value', default.GRBF_defaultEps);
         set(handles.min_eps,'String', default.min_eps);
         set(handles.max_eps,'String', default.max_eps);
+        set(handles.RBF_VIF_thresh,'String',default.GRBF_maxVIF);
+        
         
         set(handles.intercept_pop,'Value',default.intercept_pop_val);
         
@@ -2863,3 +2875,26 @@ elseif handles.gen_mode.Value==1
 end
 actionpanel_SelectionChangeFcn(handles.calibrate, eventdata, handles);
 
+
+
+
+function RBF_VIF_thresh_Callback(hObject, eventdata, handles)
+% hObject    handle to RBF_VIF_thresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of RBF_VIF_thresh as text
+%        str2double(get(hObject,'String')) returns contents of RBF_VIF_thresh as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function RBF_VIF_thresh_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to RBF_VIF_thresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

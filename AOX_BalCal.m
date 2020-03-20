@@ -798,7 +798,7 @@ if FLAGS.balCal == 2
     if FLAGS.VIF_selfTerm==1 %Initialize variables for self terminating based on VIF
         max_VIF_hist=zeros(numBasis,loaddimFlag); %History variable of VIF as RBFs are added
         comIN0_RBF=comIN0; %Initialize 'X' matrix for RBF predictor variables
-        VIF_lim=9.95; %Limit for acceptable VIF
+        GRBF_VIF_thresh=out.GRBF_VIF_thresh-.05;%Limit for acceptable VIF
         
         for i=1:loaddimFlag %Check Algebraic model max VIF in each channel
             if out.model~=0
@@ -806,7 +806,7 @@ if FLAGS.balCal == 2
             else
                 max_VIF_alg=1;
             end
-            if max_VIF_alg>VIF_lim %If Algebraic model already exceeds max VIF
+            if max_VIF_alg>GRBF_VIF_thresh %If Algebraic model already exceeds max VIF
                 self_Terminate(i)=1; %Terminate channel initially
                 fprintf(strcat('\n Channel'," ", string(i), ' Reached VIF termination criteria with Algebraic Model, no RBFs will be added in Channel'," ",string(i))); %Output message
             end
@@ -859,7 +859,7 @@ if FLAGS.balCal == 2
                         VIFtest=vif_dl(comIN0_RBF_VIFtest(:,logical(customMatrix_RBF_VIFtest))); %Calculate VIFs for predictor terms with new RBF
                         
                         max_VIF_hist(u,s)=max(VIFtest([1:end-nseries0-1,end])); %Store maximum VIF in history
-                        if  max_VIF_hist(u,s)<=VIF_lim %If max VIF is <= VIF limit
+                        if  max_VIF_hist(u,s)<=GRBF_VIF_thresh %If max VIF is <= VIF limit
                             VIF_good=1; %VIF criteria is satisfied, this will exit 'while' loop
                         else
                             if all(count(:,s)==1) %If all points have been tested and none can be added without exceeding VIF limit
