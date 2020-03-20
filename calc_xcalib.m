@@ -1,4 +1,4 @@
-function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,loaddimFlag,FLAGS,customMatrix, anova_pct, labels,method,calc_channel)
+function [xcalib,ANOVA,self_Terminate]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,loaddimFlag,FLAGS,customMatrix, anova_pct, labels,method,calc_channel)
 %Function calculates coefficient matrix (xcalib)
 % calc_channel is used as a flag to determine if coefficients in that
 % channel should be calculated, used for RBF self termination
@@ -20,9 +20,10 @@ function [xcalib,ANOVA]=calc_xcalib(comIN,targetMatrix,series,nterms,nseries0,lo
 %OUTPUTS:
 %  xcalib = Coefficient Matrix
 %  ANOVA = Results of ANOVA calculations 
+%  self_Terminate = logical vector for which channels coefficients not solved for
 
 if exist('calc_channel','var')==0 %If no variable provided for which channels to calculate
-    calc_channel=ones(1,loaddimFlag); %Calculate all channels
+    calc_channel=true(1,loaddimFlag); %Calculate all channels
 end
 
 %Orders data by series
@@ -44,8 +45,8 @@ xcalib = zeros(size(comIN,2),loaddimFlag);
 % This is to account for Custom Models, where the terms may be
 % different depending on the channel.
 
-calc_channel(logical(calc_channel))=any(customMatrix(:,logical(calc_channel)),1); %Calculate channel only if terms are included
-anova_calc_channel=zeros(size(calc_channel));
+calc_channel(calc_channel)=any(customMatrix(:,calc_channel),1); %Calculate channel only if terms are included
+anova_calc_channel=false(size(calc_channel));
 
 for k = 1:loaddimFlag
     if calc_channel(k)==1
@@ -59,8 +60,24 @@ for k = 1:loaddimFlag
         
         nterms_k= sum(customMatrix(1:nterms,k));
         
+        if contains(method, 'RBF') %If in RBF addition mode
+            orig_w=warning; %Store warning state
+            warning('off','MATLAB:rankDeficientMatrix') %Turn off warning
+            lastwarn(''); %Clear last warning message
+        end
+        
         % SOLUTION
         xcalib_k = comIN_k\targetMatrix(:,k);
+        
+        [~, msgid]=lastwarn; %Retrieve last warning message
+        if contains(method, 'RBF') %If in RBF addition mode
+            warning(orig_w); %Restore warning state
+        end
+        %Check if in RBF addition mode and rank deficient matrix
+        if contains(method, 'RBF') && strcmp(msgid,'MATLAB:rankDeficientMatrix')
+            calc_channel(k)=0; %RBF addition now terminated for channel
+            continue %Advance for loop to next count
+        end       
         
         % De-normalize the coefficients to be used with raw data
         xcalib_k = xcalib_k./scale_k';
@@ -127,4 +144,5 @@ else
     end
     
 end
+self_Terminate=~calc_channel; %Store which channels coefficients are not calculated for.
 end

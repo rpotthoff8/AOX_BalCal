@@ -733,7 +733,7 @@ if FLAGS.balCal == 2
     
     %Check to ensure max # RBFs <= number datapoints
     if numBasis>numpts0
-        warning(strcat('Input Max # GRBF > # Calibration datapoints. Setting # GRBF = # Calibration datapoints (',num2str(numpts0),')'))
+        warning(strcat('Input Max # GRBF > # Calibration datapoints. Setting Max # GRBF = # Calibration datapoints (',num2str(numpts0),')'))
         numBasis=numpts0;
     end
     
@@ -811,7 +811,7 @@ if FLAGS.balCal == 2
                 fprintf(strcat('\n Channel'," ", string(i), ' Reached VIF termination criteria with Algebraic Model, no RBFs will be added in Channel'," ",string(i))); %Output message
             end
         end
-        if all(self_Terminate)==1 %Check if all channels have self terminated
+        if all(self_Terminate) %Check if all channels have self terminated
             fprintf(strcat('\n All Channels Reached VIF termination criteria with Algebraic Model, no RBFs will be added')); %Output message
             calib_PI_mean_Hist=calib_ALG_PI_mean;
         end
@@ -914,7 +914,7 @@ if FLAGS.balCal == 2
             else %Otherwise, final calculation with RBFs
                 FLAGS_RBF.anova=FLAGS.anova; %Calculate ANOVA based on user preference
                 FLAGS_RBF.test_FLAG=0; %calculate VIF
-                calc_channel=ones(1,loaddimFlag); %Calculate every channel
+                calc_channel=true(1,loaddimFlag); %Calculate every channel
             end
             
         else %NOT final RBF Placed
@@ -929,12 +929,26 @@ if FLAGS.balCal == 2
         nterms_RBF=nterms+u*loaddimFlag; %New number of terms to solve for
         
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
-        [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
+        [xcalib_RBF, ANOVA_GRBF, new_self_Terminate] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
+        
+        if any(new_self_Terminate~=self_Terminate) %Check if any channel terminated due to rank deficiency
+            dif_channel=new_self_Terminate~=self_Terminate; %Find logical vector of channels that are now terminated
+            RBFs_added(dif_channel)=u-1; %Correct number of RBFs added
+            for i=1:loaddimFlag
+                if dif_channel(i)
+                    comIN0_RBF(:,nterms+(u-1)*loaddimFlag+i)=0; %Zero out column for added RBF in now terminated channel
+                end
+            end
+            warning(strcat("Ill-Conditioned matrix for load channel",sprintf(' %.0f,',find(dif_channel))," Terminating RBF addition. Final # RBF=",num2str(u-1))); %Display warning message
+            self_Terminate=new_self_Terminate; %update RBF termination tracker
+        end
         
         if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run for channels that have self terminated
             xcalib_RBF(1:size(xcalib_RBF_last,1)-nseries0,self_Terminate)=xcalib_RBF_last(1:end-nseries0,self_Terminate);
-            xcalib_RBF(end-nseries0:end,self_Terminate)=xcalib_RBF_last(end-nseries0:end,self_Terminate);
+            if FLAGS.tare_intercept==1
+                xcalib_RBF(end-nseries0+1:end,self_Terminate)=xcalib_RBF_last(end-nseries0+1:end,self_Terminate);
+            end
         end
         xcalib_RBF_last=xcalib_RBF;
         
@@ -1144,7 +1158,7 @@ if FLAGS.balCal == 2
         FLAGS_RBF.model=4; %Calculate with custom model
         FLAGS_RBF.anova=FLAGS.anova; %Calculate ANOVA based on user preference
         FLAGS_RBF.test_FLAG=0; %Calculate VIF
-        calc_channel=ones(1,loaddimFlag); %Calculate stats for every channel
+        calc_channel=true(1,loaddimFlag); %Calculate stats for every channel
         nterms_RBF=nterms+max(final_RBFs_added)*loaddimFlag; %New number of terms to solve for
         
         
