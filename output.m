@@ -290,7 +290,6 @@ if FLAGS.print == 1 || FLAGS.disp==1
         
         try %Rename excel sheets and delete extra sheets, only possible on PC
             [~,sheets]=xlsfinfo(fullpath);
-            s = what;
             e = actxserver('Excel.Application'); % # open Activex server
             e.DisplayAlerts = false;
             e.Visible=false;

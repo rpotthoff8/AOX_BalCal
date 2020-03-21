@@ -985,11 +985,7 @@ if 1==1
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
         [xcalib_RBF, ANOVA_GRBF, new_self_Terminate] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
-        
-        for i=1:loaddimFlag
-            PRESS_hist(u,i)=ANOVA_GRBF(i).PRESS;
-        end
-        
+               
         if any(new_self_Terminate~=self_Terminate) %Check if any channel terminated due to rank deficiency
             dif_channel=new_self_Terminate~=self_Terminate; %Find logical vector of channels that are now terminated
             RBFs_added(dif_channel)=u-1; %Correct number of RBFs added
@@ -1000,6 +996,14 @@ if 1==1
             end
             warning(strcat("Ill-Conditioned matrix for load channel",sprintf(' %.0f,',find(dif_channel))," Terminating RBF addition. Final # RBF=",num2str(u-1))); %Display warning message
             self_Terminate=new_self_Terminate; %update RBF termination tracker
+        end
+        
+        for i=1:loaddimFlag
+            if self_terminate(i)==0
+                PRESS_hist(u,i)=ANOVA_GRBF(i).PRESS;
+            else
+                PRESS_hist(u,i)=PRESS_hist(u-1,i);
+            end
         end
         
         if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run for channels that have self terminated
