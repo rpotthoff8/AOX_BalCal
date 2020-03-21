@@ -237,7 +237,11 @@ ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
 % Saving variables to calculate prediction intervals live in approximation
 ANOVA.PI.T_cr = T_cr;
 ANOVA.PI.sigma_hat_sq = sigma_hat_sq;
-ANOVA.PI.invXtX = invXtX(1:nterms,1:nterms);
+if size(X,2)~=nterms
+    ANOVA.PI.invXtX = pinv(X(:,1:nterms)'*X(:,1:nterms));
+else
+    ANOVA.PI.invXtX = invXtX;
+end
 ANOVA.PI.calc_pi = "T_cr*sqrt(sigma_hat_sq*(1+(x*invXtX*x')))";
 ANOVA.PI.dof_e=dof_e;
 %START TEST
