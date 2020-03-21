@@ -53,11 +53,12 @@ numBasis = out.basis;
 min_eps=out.min_eps; %Fasshauer pg 234, large epsilon= 'spiky'
 max_eps=out.max_eps;
 %SET SELF TERMINATE OPTION FOR RBFS
-pos_str={'No Early Termination','Validation Error Termination','Prediction Interval Termination','VIF + Prediction Interval Termination'}; %Possible self-termination options
+pos_str={'No Early Termination','Validation Error Termination','PRESS Termination','Prediction Interval Termination','VIF + Prediction Interval Termination'}; %Possible self-termination options
 match=strcmp(pos_str,out.selfTerm_str);
 FLAGS.valid_selfTerm=match(2);
-FLAGS.PI_selfTerm=match(3);
-FLAGS.VIF_selfTerm=match(4);
+FLAGS.PRESS_selfTerm=match(3);
+FLAGS.PI_selfTerm=match(4);
+FLAGS.VIF_selfTerm=match(5);
 
 %SELECT ALGEBRAIC MODE                                      set FLAGS.model = 1 (full)
 %                                                                             2 (trunc)
@@ -220,7 +221,7 @@ if FLAGS.model==6 %If user has selected a custom model
     termInclude=out.termInclude;
     %Assemble custom matrix
     customMatrix=customMatrix_builder(voltdimFlag,termInclude,loaddimFlag,FLAGS.glob_intercept);
-    
+
     %Proceed through code with custom equation
     FLAGS.model = 4;
     algebraic_model={'CUSTOM TERM SELECTION'};
@@ -421,18 +422,18 @@ if FLAGS.high_con>0 %If enforcing hierarchy constraint
     else
         calcThrough=loaddimFlag; %Necessary to calculate for each channel seperate
     end
-       
+
     for i=1:calcThrough
         incTerms=customMatrix(1:nterms,i); %Terms included in permitted model
         supTermsMatrix=high(logical(incTerms),:); %Matrix of terms needed to support variables: each row contains 1's for terms needed to support term
         incTermsMatrix=repmat(incTerms',size(supTermsMatrix,1),1); %Matrix of included terms: each row is vector of terms that are included
-        
+
         %Test to see if each of the included terms is supported by the required other included terms
         termTest=ones(size(supTermsMatrix)); %Initialize matrix as ones
         termTest(logical(supTermsMatrix))=incTermsMatrix(logical(supTermsMatrix)); %Test if needed support terms are included: if a support term is missing it will be 0 in that row.  If it is included or not needed the entry will be 1
-        
+
         termSupported=all(termTest,2); %Create vector for if each term is supported
-        
+
         if any(~termSupported) %If any terms needed for support are not included in the permitted model
             if identical_custom==1
                 warning(strcat("All channel's Permitted Math Model are not hierarchically supported. Removing unsupported terms."));
@@ -441,7 +442,7 @@ if FLAGS.high_con>0 %If enforcing hierarchy constraint
                 warning(strcat("Channel ",num2str(i), " Permitted Math Model is not hierarchically supported. Removing unsupported terms."));
                 customMatrix(~termSupported,i)=0; %Remove unsupported terms from customMatrix
             end
-            
+
         end
     end
 end
@@ -488,10 +489,10 @@ targetRes = targetMatrix0-aprxIN;
 % (Threshold approach)
 if FLAGS.balOut == 1
     fprintf('\n Identifying Outliers....')
-    
+
     %Identify outliers based on residuals
     [OUTLIER_ROWS,num_outliers,prcnt_outliers,rowOut,colOut] = ID_outliers(targetRes,numpts0,numSTD,FLAGS);
-    
+
     %Store outlier specific variables for output
     newStruct = struct('num_outliers',num_outliers,...
         'prcnt_outliers',prcnt_outliers,...
@@ -500,9 +501,9 @@ if FLAGS.balOut == 1
         'numSTD',numSTD);
     uniqueOut = cell2struct([struct2cell(uniqueOut);struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-    
+
     fprintf('Complete\n')
-    
+
     % Use the reduced input and target files
     if FLAGS.zeroed == 1
         fprintf('\n Removing Outliers....')
@@ -518,16 +519,16 @@ if FLAGS.balOut == 1
         [~,s_1st0,~] = unique(series0);
         nseries0 = length(s_1st0);
         fprintf('Complete\n')
-        
+
         %Calculate xcalib (coefficients)
         [xcalib,ANOVA] = calc_xcalib(comIN0,targetMatrix0,series0,...
             nterms,nseries0,loaddimFlag,FLAGS,customMatrix,anova_pct,loadlist,'Direct');
-        
+
         % APPROXIMATION
         % define the approximation for inputs minus global zeros (includes
         % intercept terms)
         aprxIN = comIN0*xcalib;
-        
+
         % RESIDUAL
         targetRes = targetMatrix0-aprxIN;
     end
@@ -553,7 +554,7 @@ end
 tares_STDDEV = tares_STDDEV_all(s_1st0,:);
 
 if out.model~=0 %If any algebraic terms included
-    
+
     if FLAGS.tare_intercept==1 %Check for tare load estimate agreement
         y_hat_PI=zeros(size(targetRes));
         if FLAGS.anova==1 %Extract load PI from ANOVA structure
@@ -563,7 +564,7 @@ if out.model~=0 %If any algebraic terms included
         end
         tareCheck(targetMatrix0,aprxINminGZ,series0,tares,FLAGS,targetRes,y_hat_PI,pointID0);
     end
-    
+
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, algebraic section
     section={'Calibration Algebraic'};
@@ -578,7 +579,7 @@ if out.model~=0 %If any algebraic terms included
         'gageCapacities',gageCapacities);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-    
+
     if FLAGS.mode==1 %Outputs for balance calibration mode
         newStruct=struct('loadCapacities',loadCapacities,...
             'tares',tares, 'balance_type',balance_type,...
@@ -586,7 +587,7 @@ if out.model~=0 %If any algebraic terms included
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     end
-    
+
     %Output results from calibration algebraic section
     output(section,FLAGS,targetRes,fileName,numpts0,nseries0,...
         loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
@@ -602,10 +603,10 @@ if FLAGS.balVal == 1
     %                       VALIDATION - ALGEBRAIC SECTION                        %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf('\n ********** Starting Validation Algebraic Calculations **********\n')
-    
+
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
-    
+
     load(out.savePathval,'-mat'); %Load validation data
     if FLAGS.mode~=1 %If not in balance calibration mode
         %All data is from same series
@@ -613,15 +614,15 @@ if FLAGS.balVal == 1
         series2valid=ones(size(excessVecvalid,1),1);
     end
     [validSeries,s_1stV,~] = unique(seriesvalid); %Define series for validation data
-    
+
     % Dimensions of data
     [numptsvalid,voltdimFlagvalid] = size(excessVecvalid); %Number of datapoints and voltage channels
     loaddimFlagvalid=size(targetMatrixvalid,2); %Dimension of load input (desired output variable)
-    
+
     if exist( 'pointIDvalid', 'var')==0 %Create standard point ID labels if they don't exist
         pointIDvalid=cellstr([repmat('P-',numptsvalid,1),num2str((1:numptsvalid)')]);
     end
-    
+
     if voltdimFlag~=voltdimFlagvalid || loaddimFlag~= loaddimFlagvalid %Check if mismatch between calibration and validation data.  If so, exit program
         fprintf('\n  ');
         fprintf('\n MISMATCH IN CALIBRATION/VALIDATION DATA DIMENSIONS.  UNABLE TO PROCEED.\n');
@@ -631,33 +632,33 @@ if FLAGS.balVal == 1
         end
         return; %Quit run
     end
-    
+
     if FLAGS.mode==1
         %find the average natural zeros (also called global zeros)
         globalZerosvalid = mean(natzerosvalid,1);
         % Subtract the Global Zeros from the Inputs and Local Zeros
         dainputsvalid = excessVecvalid-globalZerosvalid;
-        
+
         %load capacities
         loadCapacitiesvalid(loadCapacitiesvalid == 0) = realmin;
     else
         dainputsvalid = excessVecvalid;
     end
-    
+
     %find number of series0; this will tell us the number of tares
     nseriesvalid = max(seriesvalid);
-    
+
     % Call the Algebraic Subroutine
     comINvalid = balCal_algEqns(FLAGS.model,dainputsvalid,seriesvalid,0); %Generate term combinations
-    
+
     %VALIDATION APPROXIMATION
     %define the approximation for inputs minus global zeros
     aprxINvalid = comINvalid*coeff;        %to find approximation, JUST USE COEFF FOR VALIDATION (NO ITERCEPTS)
-    
+
     %%%%% 3/23/17 Zap intercepts %%%
     aprxINminGZvalid = aprxINvalid;
     checkitvalid = aprxINminGZvalid-targetMatrixvalid;
-    
+
     if FLAGS.tare_intercept==1 %If including Tare loads
         % SOLVE FOR TARES BY TAKING THE MEAN
         [taresAllPointsvalid,taretalstdvalid] = meantare(seriesvalid,checkitvalid);
@@ -665,23 +666,23 @@ if FLAGS.balVal == 1
         taresAllPointsvalid=zeros(size(checkitvalid));
         taretalstdvalid=zeros(size(checkitvalid));
     end
-    
+
     taresvalid     = taresAllPointsvalid(s_1stV,:);
     tares_STDEV_valid = taretalstdvalid(s_1stV,:);
-    
+
     %Tare corrected approximation
     aprxINminTAREvalid=aprxINminGZvalid-taresAllPointsvalid;
-    
+
     %RESIDUAL
     targetResvalid = targetMatrixvalid-aprxINminTAREvalid;
     std_targetResvalid=std(targetResvalid);
     RMS_targetResvalid=sqrt(mean(targetResvalid.^2,1));
-    
+
     if out.model~=0 %If any algebraic terms included
         %CALCULATE PREDICTION INTERVAL FOR POINTS
         if FLAGS.loadPI==1
             [loadPI_valid]=calc_PI(ANOVA,anova_pct,comINvalid,aprxINvalid); %Calculate prediction interval for loads
-            
+
             %Save variables for output
             newStruct=struct('loadPI_valid',loadPI_valid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
@@ -689,24 +690,24 @@ if FLAGS.balVal == 1
         else
             loadPI_valid=zeros(size(aprxINvalid));
         end
-        
+
         if FLAGS.tare_intercept==1
             tareCheck(targetMatrixvalid,aprxINminGZvalid,seriesvalid,taresvalid,FLAGS,targetResvalid,loadPI_valid,pointIDvalid);
         end
-        
+
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, algebraic section
         newStruct=struct('aprxINminTAREvalid',aprxINminTAREvalid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-        
+
         if FLAGS.mode==1
             newStruct=struct('loadCapacities',loadCapacitiesvalid,...
                 'tares',taresvalid,'tares_STDDEV',tares_STDEV_valid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         end
-        
+
         section={'Validation Algebraic'};
         output(section,FLAGS,targetResvalid,fileNamevalid,numptsvalid,nseriesvalid,...
             loadlist, seriesvalid ,excessVecvalid,voltdimFlag,loaddimFlag,voltagelist,...
@@ -728,45 +729,44 @@ if FLAGS.balCal == 2
     %find centers by finding the index of max residual, using that index to
     %subtract excess(counter)-excess(indexMaxResid) and then taking the dot
     %product of the resulting column vector
-    
+
     fprintf('\n ********** Starting Calibration GRBF Calculations **********\n')
-    
+
     %Check to ensure max # RBFs <= number datapoints
     if numBasis>numpts0
         warning(strcat('Input Max # GRBF > # Calibration datapoints. Setting Max # GRBF = # Calibration datapoints (',num2str(numpts0),')'))
         numBasis=numpts0;
     end
-    
-   
-    PRESS_hist=zeros(numBasis,loaddimFlag);
+
+
     tareGRBFHistvalid=cell(numBasis,1);
     VIF_self_terminate=zeros(1,loaddimFlag);
     resRMSHist=zeros(numBasis,loaddimFlag);
     validError_self_terminate100=zeros(1,loaddimFlag);
-    
+
     PI_self_Terminate100=zeros(1,loaddimFlag);
-    
+
         validError_self_terminate250=zeros(1,loaddimFlag);
     PI_self_Terminate250=zeros(1,loaddimFlag);
-    
+
         validError_self_terminate500=zeros(1,loaddimFlag);
     PI_self_Terminate500=zeros(1,loaddimFlag);
-    
+
         validError_self_terminate750=zeros(1,loaddimFlag);
     PI_self_Terminate750=zeros(1,loaddimFlag);
-    
+
         validError_self_terminate1000=zeros(1,loaddimFlag);
     PI_self_Terminate1000=zeros(1,loaddimFlag);
-    
+
         validError_self_terminate1250=zeros(1,loaddimFlag);
     PI_self_Terminate1250=zeros(1,loaddimFlag);
-    
+
         validError_self_terminate1500=zeros(1,loaddimFlag);
     PI_self_Terminate1500=zeros(1,loaddimFlag);
-    
+
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
-    
+
     %Initialize Variables
     targetRes2=targetRes;
     aprxINminGZ2 = aprxINminGZ;
@@ -784,8 +784,8 @@ if FLAGS.balCal == 2
     resSquareHist=zeros(numBasis,loaddimFlag);
     resStdHist=zeros(numBasis,loaddimFlag);
     dist=zeros(size(dainputs0,1),size(dainputs0,1),size(dainputs0,2));
-    
-    
+
+
     for i=1:size(dainputs0,2)
         dist(:,:,i)=dainputs0(:,i)'-dainputs0(:,i); %solve distance between each datapoint in each dimension, Eqn 16 from Javier's notes
     end
@@ -795,41 +795,45 @@ if FLAGS.balCal == 2
     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
     h_GRBF=sqrt(max(min(R_square_find))); %Point spacing parameter
-    
+
 %     max_mult=5; %CHANGE
 %     maxPer=ceil(max_mult*numBasis/size(dainputs0,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
 %     %     maxPer=ceil(0.05*numBasis); %Max number of RBFs that can be placed at any 1 location
     maxPer=1;
-    
+
     %Initialize self terminate variables:
     self_Terminate=false(1,loaddimFlag); %Logical vector that stores if RBF addition has been terminated in each channel
     RBFs_added=zeros(1,loaddimFlag); %Count of how many RBFs have been added in each channel
+%    period_change=zeros(numBasis,loaddimFlag); %Storge for Change in self termination variable over last 'n' additions
+%    period_length=min([100,max([10,0.1*numBasis])]); %CHANGE?: Length of period for self termination
+period_change100=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+period_length100=10; %CHANGE?: Length of period for self termination
+period_change250=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+period_length250=25; %CHANGE?: Length of period for self termination
+period_change500=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+period_length500=50; %CHANGE?: Length of period for self termination
+period_change750=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+period_length750=75; %CHANGE?: Length of period for self termination
+period_change1000=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+period_length1000=100; %CHANGE?: Length of period for self termination
+period_change1250=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+period_length1250=125; %CHANGE?: Length of period for self termination
+period_change1500=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+period_length1500=150; %CHANGE?: Length of period for self termination
+
 if 1==1
-    %     if FLAGS.valid_selfTerm==1 %If RBF addition will be terminated based on validation data error
+        %     if FLAGS.valid_selfTerm==1 %If RBF addition will be terminated based on validation data error
         resRMSHistvalid=zeros(numBasis,loaddimFlag); %History of valid data residual standard deviation vs RBF number
-        period_change100=zeros(numBasis,loaddimFlag); %Storge for Change in validation standard deviation over last 'n' additions
-        period_length100=10; %CHANGE?: Length of period for self termination
         comINvalid_RBF=zeros(size(dainputsvalid,1),numBasis*loaddimFlag);
 end
 if 1==1
 %     if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If RBF addition will be terminated based on VIF or Prediction interval
         calib_PI_mean_Hist=zeros(numBasis,loaddimFlag); %History of prediction interval RMS vs RBF number
-        period_change100=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length100=10; %CHANGE?: Length of period for self termination
-        period_change250=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length250=25; %CHANGE?: Length of period for self termination
-        period_change500=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length500=50; %CHANGE?: Length of period for self termination
-        period_change750=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length750=75; %CHANGE?: Length of period for self termination
-        period_change1000=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length1000=100; %CHANGE?: Length of period for self termination
-        period_change1250=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length1250=125; %CHANGE?: Length of period for self termination
-        period_change1500=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length1500=150; %CHANGE?: Length of period for self termination
         if out.model~=0
-            [loadPI_ALG]=calc_PI(ANOVA,anova_pct,comIN0(:,1:nterms),aprxIN); %Calculate prediction interval for loads with algebraic model
+            loadPI_ALG=zeros(size(targetMatrix0));
+            for i=1:loaddimFlag
+                loadPI_ALG(:,i)=ANOVA(i).y_hat_PI; %Store prediction interval for loads with algebraic model
+            end
         else
             loadPI_ALG=Inf(size(targetMatrix0));
         end
@@ -837,11 +841,24 @@ if 1==1
 end
 
 if 1==1
+%     if FLAGS.PRESS_selfTerm==1
+    PRESS_Hist=zeros(numBasis,loaddimFlag); %History of PRESS vs RBF number
+    if out.model~=0 %If algebraic model calculated
+        ALG_PRESS=zeros(1,loaddimFlag);
+        for i=1:loaddimFlag
+            ALG_PRESS(1,i)=ANOVA(i).PRESS; %Store PRESS for algebraic model
+        end
+    else
+        ALG_PRESS=Inf(1, loaddimFlag);
+    end
+end
+
+if 1==1
 %     if FLAGS.VIF_selfTerm==1 %Initialize variables for self terminating based on VIF
         max_VIF_hist=zeros(numBasis,loaddimFlag); %History variable of VIF as RBFs are added
         comIN0_RBF=comIN0; %Initialize 'X' matrix for RBF predictor variables
         GRBF_VIF_thresh=out.GRBF_VIF_thresh-.05;%Limit for acceptable VIF
-        
+
         for i=1:loaddimFlag %Check Algebraic model max VIF in each channel
             if out.model~=0
                 max_VIF_alg=max(ANOVA(i).VIF);
@@ -857,7 +874,7 @@ if 1==1
             fprintf(strcat('\n All Channels Reached VIF termination criteria with Algebraic Model, no RBFs will be added')); %Output message
             calib_PI_mean_Hist=calib_ALG_PI_mean;
         end
-        
+
         %Initialize customMatrix for solving terms
         if FLAGS.model==4
             customMatrix_RBF=customMatrix;
@@ -866,7 +883,7 @@ if 1==1
         end
     end
     %END SELF-TERMINATION INITIALIZATION
-    
+
     count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have been placed at each location
     for u=1:numBasis
         RBFs_added(not(self_Terminate))=u; %Counter for how many RBFs have been placed in each channel
@@ -878,30 +895,30 @@ if 1==1
             if self_Terminate(s)==0 %If channel has not been self-terminated
                 VIF_good=0; %Initialize Flag for if VIF is acceptable
                 while VIF_good==0 %Repeat until VIF is acceptable
-                    
+
                     %PLACE CENTER BASED ON LOCATION OF MAX RESIDUAL
                     targetRes2_find=targetRes2;
                     targetRes2_find(count(:,s)>=maxPer,s)=0; %Zero out residuals that have reached max number of RBFs
                     [~,centerIndexLoop(s)] = max(abs(targetRes2_find(:,s))); %Place RBF at max residual location
                     count(centerIndexLoop(s),s)=count(centerIndexLoop(s),s)+1; %Advance count for center location
-                    
+
                     %DEFINE DISTANCE BETWEEN RBF CENTER AND OTHER DATAPOINTS
                     eta(:,s)=R_square(:,centerIndexLoop(s)); %Distance squared between RBF center and datapoints
-                    
+
                     %find widths 'w' by optimization routine
                     eps(s) = fminbnd(@(eps) balCal_meritFunction2(eps,targetRes2(:,s),eta(:,s),h_GRBF,voltdimFlag),min_eps,max_eps );
-                    
+
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
                     %                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
                     %                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
-                    
+
 % % % % %                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
 if 1==1
                         comIN0_RBF_VIFtest(:,end)=rbfINminGZ_temp; %Define input matrix ('X') with new RBF, algebraic terms, and previous RBFs
                         customMatrix_RBF_VIFtest=[customMatrix_RBF(:,s);1]; %Define customMatrix for solving terms with new RBF
                         VIFtest=vif_dl(comIN0_RBF_VIFtest(:,logical(customMatrix_RBF_VIFtest))); %Calculate VIFs for predictor terms with new RBF
-                        
+
                         max_VIF_hist(u,s)=max(VIFtest([1:end-nseries0-1,end])); %Store maximum VIF in history
                         VIF_good=1;
                         if max_VIF_hist(u,s)>GRBF_VIF_thresh
@@ -926,12 +943,12 @@ if 1==1
                     else %If not self terminating based on VIF
                         VIF_good=1; %Exit while loop, VIF criteria not considered
                     end %END VIF_selfTerm section
-                    
+
                 end %END loop for iterating until good VIF
                 rbfINminGZ(:,u,s)=rbfINminGZ_temp; %Store temp RBF
             end
         end
-        
+
         %Make custom Matrix to solve for only RBF coefficinets in correct channel
         RBF_custom=repmat(eye(loaddimFlag,loaddimFlag),u,1);
         for i=1:loaddimFlag
@@ -942,23 +959,23 @@ if 1==1
         else
             customMatrix_RBF=[ones(nterms,loaddimFlag);RBF_custom;ones(nseries0,loaddimFlag)];
         end
-        
+
         %Add RBFs to comIN0 variable to solve with alg coefficients
         comIN0_RBF=[comIN0(:,1:nterms),zeros(size(comIN0,1),u*loaddimFlag),comIN0(:,nterms+1:end)];
         for i=1:u
             comIN0_RBF(:,nterms+1+loaddimFlag*(i-1):nterms+loaddimFlag*(i))=rbfINminGZ(:,i,:);
         end
-        
+
         %New flag structure for calc_xcalib
         FLAGS_RBF=FLAGS; %Initialize as global flag structure
         FLAGS_RBF.model=4;
         if u==numBasis %If final RBF placed
             if any(self_Terminate) %If self terminated, stats will be recalculated below
                 calc_channel=not(self_Terminate);
-                if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If self terminating based on Prediction Interval
+                if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1 || FLAGS.PRESS_selfTerm==1) %If self terminating based on Prediction Interval or PRESS
                     FLAGS_RBF.anova=1; %perform ANOVA analysis
                     FLAGS_RBF.test_FLAG=1; %Do not calculate VIF for time savings
-                else %If not self terminating with PI
+                else %If not self terminating with PI or PRESS
                     FLAGS_RBF.anova=0; %do not perform ANOVA analysis
                 end
             else %Otherwise, final calculation with RBFs
@@ -966,9 +983,9 @@ if 1==1
                 FLAGS_RBF.test_FLAG=0; %calculate VIF
                 calc_channel=true(1,loaddimFlag); %Calculate every channel
             end
-            
+
         else %NOT final RBF Placed
-            if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If self terminating based on Prediction Interval
+            if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1 || FLAGS.PRESS_selfTerm==1) %If self terminating based on Prediction Interval or PRESS
                 FLAGS_RBF.anova=1; %perform ANOVA analysis
                 FLAGS_RBF.test_FLAG=1; %Do not calculate VIF for time savings
             else
@@ -977,15 +994,16 @@ if 1==1
             calc_channel=not(self_Terminate); %Calculate channels that have not been terminated
         end
         nterms_RBF=nterms+u*loaddimFlag; %New number of terms to solve for
-        
+
         FLAGS_RBF.anova=1; %perform ANOVA analysis
         if u<numBasis
-            FLAGS_RBF.test_FLAG=1; %Do not calculate VIF for time savings        
+            FLAGS_RBF.test_FLAG=1; %Do not calculate VIF for time savings
         end
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
         [xcalib_RBF, ANOVA_GRBF, new_self_Terminate] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
-               
+
+        %Check on rank deficiency self termination
         if any(new_self_Terminate~=self_Terminate) %Check if any channel terminated due to rank deficiency
             dif_channel=new_self_Terminate~=self_Terminate; %Find logical vector of channels that are now terminated
             RBFs_added(dif_channel)=u-1; %Correct number of RBFs added
@@ -997,7 +1015,7 @@ if 1==1
             warning(strcat("Ill-Conditioned matrix for load channel",sprintf(' %.0f,',find(dif_channel))," Terminating RBF addition. Final # RBF=",num2str(u-1))); %Display warning message
             self_Terminate=new_self_Terminate; %update RBF termination tracker
         end
-        
+
         for i=1:loaddimFlag
             if self_terminate(i)==0
                 PRESS_hist(u,i)=ANOVA_GRBF(i).PRESS;
@@ -1005,7 +1023,7 @@ if 1==1
                 PRESS_hist(u,i)=PRESS_hist(u-1,i);
             end
         end
-        
+
         if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run for channels that have self terminated
             xcalib_RBF(1:size(xcalib_RBF_last,1)-nseries0,self_Terminate)=xcalib_RBF_last(1:end-nseries0,self_Terminate);
             if FLAGS.tare_intercept==1
@@ -1013,7 +1031,7 @@ if 1==1
             end
         end
         xcalib_RBF_last=xcalib_RBF;
-        
+
         %Store basis parameters in Hist variables
         epsHist(u,not(self_Terminate)) = eps(not(self_Terminate));
         %         cHist_tot{u} = coeff_algRBFmodel;
@@ -1026,7 +1044,7 @@ if 1==1
                 %Dim 3= Dimension center is placed in ( what load channel it is helping approximate)
             end
         end
-        
+
         %Find and Store tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
             [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist(1:u,:),center_daHist(1:u,:,:),h_GRBF); %Calculate tares from series specific intercepts
@@ -1035,14 +1053,14 @@ if 1==1
         end
         taretalRBF=taresGRBF(series0,:);
         tareGRBFHist{u} = taresGRBF;
-        
+
         %update the approximation
         aprxIN2=comIN0_RBF*xcalib_RBF; %Approximation including series intercepts
         aprxIN2_Hist{u} = aprxIN2;
         aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include series intercept terms
         %Calculate tare corrected load approximation
         aprxINminTARE2=aprxINminGZ2-taretalRBF;
-        
+
         %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
         % Find Standard Deviation of mean tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
@@ -1051,7 +1069,7 @@ if 1==1
             taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
         end
         taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
-        
+
         %Extract RBF coefficients
         coeff_algRBFmodel=xcalib_RBF(1:nterms_RBF,:); %Algebraic and RBF coefficient matrix
         coeff_algRBFmodel_alg=xcalib_RBF(1:nterms,:); %new algebraic coefficients
@@ -1061,10 +1079,10 @@ if 1==1
         for i=1:u
             coeff_algRBFmodel_RBF(i,:)=diag(coeff_algRBFmodel_RBF_diag(1+loaddimFlag*(i-1):loaddimFlag*i,:));
         end
-        
+
         %Store basis parameters in Hist variables
         cHist_tot{u} = coeff_algRBFmodel;
-        
+
         %Calculate and store residuals
         targetRes2 = targetMatrix0-aprxINminTARE2;
         newRes2 = targetRes2'*targetRes2;
@@ -1073,7 +1091,7 @@ if 1==1
         resStdHist(u,:)=std(targetRes2);
         resRMSHist(u,:)=sqrt(mean(targetRes2.^2,1));
 
-        
+
         %Validation Error Self-Termination Check: use new ALG+RBF model to
         %determine standard deviation of residuals for validation data
         % % % % %         if FLAGS.valid_selfTerm==1
@@ -1081,9 +1099,9 @@ if 1==1
             %Test on validation data
             comINvalid_RBF(:,(u-1)*loaddimFlag+1:u*loaddimFlag)=create_comIN_RBF(dainputsvalid,epsHist(u,:),center_daHist(u,:,:),h_GRBF); %Generate comIN for RBFs
             comINvalid_algRBF=[comINvalid, comINvalid_RBF(:,1:u*loaddimFlag)]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
-            
+
             aprxINminGZ2valid=comINvalid_algRBF*coeff_algRBFmodel; %find approximation with alg and RBF Coefficients
-            
+
             % SOLVE FOR TARES BY TAKING THE MEAN
             [~,s_1st,~] = unique(seriesvalid);
             if FLAGS.tare_intercept==1 %If tare loads were included in regression
@@ -1093,16 +1111,16 @@ if 1==1
                 taretalstdvalid2 = zeros(size(targetMatrixvalid));
             end
             tareGRBFHistvalid{u}=taresAllPointsvalid2(s_1stV,:);
-            
+
             %Calculate tare corrected load approximation
             aprxINminTARE2valid=aprxINminGZ2valid-taresAllPointsvalid2;
-            
+
             %Residuals
             targetRes2valid = targetMatrixvalid-aprxINminTARE2valid;      %0=b-Ax
             newRes2valid = targetRes2valid'*targetRes2valid;
             resSquare2valid = diag(newRes2valid);
             resRMSHistvalid(u,:)=sqrt(mean(targetRes2valid.^2,1));
-            
+
             %Self termination criteria
             %Calculate period_change, the difference between the minimum
             %error in the last n iterations and the error n+1 iterations ago
@@ -1111,44 +1129,44 @@ if 1==1
             elseif u==period_length100
                 period_change100(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
             end
-            
+
             if u>period_length250
                 period_change250(u,:)=min(resRMSHistvalid(u-(period_length250-1):u,:))-resRMSHistvalid(u-period_length250,:);
             elseif u==period_length250
                 period_change250(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
             end
-            
+
             if u>period_length500
                 period_change500(u,:)=min(resRMSHistvalid(u-(period_length500-1):u,:))-resRMSHistvalid(u-period_length500,:);
             elseif u==period_length500
                 period_change500(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
             end
-            
+
             if u>period_length750
                 period_change750(u,:)=min(resRMSHistvalid(u-(period_length750-1):u,:))-resRMSHistvalid(u-period_length750,:);
             elseif u==period_length750
                 period_change750(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
             end
-            
+
             if u>period_length1000
                 period_change1000(u,:)=min(resRMSHistvalid(u-(period_length1000-1):u,:))-resRMSHistvalid(u-period_length1000,:);
             elseif u==period_length1000
                 period_change1000(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
             end
-            
+
             if u>period_length1250
                 period_change1250(u,:)=min(resRMSHistvalid(u-(period_length1250-1):u,:))-resRMSHistvalid(u-period_length1250,:);
             elseif u==period_length1250
                 period_change1250(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
             end
-            
+
             if u>period_length1500
                 period_change1500(u,:)=min(resRMSHistvalid(u-(period_length1500-1):u,:))-resRMSHistvalid(u-period_length1500,:);
             elseif u==period_length1500
                 period_change1500(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
             end
-            
-            
+
+
             %Self Terminate if validation error has only gotten worse over
             %the last n+1 iterations
             for i=1:loaddimFlag
@@ -1159,7 +1177,7 @@ if 1==1
                         fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
                     end
                 end
-                
+
                 if period_change250(u,i)>0 && self_Terminate(i)==0
                     % % % % %                     self_Terminate(i)=1;
                     if validError_self_terminate250(i)==0
@@ -1167,7 +1185,7 @@ if 1==1
                         fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
                     end
                 end
-                
+
                 if period_change500(u,i)>0 && self_Terminate(i)==0
                     % % % % %                     self_Terminate(i)=1;
                     if validError_self_terminate500(i)==0
@@ -1175,7 +1193,7 @@ if 1==1
                         fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
                     end
                 end
-                
+
                 if period_change750(u,i)>0 && self_Terminate(i)==0
                     % % % % %                     self_Terminate(i)=1;
                     if validError_self_terminate750(i)==0
@@ -1183,7 +1201,7 @@ if 1==1
                         fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
                     end
                 end
-                
+
                 if period_change1000(u,i)>0 && self_Terminate(i)==0
                     % % % % %                     self_Terminate(i)=1;
                     if validError_self_terminate1000(i)==0
@@ -1191,7 +1209,7 @@ if 1==1
                         fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
                     end
                 end
-                
+
                 if period_change1250(u,i)>0 && self_Terminate(i)==0
                     % % % % %                     self_Terminate(i)=1;
                     if validError_self_terminate1250(i)==0
@@ -1199,7 +1217,7 @@ if 1==1
                         fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
                     end
                 end
-                
+
                 if period_change1500(u,i)>0 && self_Terminate(i)==0
                     % % % % %                     self_Terminate(i)=1;
                     if validError_self_terminate1500(i)==0
@@ -1207,23 +1225,23 @@ if 1==1
                         fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
                     end
                 end
-                
+
             end
         end
-        
+
         %Prediction Error Self-Termination Check: caculate PI for
-        %calibration data and store RMS of all calibration points
-% % % % %         if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) && any(~self_Terminate) %If terminating based on PI or VIF and not all the channels have been self terminated
-if 1==1
-            [loadPI_GRBF_iter]=calc_PI(ANOVA_GRBF,anova_pct,comIN0_RBF(:,1:nterms_RBF),aprxIN2,calc_channel); %Calculate prediction interval for loads
+        %calibration data and store mean of all calibration points
+        % % % % %         if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) && any(~self_Terminate) %If terminating based on PI or VIF and not all the channels have been self terminated
+        if 1==1
+        %             [loadPI_GRBF_iter]=calc_PI(ANOVA_GRBF,anova_pct,comIN0_RBF(:,1:nterms_RBF),aprxIN2,calc_channel); %Calculate prediction interval for loads
             for i=1:loaddimFlag
                 if self_Terminate(i)==1 %If channel is self terminated, use PI mean from previous iteration
                     calib_PI_mean_Hist(u,i)=calib_PI_mean_Hist(u-1,i);
                 else
-                    calib_PI_mean_Hist(u,i)=mean(loadPI_GRBF_iter(:,i),1); %RMS for calibration PI
+                    calib_PI_mean_Hist(u,i)=mean(ANOVA_GRBF(i).y_hat_PI,1); %RMS for calibration PI
                 end
             end
-            
+
             %Self termination criteria
             %Calculate period_change, the difference between the minimum
             %PI in the last n iterations and the PI n+1 iterations ago
@@ -1232,43 +1250,43 @@ if 1==1
             elseif u==period_length100
                 period_change100(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
             end
-            
+
             if u>period_length250
                 period_change250(u,:)=min(calib_PI_mean_Hist(u-(period_length250-1):u,:))-calib_PI_mean_Hist(u-period_length250,:);
             elseif u==period_length250
                 period_change250(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
             end
-            
+
             if u>period_length500
                 period_change500(u,:)=min(calib_PI_mean_Hist(u-(period_length500-1):u,:))-calib_PI_mean_Hist(u-period_length500,:);
             elseif u==period_length500
                 period_change500(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
             end
-            
+
             if u>period_length750
                 period_change750(u,:)=min(calib_PI_mean_Hist(u-(period_length750-1):u,:))-calib_PI_mean_Hist(u-period_length750,:);
             elseif u==period_length750
                 period_change750(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
             end
-            
+
             if u>period_length1000
                 period_change1000(u,:)=min(calib_PI_mean_Hist(u-(period_length1000-1):u,:))-calib_PI_mean_Hist(u-period_length1000,:);
             elseif u==period_length1000
                 period_change1000(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
             end
-            
+
             if u>period_length1250
                 period_change1250(u,:)=min(calib_PI_mean_Hist(u-(period_length1250-1):u,:))-calib_PI_mean_Hist(u-period_length1250,:);
             elseif u==period_length1250
                 period_change1250(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
             end
-            
+
             if u>period_length1500
                 period_change1500(u,:)=min(calib_PI_mean_Hist(u-(period_length1500-1):u,:))-calib_PI_mean_Hist(u-period_length1500,:);
             elseif u==period_length1500
                 period_change1500(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
             end
-            
+
             %Self Terminate if validation error has only gotten worse over
             %the last n+1 iterations
             for i=1:loaddimFlag
@@ -1279,7 +1297,7 @@ if 1==1
                         PI_self_Terminate100(i)=u;
                     end
                 end
-                
+
                 if period_change250(u,i)>0 && self_Terminate(i)==0
                     % % % % % %                     self_Terminate(i)=1;
                     if PI_self_Terminate250(i)==0
@@ -1287,7 +1305,7 @@ if 1==1
                         PI_self_Terminate250(i)=u;
                     end
                 end
-                
+
                 if period_change500(u,i)>0 && self_Terminate(i)==0
                     % % % % % %                     self_Terminate(i)=1;
                     if PI_self_Terminate500(i)==0
@@ -1295,7 +1313,7 @@ if 1==1
                         PI_self_Terminate500(i)=u;
                     end
                 end
-                
+
                 if period_change750(u,i)>0 && self_Terminate(i)==0
                     % % % % % %                     self_Terminate(i)=1;
                     if PI_self_Terminate750(i)==0
@@ -1303,7 +1321,7 @@ if 1==1
                         PI_self_Terminate750(i)=u;
                     end
                 end
-                
+
                 if period_change1000(u,i)>0 && self_Terminate(i)==0
                     % % % % % %                     self_Terminate(i)=1;
                     if PI_self_Terminate1000(i)==0
@@ -1311,7 +1329,7 @@ if 1==1
                         PI_self_Terminate1000(i)=u;
                     end
                 end
-                
+
                 if period_change1250(u,i)>0 && self_Terminate(i)==0
                     % % % % % %                     self_Terminate(i)=1;
                     if PI_self_Terminate1250(i)==0
@@ -1319,7 +1337,7 @@ if 1==1
                         PI_self_Terminate1250(i)=u;
                     end
                 end
-                
+
                 if period_change1500(u,i)>0 && self_Terminate(i)==0
                     % % % % % %                     self_Terminate(i)=1;
                     if PI_self_Terminate1500(i)==0
@@ -1334,7 +1352,40 @@ if 1==1
                         calib_PI_mean_Hist(u+1:end,:)=[];  %Trim storage variable
                     end
         end
-        
+
+        %PRESS self termination: Store PRESS statistic
+        if FLAGS.PRESS_selfTerm==1 && any(~self_Terminate) %If terminating based on PRESS and not all the channels have been self terminated
+            for i=1:loaddimFlag
+                if self_Terminate(i)==1 %If channel is self terminated, use PRESS from previous iteration
+                    PRESS_Hist(u,i)=PRESS_Hist(u-1,i);
+                else
+                    PRESS_Hist(u,i)=ANOVA_GRBF(i).PRESS; %store PRESS from ANOVA
+                end
+            end
+
+            %Self termination criteria
+            %Calculate period_change, the difference between the minimum
+            %PRESS in the last n iterations and PRESS n+1 iterations ago
+            if u>period_length
+                period_change(u,:)=min(PRESS_Hist(u-(period_length-1):u,:))-PRESS_Hist(u-period_length,:);
+            elseif u==period_length
+                period_change(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
+            end
+
+            %Self Terminate if PRESS has only gotten worse over
+            %the last n+1 iterations
+            for i=1:loaddimFlag
+                if period_change(u,i)>0 && self_Terminate(i)==0
+                    fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                    self_Terminate(i)=1;
+                    if all(self_Terminate) %If all the channels have now been self-terminated
+                        PRESS_Hist(u+1:end,:)=[];  %Trim storage variable
+                    end
+                end
+            end
+        end
+
+
         if all(self_Terminate) %Check if all channels have self terminated
             %Trim Variables
             aprxIN2_Hist(u+1:end)=[];
@@ -1351,7 +1402,7 @@ if 1==1
         end
     end
     final_RBFs_added=RBFs_added; %Initialize count of # RBFs/channel for final model
-    
+
     %If validation self-termination selected, recalculate for RBF number of min
     %validation STD
     if FLAGS.valid_selfTerm==1
@@ -1367,7 +1418,7 @@ if 1==1
         final_RBFs_added=min_validSTD_num; %Final RBF model is model that results in lowest validation STD
         fprintf('\n');
     end
-    
+
     %If PI self-termination selected, recalculate for RBF number of min
     %PI STD
     if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1)
@@ -1384,7 +1435,23 @@ if 1==1
         final_RBFs_added=min_calibPI_num; %Final RBF model is model that results in lowest calib PI RMS
         fprintf('\n');
     end
-    
+
+    %If PRESS self-termination selected, recalculate for RBF number of min PRESS
+    if FLAGS.PRESS_selfTerm==1
+        fprintf(strcat('\n Trimming RBFs for minimum PRESS'));
+        %Find RBF number for lowest PRESS
+        min_calibPRESS_num=zeros(1,loaddimFlag);
+        final_calibPRESS=zeros(1,loaddimFlag);
+        for i=1:loaddimFlag
+            %Find RBF number for lowest PRESS
+            [final_calibPRESS(i),min_calibPRESS_num(i)]=min([ALG_PRESS(i);PRESS_Hist(1:end,i)],[],1);
+            min_calibPRESS_num(i)=min_calibPRESS_num(i)-1;
+            fprintf(strcat('\n Channel'," ", string(i), ' Final # RBF=',string(min_calibPRESS_num(i))));
+        end
+        final_RBFs_added=min_calibPRESS_num; %Final RBF model is model that results in lowest PRESS
+        fprintf('\n');
+    end
+
     %If any channel self-terminated, recalculate with final ALG+GRBF model
     if any(final_RBFs_added<numBasis)
         %Make custom Matrix to solve for only RBF coefficinets in correct channel
@@ -1397,8 +1464,8 @@ if 1==1
         else
             customMatrix_RBF=[ones(nterms,loaddimFlag);RBF_custom;ones(nseries0,loaddimFlag)];
         end
-        
-        
+
+
         %New flag structure for calc_xcalib
         FLAGS_RBF=FLAGS; %Initialize as global flag structure
         FLAGS_RBF.model=4; %Calculate with custom model
@@ -1406,8 +1473,8 @@ if 1==1
         FLAGS_RBF.test_FLAG=0; %Calculate VIF
         calc_channel=true(1,loaddimFlag); %Calculate stats for every channel
         nterms_RBF=nterms+max(final_RBFs_added)*loaddimFlag; %New number of terms to solve for
-        
-        
+
+
         %Trim comIN
         comIN0_RBF(:,nterms_RBF+1:nterms+u*loaddimFlag)=[];
         %Zero out parameters for trimmed RBFs in each channel
@@ -1423,12 +1490,12 @@ if 1==1
         epsHist(max(final_RBFs_added)+1:end,:) = [];
         centerIndexHist(max(final_RBFs_added)+1:end,:) = [];
         center_daHist(max(final_RBFs_added)+1:end,:,:)=[];
-        
-        
+
+
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
         [xcalib_RBF, ANOVA_GRBF] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
-        
+
         %Find and Store tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
             [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist,center_daHist,h_GRBF); %Calculate tares from series specific intercepts
@@ -1437,14 +1504,14 @@ if 1==1
         end
         taretalRBF=taresGRBF(series0,:);
         tareGRBFHist{u+1} = taresGRBF;
-        
+
         %update the approximation
         aprxIN2=comIN0_RBF*xcalib_RBF; %Approximation including series intercepts
         aprxIN2_Hist{u+1} = aprxIN2;
         aprxINminGZ2=aprxIN2+taretalRBF; %Approximation that does not include series intercept terms
         %Calculate tare corrected load approximation
         aprxINminTARE2=aprxINminGZ2-taretalRBF;
-        
+
         %    QUESTION: JRP; IS THIS NECESSARY/USEFUL?
         % Find Standard Deviation of mean tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
@@ -1453,7 +1520,7 @@ if 1==1
             taresGRBF_STDDEV_all=zeros(size(targetMatrix0));
         end
         taresGRBFSTDEV = taresGRBF_STDDEV_all(s_1st0,:);
-        
+
         %Extract RBF coefficients
         coeff_algRBFmodel=xcalib_RBF(1:nterms_RBF,:); %Algebraic and RBF coefficient matrix
         coeff_algRBFmodel_alg=xcalib_RBF(1:nterms,:); %new algebraic coefficients
@@ -1463,10 +1530,10 @@ if 1==1
         for i=1:max(final_RBFs_added)
             coeff_algRBFmodel_RBF(i,:)=diag(coeff_algRBFmodel_RBF_diag(1+loaddimFlag*(i-1):loaddimFlag*i,:));
         end
-        
+
         %Update basis parameters in Hist variables
         cHist_tot{u+1} = coeff_algRBFmodel;
-        
+
         %Calculate and store residuals
         targetRes2 = targetMatrix0-aprxINminTARE2;
         newRes2 = targetRes2'*targetRes2;
@@ -1474,7 +1541,7 @@ if 1==1
         resSquareHist(u+1,:) = resSquare2;
         resStdHist(u+1,:)=std(targetRes2);
     end
-    
+
     if FLAGS.tare_intercept==1 %Check for tare load estimate agreement
         y_hat_PI2=zeros(size(targetRes));
         if FLAGS.anova==1 %Extract load PI from ANOVA structure
@@ -1484,7 +1551,7 @@ if 1==1
         end
         tareCheck(targetMatrix0,aprxINminGZ2,series0,taresGRBF,FLAGS,targetRes2,y_hat_PI2,pointID0);
     end
-    
+
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
     section={'Calibration GRBF'};
@@ -1503,18 +1570,18 @@ if 1==1
         'coeff',coeff);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-    
+
     if FLAGS.mode==1
         newStruct=struct('loadCapacities',loadCapacities,'tares',taresGRBF,'tares_STDDEV',taresGRBFSTDEV);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     end
-    
+
     output(section,FLAGS,targetRes2,fileName,numpts0,nseries0,...
         loadlist,series0,excessVec0,voltdimFlag,loaddimFlag,voltagelist,...
         reslist,numBasis,pointID0,series20,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
     %END CALIBRATION GRBF SECTION
-    
+
     %%
     if FLAGS.balVal == 1
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1522,16 +1589,16 @@ if 1==1
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %goal to use centers, width and coefficients to validate parameters against
         %independent data
-        
+
         fprintf('\n ********** Starting Validation GRBF Calculations **********\n')
         %Initialize structure for unique outputs for section
         uniqueOut=struct();
-        
+
         comINvalid_RBF=create_comIN_RBF(dainputsvalid,epsHist,center_daHist,h_GRBF); %Generate comIN for RBFs
         comINvalid_algRBF=[comINvalid, comINvalid_RBF]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
-        
+
         aprxINminGZ2valid=comINvalid_algRBF*coeff_algRBFmodel; %find approximation with alg and RBF Coefficients
-        
+
         % SOLVE FOR TARES BY TAKING THE MEAN
         [~,s_1st,~] = unique(seriesvalid);
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
@@ -1542,19 +1609,19 @@ if 1==1
         end
         taresGRBFvalid = taresAllPointsvalid2(s_1st,:);
         taresGRBFSTDEVvalid = taretalstdvalid2(s_1st,:);
-        
+
         %Calculate tare corrected load approximation
         aprxINminTARE2valid=aprxINminGZ2valid-taresAllPointsvalid2;
-        
+
         %Residuals
         targetRes2valid = targetMatrixvalid-aprxINminTARE2valid;      %0=b-Ax
         newRes2valid = targetRes2valid'*targetRes2valid;
         resSquare2valid = diag(newRes2valid);
-        
+
         %CALCULATE PREDICTION INTERVAL FOR POINTS
         if FLAGS.loadPI==1
             [loadPI_valid_GRBF]=calc_PI(ANOVA_GRBF,anova_pct,comINvalid_algRBF,aprxINminTARE2valid); %Calculate prediction interval for loads
-            
+
             %Store Variables for output
             newStruct=struct('loadPI_valid_GRBF',loadPI_valid_GRBF);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
@@ -1562,24 +1629,24 @@ if 1==1
         else
             loadPI_valid_GRBF=zeros(size(aprxINminTARE2valid));
         end
-        
+
         if FLAGS.tare_intercept==1
             tareCheck(targetMatrixvalid,aprxINminGZ2valid,seriesvalid,taresGRBFvalid,FLAGS,targetRes2valid,loadPI_valid_GRBF,pointIDvalid);
         end
-        
+
         %OUTPUT FUNCTION
         %Function creates all outputs for validation, GRBF section
         section={'Validation GRBF'};
         newStruct=struct('aprxINminTARE2valid',aprxINminTARE2valid);
         uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
             [fieldnames(uniqueOut); fieldnames(newStruct)],1);
-        
+
         if FLAGS.mode==1
             newStruct=struct('loadCapacities',loadCapacitiesvalid,'tares',taresGRBFvalid,'tares_STDDEV',taresGRBFSTDEVvalid);
             uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
                 [fieldnames(uniqueOut); fieldnames(newStruct)],1);
         end
-        
+
         output(section,FLAGS,targetRes2valid,fileNamevalid,numptsvalid,nseriesvalid,...
             loadlist,seriesvalid,excessVecvalid,voltdimFlagvalid,loaddimFlagvalid,voltagelist,...
             reslist,numBasis,pointIDvalid,series2valid,file_output_location,REPORT_NO,algebraic_model,uniqueOut)
@@ -1601,7 +1668,7 @@ if FLAGS.balApprox == 1
         series2approx=ones(size(excessVecapprox,1),1);
         natzerosapprox=0;
     end
-    
+
     if voltdimFlag~=size(excessVecapprox,2) %Check if mismatch between calibration and approximation data.  If so, exit program
         fprintf('\n  ');
         fprintf('\n MISMATCH IN CALIBRATION/APPROXIMATION DATA DIMENSIONS.  UNABLE TO PROCEED.\n');
@@ -1611,11 +1678,11 @@ if FLAGS.balApprox == 1
         end
         return; %Quit run
     end
-    
+
     if exist( 'pointIDvalid', 'var')==0
         pointIDapprox=cellstr([repmat('P-',size(excessVecapprox,1),1),num2str((1:size(excessVecapprox,1))')]);
     end
-    
+
     if FLAGS.balCal == 2 %If RBFs were placed, put parameters in structure
         GRBF.epsHist=epsHist;
         GRBF.coeff_algRBFmodel=coeff_algRBFmodel;
@@ -1625,11 +1692,11 @@ if FLAGS.balApprox == 1
     else
         GRBF='GRBFS NOT PLACED';
     end
-    
+
     %Function that performs all Approximation calculations and outputs
     [aprxINminGZapprox,loadPI_approx]=AOX_approx_funct(coeff,natzerosapprox,excessVecapprox,FLAGS,seriesapprox,...
         series2approx,pointIDapprox,loadlist,file_output_location,GRBF,ANOVA,anova_pct);
-    
+
 end
 %END APPROXIMATION SECTION
 
@@ -1756,8 +1823,7 @@ if ~isempty(probTare_r) %If any problem tares found
 %     probSeries_str = sprintf('%.0f,' , probSeries); %Convert list of problem series to comma deliminated string
 %     probSeries_str = probSeries_str(1:end-1);% strip final comma
 %     fprintf(probSeries_str); fprintf('\n');
-    
+
     warning('Disagreement between calculated series intercept tare loads and tare load datapoints.  Check results.');
 end
 end
-
