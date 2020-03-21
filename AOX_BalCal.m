@@ -53,11 +53,12 @@ numBasis = out.basis;
 min_eps=out.min_eps; %Fasshauer pg 234, large epsilon= 'spiky'
 max_eps=out.max_eps;
 %SET SELF TERMINATE OPTION FOR RBFS
-pos_str={'No Early Termination','Validation Error Termination','Prediction Interval Termination','VIF + Prediction Interval Termination'}; %Possible self-termination options
+pos_str={'No Early Termination','Validation Error Termination','PRESS Termination','Prediction Interval Termination','VIF + Prediction Interval Termination'}; %Possible self-termination options
 match=strcmp(pos_str,out.selfTerm_str);
 FLAGS.valid_selfTerm=match(2);
-FLAGS.PI_selfTerm=match(3);
-FLAGS.VIF_selfTerm=match(4);
+FLAGS.PRESS_selfTerm=match(3);
+FLAGS.PI_selfTerm=match(4);
+FLAGS.VIF_selfTerm=match(5);
 
 %SELECT ALGEBRAIC MODE                                      set FLAGS.model = 1 (full)
 %                                                                             2 (trunc)
@@ -777,22 +778,35 @@ if FLAGS.balCal == 2
     %Initialize self terminate variables:
     self_Terminate=false(1,loaddimFlag); %Logical vector that stores if RBF addition has been terminated in each channel
     RBFs_added=zeros(1,loaddimFlag); %Count of how many RBFs have been added in each channel
+    period_change=zeros(numBasis,loaddimFlag); %Storge for Change in self termination variable over last 'n' additions
+    period_length=min([100,max([10,0.1*numBasis])]); %CHANGE?: Length of period for self termination
+    
     if FLAGS.valid_selfTerm==1 %If RBF addition will be terminated based on validation data error
         resRMSHistvalid=zeros(numBasis,loaddimFlag); %History of valid data residual standard deviation vs RBF number
-        period_change=zeros(numBasis,loaddimFlag); %Storge for Change in validation standard deviation over last 'n' additions
-        period_length=max([10,0.1*numBasis]); %CHANGE?: Length of period for self termination
         comINvalid_RBF=zeros(size(dainputsvalid,1),numBasis*loaddimFlag);
     end
     if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If RBF addition will be terminated based on VIF or Prediction interval
         calib_PI_mean_Hist=zeros(numBasis,loaddimFlag); %History of prediction interval RMS vs RBF number
-        period_change=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length=min([100,max([10,0.1*numBasis])]); %CHANGE?: Length of period for self termination
         if out.model~=0
-            [loadPI_ALG]=calc_PI(ANOVA,anova_pct,comIN0(:,1:nterms),aprxIN); %Calculate prediction interval for loads with algebraic model
+            loadPI_ALG=zeros(size(targetMatrix0));
+            for i=1:loaddimFlag
+                loadPI_ALG(:,i)=ANOVA(i).y_hat_PI; %Store prediction interval for loads with algebraic model
+            end
         else
             loadPI_ALG=Inf(size(targetMatrix0));
         end
         calib_ALG_PI_mean=mean(loadPI_ALG,1); %RMS for calibration PI
+    end
+    if FLAGS.PRESS_selfTerm==1
+        PRESS_Hist=zeros(numBasis,loaddimFlag); %History of PRESS vs RBF number
+        if out.model~=0 %If algebraic model calculated
+            ALG_PRESS=zeros(1,loaddimFlag);
+            for i=1:loaddimFlag
+                ALG_PRESS(1,i)=ANOVA(i).PRESS; %Store PRESS for algebraic model
+            end
+        else
+            ALG_PRESS=Inf(1, loaddimFlag);
+        end
     end
     
     if FLAGS.VIF_selfTerm==1 %Initialize variables for self terminating based on VIF
@@ -905,10 +919,10 @@ if FLAGS.balCal == 2
         if u==numBasis %If final RBF placed
             if any(self_Terminate) %If self terminated, stats will be recalculated below
                 calc_channel=not(self_Terminate);
-                if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If self terminating based on Prediction Interval
+                if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1 || FLAGS.PRESS_selfTerm==1) %If self terminating based on Prediction Interval or PRESS
                     FLAGS_RBF.anova=1; %perform ANOVA analysis
                     FLAGS_RBF.test_FLAG=1; %Do not calculate VIF for time savings
-                else %If not self terminating with PI
+                else %If not self terminating with PI or PRESS
                     FLAGS_RBF.anova=0; %do not perform ANOVA analysis
                 end
             else %Otherwise, final calculation with RBFs
@@ -918,7 +932,7 @@ if FLAGS.balCal == 2
             end
             
         else %NOT final RBF Placed
-            if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If self terminating based on Prediction Interval
+            if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1 || FLAGS.PRESS_selfTerm==1) %If self terminating based on Prediction Interval or PRESS
                 FLAGS_RBF.anova=1; %perform ANOVA analysis
                 FLAGS_RBF.test_FLAG=1; %Do not calculate VIF for time savings
             else
@@ -1057,7 +1071,7 @@ if FLAGS.balCal == 2
         end
         
         %Prediction Error Self-Termination Check: caculate PI for
-        %calibration data and store RMS of all calibration points
+        %calibration data and store mean of all calibration points
         if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) && any(~self_Terminate) %If terminating based on PI or VIF and not all the channels have been self terminated
 %             [loadPI_GRBF_iter]=calc_PI(ANOVA_GRBF,anova_pct,comIN0_RBF(:,1:nterms_RBF),aprxIN2,calc_channel); %Calculate prediction interval for loads
             for i=1:loaddimFlag
@@ -1089,6 +1103,39 @@ if FLAGS.balCal == 2
                 end
             end
         end
+        
+        %PRESS self termination: Store PRESS statistic
+        if FLAGS.PRESS_selfTerm==1 && any(~self_Terminate) %If terminating based on PRESS and not all the channels have been self terminated
+            for i=1:loaddimFlag
+                if self_Terminate(i)==1 %If channel is self terminated, use PRESS from previous iteration
+                    PRESS_Hist(u,i)=PRESS_Hist(u-1,i);
+                else
+                    PRESS_Hist(u,i)=ANOVA_GRBF(i).PRESS; %store PRESS from ANOVA
+                end
+            end
+            
+            %Self termination criteria
+            %Calculate period_change, the difference between the minimum
+            %PRESS in the last n iterations and PRESS n+1 iterations ago
+            if u>period_length
+                period_change(u,:)=min(PRESS_Hist(u-(period_length-1):u,:))-PRESS_Hist(u-period_length,:);
+            elseif u==period_length
+                period_change(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
+            end
+            
+            %Self Terminate if PRESS has only gotten worse over
+            %the last n+1 iterations
+            for i=1:loaddimFlag
+                if period_change(u,i)>0 && self_Terminate(i)==0
+                    fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                    self_Terminate(i)=1;
+                    if all(self_Terminate) %If all the channels have now been self-terminated
+                        PRESS_Hist(u+1:end,:)=[];  %Trim storage variable
+                    end
+                end
+            end
+        end
+        
         
         if all(self_Terminate) %Check if all channels have self terminated
             %Trim Variables
@@ -1137,6 +1184,22 @@ if FLAGS.balCal == 2
             fprintf(strcat('\n Channel'," ", string(i), ' Final # RBF=',string(min_calibPI_num(i))));
         end
         final_RBFs_added=min_calibPI_num; %Final RBF model is model that results in lowest calib PI RMS
+        fprintf('\n');
+    end
+    
+    %If PRESS self-termination selected, recalculate for RBF number of min PRESS
+    if FLAGS.PRESS_selfTerm==1
+        fprintf(strcat('\n Trimming RBFs for minimum PRESS'));
+        %Find RBF number for lowest PRESS
+        min_calibPRESS_num=zeros(1,loaddimFlag);
+        final_calibPRESS=zeros(1,loaddimFlag);
+        for i=1:loaddimFlag
+            %Find RBF number for lowest PRESS
+            [final_calibPRESS(i),min_calibPRESS_num(i)]=min([ALG_PRESS(i);PRESS_Hist(1:end,i)],[],1);
+            min_calibPRESS_num(i)=min_calibPRESS_num(i)-1;
+            fprintf(strcat('\n Channel'," ", string(i), ' Final # RBF=',string(min_calibPRESS_num(i))));
+        end
+        final_RBFs_added=min_calibPRESS_num; %Final RBF model is model that results in lowest PRESS
         fprintf('\n');
     end
     

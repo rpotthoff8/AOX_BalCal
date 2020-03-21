@@ -2219,14 +2219,13 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function selfTerm_strSet(handles) %Function sets the string for RBF self-termination popup
-pos_str={'No Early Termination','Validation Error Termination','Prediction Interval Termination','VIF + Prediction Interval Termination'}; %Possible self-termination options
-str_include=logical([1,0,0,0]); %Logical array of what options should be possible
+pos_str={'No Early Termination','Validation Error Termination','PRESS Termination','Prediction Interval Termination','VIF + Prediction Interval Termination'}; %Possible self-termination options
+str_include=logical([1,0,0,0,0]); %Logical array of what options should be possible
 if handles.validate.Value==1 %If validation data is provided
     str_include(2)=1;
 end
 if handles.anova_FLAGcheck.Value==1 %If ANOVA is turned on
-    str_include(3)=1;
-    str_include(4)=1;
+    str_include(3:5)=1;
 end
 %Retrieve current popup state
 cur_str=handles.selfTerm_pop.String;
