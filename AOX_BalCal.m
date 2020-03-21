@@ -932,6 +932,7 @@ if FLAGS.balCal == 2
         [xcalib_RBF, ANOVA_GRBF, new_self_Terminate] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
         
+        %Check on rank deficiency self termination
         if any(new_self_Terminate~=self_Terminate) %Check if any channel terminated due to rank deficiency
             dif_channel=new_self_Terminate~=self_Terminate; %Find logical vector of channels that are now terminated
             RBFs_added(dif_channel)=u-1; %Correct number of RBFs added
@@ -1058,12 +1059,12 @@ if FLAGS.balCal == 2
         %Prediction Error Self-Termination Check: caculate PI for
         %calibration data and store RMS of all calibration points
         if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) && any(~self_Terminate) %If terminating based on PI or VIF and not all the channels have been self terminated
-            [loadPI_GRBF_iter]=calc_PI(ANOVA_GRBF,anova_pct,comIN0_RBF(:,1:nterms_RBF),aprxIN2,calc_channel); %Calculate prediction interval for loads
+%             [loadPI_GRBF_iter]=calc_PI(ANOVA_GRBF,anova_pct,comIN0_RBF(:,1:nterms_RBF),aprxIN2,calc_channel); %Calculate prediction interval for loads
             for i=1:loaddimFlag
                 if self_Terminate(i)==1 %If channel is self terminated, use PI RMS from previous iteration
                     calib_PI_mean_Hist(u,i)=calib_PI_mean_Hist(u-1,i);
                 else
-                    calib_PI_mean_Hist(u,i)=mean(loadPI_GRBF_iter(:,i),1); %RMS for calibration PI
+                    calib_PI_mean_Hist(u,i)=mean(ANOVA_GRBF(i).y_hat_PI,1); %RMS for calibration PI
                 end
             end
             
