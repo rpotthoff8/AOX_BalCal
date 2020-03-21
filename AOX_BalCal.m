@@ -737,6 +737,33 @@ if FLAGS.balCal == 2
         numBasis=numpts0;
     end
     
+   
+    PRESS_hist=zeros(numBasis,loaddimFlag);
+    tareGRBFHistvalid=cell(numBasis,1);
+    VIF_self_terminate=zeros(1,loaddimFlag);
+    resRMSHist=zeros(numBasis,loaddimFlag);
+    validError_self_terminate100=zeros(1,loaddimFlag);
+    
+    PI_self_Terminate100=zeros(1,loaddimFlag);
+    
+        validError_self_terminate250=zeros(1,loaddimFlag);
+    PI_self_Terminate250=zeros(1,loaddimFlag);
+    
+        validError_self_terminate500=zeros(1,loaddimFlag);
+    PI_self_Terminate500=zeros(1,loaddimFlag);
+    
+        validError_self_terminate750=zeros(1,loaddimFlag);
+    PI_self_Terminate750=zeros(1,loaddimFlag);
+    
+        validError_self_terminate1000=zeros(1,loaddimFlag);
+    PI_self_Terminate1000=zeros(1,loaddimFlag);
+    
+        validError_self_terminate1250=zeros(1,loaddimFlag);
+    PI_self_Terminate1250=zeros(1,loaddimFlag);
+    
+        validError_self_terminate1500=zeros(1,loaddimFlag);
+    PI_self_Terminate1500=zeros(1,loaddimFlag);
+    
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
     
@@ -777,25 +804,40 @@ if FLAGS.balCal == 2
     %Initialize self terminate variables:
     self_Terminate=false(1,loaddimFlag); %Logical vector that stores if RBF addition has been terminated in each channel
     RBFs_added=zeros(1,loaddimFlag); %Count of how many RBFs have been added in each channel
-    if FLAGS.valid_selfTerm==1 %If RBF addition will be terminated based on validation data error
+if 1==1
+    %     if FLAGS.valid_selfTerm==1 %If RBF addition will be terminated based on validation data error
         resRMSHistvalid=zeros(numBasis,loaddimFlag); %History of valid data residual standard deviation vs RBF number
-        period_change=zeros(numBasis,loaddimFlag); %Storge for Change in validation standard deviation over last 'n' additions
-        period_length=max([10,0.1*numBasis]); %CHANGE?: Length of period for self termination
+        period_change100=zeros(numBasis,loaddimFlag); %Storge for Change in validation standard deviation over last 'n' additions
+        period_length100=10; %CHANGE?: Length of period for self termination
         comINvalid_RBF=zeros(size(dainputsvalid,1),numBasis*loaddimFlag);
-    end
-    if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If RBF addition will be terminated based on VIF or Prediction interval
+end
+if 1==1
+%     if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) %If RBF addition will be terminated based on VIF or Prediction interval
         calib_PI_mean_Hist=zeros(numBasis,loaddimFlag); %History of prediction interval RMS vs RBF number
-        period_change=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
-        period_length=min([100,max([10,0.1*numBasis])]); %CHANGE?: Length of period for self termination
+        period_change100=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+        period_length100=10; %CHANGE?: Length of period for self termination
+        period_change250=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+        period_length250=25; %CHANGE?: Length of period for self termination
+        period_change500=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+        period_length500=50; %CHANGE?: Length of period for self termination
+        period_change750=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+        period_length750=75; %CHANGE?: Length of period for self termination
+        period_change1000=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+        period_length1000=100; %CHANGE?: Length of period for self termination
+        period_change1250=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+        period_length1250=125; %CHANGE?: Length of period for self termination
+        period_change1500=zeros(numBasis,loaddimFlag);  %Storge for Change in PI over last 'n' additions
+        period_length1500=150; %CHANGE?: Length of period for self termination
         if out.model~=0
             [loadPI_ALG]=calc_PI(ANOVA,anova_pct,comIN0(:,1:nterms),aprxIN); %Calculate prediction interval for loads with algebraic model
         else
             loadPI_ALG=Inf(size(targetMatrix0));
         end
         calib_ALG_PI_mean=mean(loadPI_ALG,1); %RMS for calibration PI
-    end
-    
-    if FLAGS.VIF_selfTerm==1 %Initialize variables for self terminating based on VIF
+end
+
+if 1==1
+%     if FLAGS.VIF_selfTerm==1 %Initialize variables for self terminating based on VIF
         max_VIF_hist=zeros(numBasis,loaddimFlag); %History variable of VIF as RBFs are added
         comIN0_RBF=comIN0; %Initialize 'X' matrix for RBF predictor variables
         GRBF_VIF_thresh=out.GRBF_VIF_thresh-.05;%Limit for acceptable VIF
@@ -828,7 +870,8 @@ if FLAGS.balCal == 2
     count=zeros(size(dainputs0)); %Initialize matrix to count how many RBFs have been placed at each location
     for u=1:numBasis
         RBFs_added(not(self_Terminate))=u; %Counter for how many RBFs have been placed in each channel
-        if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
+% % % % %         if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
+if 1==1
             comIN0_RBF_VIFtest=[comIN0_RBF,zeros(numpts0,1)]; %Initialize
         end
         for s=1:loaddimFlag %Loop places center and determines width for RBF in each channel
@@ -853,26 +896,33 @@ if FLAGS.balCal == 2
                     %                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
                     %                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
                     
-                    if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
+% % % % %                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
+if 1==1
                         comIN0_RBF_VIFtest(:,end)=rbfINminGZ_temp; %Define input matrix ('X') with new RBF, algebraic terms, and previous RBFs
                         customMatrix_RBF_VIFtest=[customMatrix_RBF(:,s);1]; %Define customMatrix for solving terms with new RBF
                         VIFtest=vif_dl(comIN0_RBF_VIFtest(:,logical(customMatrix_RBF_VIFtest))); %Calculate VIFs for predictor terms with new RBF
                         
                         max_VIF_hist(u,s)=max(VIFtest([1:end-nseries0-1,end])); %Store maximum VIF in history
-                        if  max_VIF_hist(u,s)<=GRBF_VIF_thresh %If max VIF is <= VIF limit
-                            VIF_good=1; %VIF criteria is satisfied, this will exit 'while' loop
-                        else
-                            if all(count(:,s)==1) %If all points have been tested and none can be added without exceeding VIF limit
-                                self_Terminate(s)=1; %Self terminate channel
-                                RBFs_added(s)=u-1; %RBFs added in that channel is back one from current iteration
-                                rbfINminGZ_temp=0; %Zero out new RBF since VIF limit not met
-                                fprintf(strcat('\n Channel'," ", string(s), ' Reached VIF termination criteria, # RBF=',string(u-1))); %Output message
-                                if all(self_Terminate) %If all channels have now terminated
-                                    calib_PI_mean_Hist(u:end,:)=[]; %Trim history variable
-                                end
-                                break %Exit while loop
+                        VIF_good=1;
+                        if max_VIF_hist(u,s)>GRBF_VIF_thresh
+                            if VIF_self_terminate(s)==0
+                                VIF_self_terminate(s)=u;
                             end
                         end
+% % % % %                         if  max_VIF_hist(u,s)<=GRBF_VIF_thresh %If max VIF is <= VIF limit
+% % % % %                             VIF_good=1; %VIF criteria is satisfied, this will exit 'while' loop
+% % % % %                         else
+% % % % %                             if all(count(:,s)==1) %If all points have been tested and none can be added without exceeding VIF limit
+% % % % %                                 self_Terminate(s)=1; %Self terminate channel
+% % % % %                                 RBFs_added(s)=u-1; %RBFs added in that channel is back one from current iteration
+% % % % %                                 rbfINminGZ_temp=0; %Zero out new RBF since VIF limit not met
+% % % % %                                 fprintf(strcat('\n Channel'," ", string(s), ' Reached VIF termination criteria, # RBF=',string(u-1))); %Output message
+% % % % %                                 if all(self_Terminate) %If all channels have now terminated
+% % % % %                                     calib_PI_mean_Hist(u:end,:)=[]; %Trim history variable
+% % % % %                                 end
+% % % % %                                 break %Exit while loop
+% % % % %                             end
+% % % % %                         end
                     else %If not self terminating based on VIF
                         VIF_good=1; %Exit while loop, VIF criteria not considered
                     end %END VIF_selfTerm section
@@ -928,9 +978,17 @@ if FLAGS.balCal == 2
         end
         nterms_RBF=nterms+u*loaddimFlag; %New number of terms to solve for
         
+        FLAGS_RBF.anova=1; %perform ANOVA analysis
+        if u<numBasis
+            FLAGS_RBF.test_FLAG=1; %Do not calculate VIF for time savings        
+        end
         %Calculate Algebraic and RBF coefficients with calc_xcalib function
         [xcalib_RBF, ANOVA_GRBF, new_self_Terminate] = calc_xcalib(comIN0_RBF,targetMatrix0,series0,...
             nterms_RBF,nseries0,loaddimFlag,FLAGS_RBF,customMatrix_RBF,anova_pct,loadlist,'Direct w RBF',calc_channel);
+        
+        for i=1:loaddimFlag
+            PRESS_hist(u,i)=ANOVA_GRBF(i).PRESS;
+        end
         
         if any(new_self_Terminate~=self_Terminate) %Check if any channel terminated due to rank deficiency
             dif_channel=new_self_Terminate~=self_Terminate; %Find logical vector of channels that are now terminated
@@ -1009,10 +1067,13 @@ if FLAGS.balCal == 2
         resSquare2 = diag(newRes2);
         resSquareHist(u,:) = resSquare2;
         resStdHist(u,:)=std(targetRes2);
+        resRMSHist(u,:)=sqrt(mean(targetRes2.^2,1));
+
         
         %Validation Error Self-Termination Check: use new ALG+RBF model to
         %determine standard deviation of residuals for validation data
-        if FLAGS.valid_selfTerm==1
+        % % % % %         if FLAGS.valid_selfTerm==1
+        if 1==1
             %Test on validation data
             comINvalid_RBF(:,(u-1)*loaddimFlag+1:u*loaddimFlag)=create_comIN_RBF(dainputsvalid,epsHist(u,:),center_daHist(u,:,:),h_GRBF); %Generate comIN for RBFs
             comINvalid_algRBF=[comINvalid, comINvalid_RBF(:,1:u*loaddimFlag)]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
@@ -1027,6 +1088,8 @@ if FLAGS.balCal == 2
                 taresAllPointsvalid2=zeros(size(targetMatrixvalid));
                 taretalstdvalid2 = zeros(size(targetMatrixvalid));
             end
+            tareGRBFHistvalid{u}=taresAllPointsvalid2(s_1stV,:);
+            
             %Calculate tare corrected load approximation
             aprxINminTARE2valid=aprxINminGZ2valid-taresAllPointsvalid2;
             
@@ -1039,28 +1102,118 @@ if FLAGS.balCal == 2
             %Self termination criteria
             %Calculate period_change, the difference between the minimum
             %error in the last n iterations and the error n+1 iterations ago
-            if u>period_length
-                period_change(u,:)=min(resRMSHistvalid(u-(period_length-1):u,:))-resRMSHistvalid(u-period_length,:);
-            elseif u==period_length
-                period_change(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
+            if u>period_length100
+                period_change100(u,:)=min(resRMSHistvalid(u-(period_length100-1):u,:))-resRMSHistvalid(u-period_length100,:);
+            elseif u==period_length100
+                period_change100(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
             end
+            
+            if u>period_length250
+                period_change250(u,:)=min(resRMSHistvalid(u-(period_length250-1):u,:))-resRMSHistvalid(u-period_length250,:);
+            elseif u==period_length250
+                period_change250(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
+            end
+            
+            if u>period_length500
+                period_change500(u,:)=min(resRMSHistvalid(u-(period_length500-1):u,:))-resRMSHistvalid(u-period_length500,:);
+            elseif u==period_length500
+                period_change500(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
+            end
+            
+            if u>period_length750
+                period_change750(u,:)=min(resRMSHistvalid(u-(period_length750-1):u,:))-resRMSHistvalid(u-period_length750,:);
+            elseif u==period_length750
+                period_change750(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
+            end
+            
+            if u>period_length1000
+                period_change1000(u,:)=min(resRMSHistvalid(u-(period_length1000-1):u,:))-resRMSHistvalid(u-period_length1000,:);
+            elseif u==period_length1000
+                period_change1000(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
+            end
+            
+            if u>period_length1250
+                period_change1250(u,:)=min(resRMSHistvalid(u-(period_length1250-1):u,:))-resRMSHistvalid(u-period_length1250,:);
+            elseif u==period_length1250
+                period_change1250(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
+            end
+            
+            if u>period_length1500
+                period_change1500(u,:)=min(resRMSHistvalid(u-(period_length1500-1):u,:))-resRMSHistvalid(u-period_length1500,:);
+            elseif u==period_length1500
+                period_change1500(u,:)=min(resRMSHistvalid(1:u,:))-RMS_targetResvalid;
+            end
+            
             
             %Self Terminate if validation error has only gotten worse over
             %the last n+1 iterations
             for i=1:loaddimFlag
-                if period_change(u,i)>0 && self_Terminate(i)==0
-                    fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
-                    self_Terminate(i)=1;
+                if period_change100(u,i)>0 && self_Terminate(i)==0
+                    % % % % %                     self_Terminate(i)=1;
+                    if validError_self_terminate100(i)==0
+                        validError_self_terminate100(i)=u;
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
+                    end
                 end
+                
+                if period_change250(u,i)>0 && self_Terminate(i)==0
+                    % % % % %                     self_Terminate(i)=1;
+                    if validError_self_terminate250(i)==0
+                        validError_self_terminate250(i)=u;
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
+                    end
+                end
+                
+                if period_change500(u,i)>0 && self_Terminate(i)==0
+                    % % % % %                     self_Terminate(i)=1;
+                    if validError_self_terminate500(i)==0
+                        validError_self_terminate500(i)=u;
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
+                    end
+                end
+                
+                if period_change750(u,i)>0 && self_Terminate(i)==0
+                    % % % % %                     self_Terminate(i)=1;
+                    if validError_self_terminate750(i)==0
+                        validError_self_terminate750(i)=u;
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
+                    end
+                end
+                
+                if period_change1000(u,i)>0 && self_Terminate(i)==0
+                    % % % % %                     self_Terminate(i)=1;
+                    if validError_self_terminate1000(i)==0
+                        validError_self_terminate1000(i)=u;
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
+                    end
+                end
+                
+                if period_change1250(u,i)>0 && self_Terminate(i)==0
+                    % % % % %                     self_Terminate(i)=1;
+                    if validError_self_terminate1250(i)==0
+                        validError_self_terminate1250(i)=u;
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
+                    end
+                end
+                
+                if period_change1500(u,i)>0 && self_Terminate(i)==0
+                    % % % % %                     self_Terminate(i)=1;
+                    if validError_self_terminate1500(i)==0
+                        validError_self_terminate1500(i)=u;
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
+                    end
+                end
+                
             end
         end
         
         %Prediction Error Self-Termination Check: caculate PI for
         %calibration data and store RMS of all calibration points
-        if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) && any(~self_Terminate) %If terminating based on PI or VIF and not all the channels have been self terminated
+% % % % %         if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1) && any(~self_Terminate) %If terminating based on PI or VIF and not all the channels have been self terminated
+if 1==1
             [loadPI_GRBF_iter]=calc_PI(ANOVA_GRBF,anova_pct,comIN0_RBF(:,1:nterms_RBF),aprxIN2,calc_channel); %Calculate prediction interval for loads
             for i=1:loaddimFlag
-                if self_Terminate(i)==1 %If channel is self terminated, use PI RMS from previous iteration
+                if self_Terminate(i)==1 %If channel is self terminated, use PI mean from previous iteration
                     calib_PI_mean_Hist(u,i)=calib_PI_mean_Hist(u-1,i);
                 else
                     calib_PI_mean_Hist(u,i)=mean(loadPI_GRBF_iter(:,i),1); %RMS for calibration PI
@@ -1070,23 +1223,112 @@ if FLAGS.balCal == 2
             %Self termination criteria
             %Calculate period_change, the difference between the minimum
             %PI in the last n iterations and the PI n+1 iterations ago
-            if u>period_length
-                period_change(u,:)=min(calib_PI_mean_Hist(u-(period_length-1):u,:))-calib_PI_mean_Hist(u-period_length,:);
-            elseif u==period_length
-                period_change(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
+            if u>period_length100
+                period_change100(u,:)=min(calib_PI_mean_Hist(u-(period_length100-1):u,:))-calib_PI_mean_Hist(u-period_length100,:);
+            elseif u==period_length100
+                period_change100(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
+            end
+            
+            if u>period_length250
+                period_change250(u,:)=min(calib_PI_mean_Hist(u-(period_length250-1):u,:))-calib_PI_mean_Hist(u-period_length250,:);
+            elseif u==period_length250
+                period_change250(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
+            end
+            
+            if u>period_length500
+                period_change500(u,:)=min(calib_PI_mean_Hist(u-(period_length500-1):u,:))-calib_PI_mean_Hist(u-period_length500,:);
+            elseif u==period_length500
+                period_change500(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
+            end
+            
+            if u>period_length750
+                period_change750(u,:)=min(calib_PI_mean_Hist(u-(period_length750-1):u,:))-calib_PI_mean_Hist(u-period_length750,:);
+            elseif u==period_length750
+                period_change750(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
+            end
+            
+            if u>period_length1000
+                period_change1000(u,:)=min(calib_PI_mean_Hist(u-(period_length1000-1):u,:))-calib_PI_mean_Hist(u-period_length1000,:);
+            elseif u==period_length1000
+                period_change1000(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
+            end
+            
+            if u>period_length1250
+                period_change1250(u,:)=min(calib_PI_mean_Hist(u-(period_length1250-1):u,:))-calib_PI_mean_Hist(u-period_length1250,:);
+            elseif u==period_length1250
+                period_change1250(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
+            end
+            
+            if u>period_length1500
+                period_change1500(u,:)=min(calib_PI_mean_Hist(u-(period_length1500-1):u,:))-calib_PI_mean_Hist(u-period_length1500,:);
+            elseif u==period_length1500
+                period_change1500(u,:)=min(calib_PI_mean_Hist(1:u,:))-calib_ALG_PI_mean;
             end
             
             %Self Terminate if validation error has only gotten worse over
             %the last n+1 iterations
             for i=1:loaddimFlag
-                if period_change(u,i)>0 && self_Terminate(i)==0
-                    fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
-                    self_Terminate(i)=1;
-                    if all(self_Terminate) %If all the channels have now been self-terminated
-                        calib_PI_mean_Hist(u+1:end,:)=[];  %Trim storage variable
+                if period_change100(u,i)>0 && self_Terminate(i)==0
+                    % % % % % %                     self_Terminate(i)=1;
+                    if PI_self_Terminate100(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
+                        PI_self_Terminate100(i)=u;
                     end
                 end
+                
+                if period_change250(u,i)>0 && self_Terminate(i)==0
+                    % % % % % %                     self_Terminate(i)=1;
+                    if PI_self_Terminate250(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
+                        PI_self_Terminate250(i)=u;
+                    end
+                end
+                
+                if period_change500(u,i)>0 && self_Terminate(i)==0
+                    % % % % % %                     self_Terminate(i)=1;
+                    if PI_self_Terminate500(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
+                        PI_self_Terminate500(i)=u;
+                    end
+                end
+                
+                if period_change750(u,i)>0 && self_Terminate(i)==0
+                    % % % % % %                     self_Terminate(i)=1;
+                    if PI_self_Terminate750(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
+                        PI_self_Terminate750(i)=u;
+                    end
+                end
+                
+                if period_change1000(u,i)>0 && self_Terminate(i)==0
+                    % % % % % %                     self_Terminate(i)=1;
+                    if PI_self_Terminate1000(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
+                        PI_self_Terminate1000(i)=u;
+                    end
+                end
+                
+                if period_change1250(u,i)>0 && self_Terminate(i)==0
+                    % % % % % %                     self_Terminate(i)=1;
+                    if PI_self_Terminate1250(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
+                        PI_self_Terminate1250(i)=u;
+                    end
+                end
+                
+                if period_change1500(u,i)>0 && self_Terminate(i)==0
+                    % % % % % %                     self_Terminate(i)=1;
+                    if PI_self_Terminate1500(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
+                        PI_self_Terminate1500(i)=u;
+                    end
+                end
+
+
             end
+                                if all(self_Terminate) %If all the channels have now been self-terminated
+                        calib_PI_mean_Hist(u+1:end,:)=[];  %Trim storage variable
+                    end
         end
         
         if all(self_Terminate) %Check if all channels have self terminated
@@ -1407,7 +1649,7 @@ if FLAGS.input_save==0  %If user did not want to save input data files, delete
 end
 
 %
-
+save([file_output_location,'AOX_BalCal_results']);
 fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
 fprintf('%s',strcat('Check '," ",file_output_location,' for output files.'))
