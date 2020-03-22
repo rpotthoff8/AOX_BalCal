@@ -563,7 +563,7 @@ if strcmp(section,{'Calibration GRBF'})==1
         description='CALIBRATION MODEL';
         try
             model=FLAGS.model;
-            save(fullpath,'coeff','ANOVA','loadlist','model','coeff_algRBFmodel','epsHist','center_daHist','h_GRBF','ANOVA_GRBF');
+            save(fullpath,'coeff','ANOVA','loadlist','model','coeff_algRBFmodel','epsHist','center_daHist','h_GRBF','ANOVA_GRBF','-v7.3');
             fprintf('\n'); fprintf(description); fprintf(' FILE: '); fprintf(filename); fprintf('\n');
         catch ME
             fprintf('\nUNABLE TO SAVE '); fprintf('%s %s', upper(description),'FILE. ');

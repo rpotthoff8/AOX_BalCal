@@ -742,27 +742,34 @@ if FLAGS.balCal == 2
     tareGRBFHistvalid=cell(numBasis,1);
     VIF_self_terminate=zeros(1,loaddimFlag);
     resRMSHist=zeros(numBasis,loaddimFlag);
+    
     validError_self_terminate100=zeros(1,loaddimFlag);
-
     PI_self_Terminate100=zeros(1,loaddimFlag);
-
-        validError_self_terminate250=zeros(1,loaddimFlag);
+    PRESS_self_Terminate100=zeros(1,loaddimFlag);
+    
+    validError_self_terminate250=zeros(1,loaddimFlag);
     PI_self_Terminate250=zeros(1,loaddimFlag);
-
-        validError_self_terminate500=zeros(1,loaddimFlag);
+    PRESS_self_Terminate250=zeros(1,loaddimFlag);
+    
+    validError_self_terminate500=zeros(1,loaddimFlag);
     PI_self_Terminate500=zeros(1,loaddimFlag);
-
-        validError_self_terminate750=zeros(1,loaddimFlag);
+    PRESS_self_Terminate500=zeros(1,loaddimFlag);
+    
+    validError_self_terminate750=zeros(1,loaddimFlag);
     PI_self_Terminate750=zeros(1,loaddimFlag);
-
-        validError_self_terminate1000=zeros(1,loaddimFlag);
+    PRESS_self_Terminate750=zeros(1,loaddimFlag);
+    
+    validError_self_terminate1000=zeros(1,loaddimFlag);
     PI_self_Terminate1000=zeros(1,loaddimFlag);
-
-        validError_self_terminate1250=zeros(1,loaddimFlag);
+    PRESS_self_Terminate1000=zeros(1,loaddimFlag);
+    
+    validError_self_terminate1250=zeros(1,loaddimFlag);
     PI_self_Terminate1250=zeros(1,loaddimFlag);
-
-        validError_self_terminate1500=zeros(1,loaddimFlag);
+    PRESS_self_Terminate1250=zeros(1,loaddimFlag);
+    
+    validError_self_terminate1500=zeros(1,loaddimFlag);
     PI_self_Terminate1500=zeros(1,loaddimFlag);
+    PRESS_self_Terminate1500=zeros(1,loaddimFlag);
 
     %Initialize structure for unique outputs for section
     uniqueOut=struct();
@@ -865,10 +872,10 @@ if 1==1
             else
                 max_VIF_alg=1;
             end
-            if max_VIF_alg>GRBF_VIF_thresh %If Algebraic model already exceeds max VIF
-                self_Terminate(i)=1; %Terminate channel initially
-                fprintf(strcat('\n Channel'," ", string(i), ' Reached VIF termination criteria with Algebraic Model, no RBFs will be added in Channel'," ",string(i))); %Output message
-            end
+% % % % %             if max_VIF_alg>GRBF_VIF_thresh %If Algebraic model already exceeds max VIF
+% % % % %                 self_Terminate(i)=1; %Terminate channel initially
+% % % % %                 fprintf(strcat('\n Channel'," ", string(i), ' Reached VIF termination criteria with Algebraic Model, no RBFs will be added in Channel'," ",string(i))); %Output message
+% % % % %             end
         end
         if all(self_Terminate) %Check if all channels have self terminated
             fprintf(strcat('\n All Channels Reached VIF termination criteria with Algebraic Model, no RBFs will be added')); %Output message
@@ -1014,14 +1021,6 @@ if 1==1
             end
             warning(strcat("Ill-Conditioned matrix for load channel",sprintf(' %.0f,',find(dif_channel))," Terminating RBF addition. Final # RBF=",num2str(u-1))); %Display warning message
             self_Terminate=new_self_Terminate; %update RBF termination tracker
-        end
-
-        for i=1:loaddimFlag
-            if self_terminate(i)==0
-                PRESS_hist(u,i)=ANOVA_GRBF(i).PRESS;
-            else
-                PRESS_hist(u,i)=PRESS_hist(u-1,i);
-            end
         end
 
         if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run for channels that have self terminated
@@ -1354,35 +1353,119 @@ if 1==1
         end
 
         %PRESS self termination: Store PRESS statistic
-        if FLAGS.PRESS_selfTerm==1 && any(~self_Terminate) %If terminating based on PRESS and not all the channels have been self terminated
-            for i=1:loaddimFlag
-                if self_Terminate(i)==1 %If channel is self terminated, use PRESS from previous iteration
-                    PRESS_Hist(u,i)=PRESS_Hist(u-1,i);
-                else
-                    PRESS_Hist(u,i)=ANOVA_GRBF(i).PRESS; %store PRESS from ANOVA
-                end
+        % % % % %         if FLAGS.PRESS_selfTerm==1 && any(~self_Terminate) %If terminating based on PRESS and not all the channels have been self terminated
+if 1==1
+        for i=1:loaddimFlag
+            if self_Terminate(i)==1 %If channel is self terminated, use PRESS from previous iteration
+                PRESS_Hist(u,i)=PRESS_Hist(u-1,i);
+            else
+                PRESS_Hist(u,i)=ANOVA_GRBF(i).PRESS; %store PRESS from ANOVA
             end
+        end
 
             %Self termination criteria
             %Calculate period_change, the difference between the minimum
             %PRESS in the last n iterations and PRESS n+1 iterations ago
-            if u>period_length
-                period_change(u,:)=min(PRESS_Hist(u-(period_length-1):u,:))-PRESS_Hist(u-period_length,:);
-            elseif u==period_length
-                period_change(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
+            if u>period_length100
+                period_change100(u,:)=min(PRESS_Hist(u-(period_length100-1):u,:))-PRESS_Hist(u-period_length100,:);
+            elseif u==period_length100
+                period_change100(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
             end
+            
+            if u>period_length250
+                period_change250(u,:)=min(PRESS_Hist(u-(period_length250-1):u,:))-PRESS_Hist(u-period_length250,:);
+            elseif u==period_length250
+                period_change250(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
+            end
+            
+            if u>period_length500
+                period_change500(u,:)=min(PRESS_Hist(u-(period_length500-1):u,:))-PRESS_Hist(u-period_length500,:);
+            elseif u==period_length500
+                period_change500(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
+            end
+            
+            if u>period_length750
+                period_change750(u,:)=min(PRESS_Hist(u-(period_length750-1):u,:))-PRESS_Hist(u-period_length750,:);
+            elseif u==period_length750
+                period_change750(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
+            end
+            
+            if u>period_length1000
+                period_change1000(u,:)=min(PRESS_Hist(u-(period_length1000-1):u,:))-PRESS_Hist(u-period_length1000,:);
+            elseif u==period_length1000
+                period_change1000(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
+            end
+            
+            if u>period_length1250
+                period_change1250(u,:)=min(PRESS_Hist(u-(period_length1250-1):u,:))-PRESS_Hist(u-period_length1250,:);
+            elseif u==period_length1250
+                period_change1250(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
+            end
+            
+            if u>period_length1500
+                period_change1500(u,:)=min(PRESS_Hist(u-(period_length1500-1):u,:))-PRESS_Hist(u-period_length1500,:);
+            elseif u==period_length1500
+                period_change1500(u,:)=min(PRESS_Hist(1:u,:))-ALG_PRESS;
+            end
+            
 
             %Self Terminate if PRESS has only gotten worse over
             %the last n+1 iterations
             for i=1:loaddimFlag
-                if period_change(u,i)>0 && self_Terminate(i)==0
-                    fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
-                    self_Terminate(i)=1;
-                    if all(self_Terminate) %If all the channels have now been self-terminated
-                        PRESS_Hist(u+1:end,:)=[];  %Trim storage variable
+                if period_change100(u,i)>0 && self_Terminate(i)==0
+% % % % %                     self_Terminate(i)=1;
+                    if PRESS_self_Terminate100(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                        PRESS_self_Terminate100(i)=u;
                     end
                 end
+                if period_change250(u,i)>0 && self_Terminate(i)==0
+% % % % %                     self_Terminate(i)=1;
+                    if PRESS_self_Terminate250(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                        PRESS_self_Terminate250(i)=u;
+                    end
+                end
+                  if period_change500(u,i)>0 && self_Terminate(i)==0
+% % % % %                     self_Terminate(i)=1;
+                    if PRESS_self_Terminate500(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                        PRESS_self_Terminate500(i)=u;
+                    end
+                end
+                  if period_change750(u,i)>0 && self_Terminate(i)==0
+% % % % %                     self_Terminate(i)=1;
+                    if PRESS_self_Terminate750(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                        PRESS_self_Terminate750(i)=u;
+                    end
+                end
+                  if period_change1000(u,i)>0 && self_Terminate(i)==0
+% % % % %                     self_Terminate(i)=1;
+                    if PRESS_self_Terminate1000(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                        PRESS_self_Terminate1000(i)=u;
+                    end
+                end
+                  if period_change1250(u,i)>0 && self_Terminate(i)==0
+% % % % %                     self_Terminate(i)=1;
+                    if PRESS_self_Terminate1250(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                        PRESS_self_Terminate1250(i)=u;
+                    end
+                end
+                  if period_change1500(u,i)>0 && self_Terminate(i)==0
+% % % % %                     self_Terminate(i)=1;
+                    if PRESS_self_Terminate1500(i)==0
+                        fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                        PRESS_self_Terminate1500(i)=u;
+                    end
+                end
+                  
             end
+                                if all(self_Terminate) %If all the channels have now been self-terminated
+                        PRESS_Hist(u+1:end,:)=[];  %Trim storage variable
+                    end
         end
 
 
@@ -1720,7 +1803,7 @@ if FLAGS.input_save==0  %If user did not want to save input data files, delete
 end
 
 %
-save([file_output_location,'AOX_BalCal_results']);
+save([file_output_location,'AOX_BalCal_results'],'-v7.3');
 fprintf('\n  ');
 fprintf('\nCalculations Complete.\n');
 fprintf('%s',strcat('Check '," ",file_output_location,' for output files.'))
