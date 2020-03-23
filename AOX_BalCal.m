@@ -960,9 +960,11 @@ if FLAGS.balCal == 2
         end
         
         if u>1 && any(self_Terminate) %Coefficients for self terminated channels are retained from previous run for channels that have self terminated
-            xcalib_RBF(1:size(xcalib_RBF_last,1)-nseries0,self_Terminate)=xcalib_RBF_last(1:end-nseries0,self_Terminate);
             if FLAGS.tare_intercept==1
+                xcalib_RBF(1:size(xcalib_RBF_last,1)-nseries0,self_Terminate)=xcalib_RBF_last(1:end-nseries0,self_Terminate);
                 xcalib_RBF(end-nseries0+1:end,self_Terminate)=xcalib_RBF_last(end-nseries0+1:end,self_Terminate);
+            else
+                 xcalib_RBF(1:size(xcalib_RBF_last,1),self_Terminate)=xcalib_RBF_last(:,self_Terminate);
             end
         end
         xcalib_RBF_last=xcalib_RBF;
