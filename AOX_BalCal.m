@@ -1563,7 +1563,7 @@ end
 probSeries=series0(tareLoad_points(probTare_r)); %Find series for problem tares
 probID=pointID0(tareLoad_points(probTare_r)); %Find point IDs for problem tares
 
-probTable=cell2table([num2cell(probTare_c),num2cell(probSeries),probID,num2cell(tareDif(abs(tareDif)>tareMargin))],'VariableNames',{'Channel','Series','Point ID','Tare Difference'}); %Table of possible problem tare datapoints
+probTable=cell2table([num2cell(probTare_c),num2cell(probSeries),probID,num2cell(tareDif(abs(tareDif)>tareMargin))],'VariableNames',{'Channel','Series','Point_ID','Tare_Difference'}); %Table of possible problem tare datapoints
 
 if ~isempty(probTare_r) %If any problem tares found
     if FLAGS.anova==1
