@@ -27,12 +27,13 @@ search_metric_flag=FLAGS.search_metric;
 VIF_stop_flag=FLAGS.VIF_stop;
 
 %% Multicollinearity detection / VIF calcualtion
-if FLAGS.glob_intercept==0 %If no global intercept term
+% if FLAGS.glob_intercept==0 %If no global intercept term
+% VIF=vif_dl(X);
+% else
+%     VIF=vif_dl(X(:,2:end)); %Calculate VIF for all terms except global intercept
+%     VIF=[1,VIF]; %Set VIF for intercept=1
+% end
 VIF=vif_dl(X);
-else
-    VIF=vif_dl(X(:,2:end)); %Calculate VIF for all terms except global intercept
-    VIF=[1,VIF]; %Set VIF for intercept=1
-end
 
 VIF_max=max(VIF,[],'all');
 if VIF_max<=VIFthresh

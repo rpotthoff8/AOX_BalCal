@@ -17,10 +17,12 @@ function [V]=vif_dl(X)
 orig_state=warning; %Save warning state
 warning('off','all'); %Temp turn off warnings
 
-X_center=X-mean(X,1); %Center terms
-X_scale=X_center./sqrt(sum(X_center.^2,1)); %Scale terms
-
-R0 = corrcoef(X_scale); % correlation matrix
-V=diag(pinv(R0))';
+% X_center=X-mean(X,1); %Center terms
+% X_scale=X_center./sqrt(sum(X_center.^2,1)); %Scale terms
+% R0 = corrcoef(X_scale); % correlation matrix
+V=ones(size(X,2),1);
+difCol=~all(~diff(X)); %Find columns that have some variation
+V(difCol)=diag(pinv(corrcoef(X(:,difCol))));
+% V=diag(pinv(corrcoef(X)))';
 
 warning(orig_state); %Restore warning state

@@ -757,9 +757,10 @@ if FLAGS.balCal == 2
     center_daHist=zeros(numBasis,voltdimFlag,loaddimFlag);
     resSquareHist=zeros(numBasis,loaddimFlag);
     resStdHist=zeros(numBasis,loaddimFlag);
-    dist=zeros(size(dainputs0,1),size(dainputs0,1),size(dainputs0,2));
+    dist=zeros(size(dainputs0,1),size(dainputs0,1),size(dainputs0,2));    
     for i=1:size(dainputs0,2)
         dist(:,:,i)=dainputs0(:,i)'-dainputs0(:,i); %solve distance between each datapoint in each dimension, Eqn 16 from Javier's notes
+
     end
     dist_T=tall(dist); %use tall array for memory concerns
     R_square=gather(sum(dist.^2,3)); %Eqn 17 from Javier's notes: squared distance between each point

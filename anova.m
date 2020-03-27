@@ -295,11 +295,14 @@ function VIF = vif(X, FLAGS)
 % VIF<1 is theoretically nonsensical, it simply means that trying to find a
 % linear correlation yielded a model that was less accurate thannot having
 % a model at all -> totally linearly independent
-if FLAGS.glob_intercept==1
-    VIF = max(diag(pinv(corrcoef(X(:,2:end)))),1);
-    VIF=[1;VIF];
-else
-    VIF = max(diag(pinv(corrcoef(X))),1);
-end
+VIF=ones(size(X,2),1);
+difCol=~all(~diff(X)); %Find columns that have some variation
+VIF(difCol)=max(diag(pinv(corrcoef(X(:,difCol)))),1);
+% if FLAGS.glob_intercept==1
+%     VIF = max(diag(pinv(corrcoef(X(:,2:end)))),1);
+%     VIF=[1;VIF];
+% else
+%     VIF = max(diag(pinv(corrcoef(X))),1);
+% end
 %% Turn warnings back on
 warning('on','all');
