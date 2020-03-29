@@ -779,7 +779,7 @@ if FLAGS.balCal == 2
     self_Terminate=false(1,loaddimFlag); %Logical vector that stores if RBF addition has been terminated in each channel
     RBFs_added=zeros(1,loaddimFlag); %Count of how many RBFs have been added in each channel
     period_change=zeros(numBasis,loaddimFlag); %Storge for Change in self termination variable over last 'n' additions
-    period_length=min([100,max([10,0.1*numBasis])]); %CHANGE?: Length of period for self termination
+    period_length=min([100,max([10,round(0.1*numBasis)])]); %CHANGE?: Length of period for self termination
     
     if FLAGS.valid_selfTerm==1 %If RBF addition will be terminated based on validation data error
         resRMSHistvalid=zeros(numBasis,loaddimFlag); %History of valid data residual standard deviation vs RBF number
