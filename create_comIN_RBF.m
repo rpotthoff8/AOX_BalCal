@@ -1,4 +1,4 @@
-function [comIN_RBF]=create_comIN_RBF(dainputs,epsHist,center_daHist,h_GRBF)
+function [comIN_RBF]=create_comIN_RBF(dainputs,epsHist,center_daHist,h_GRBF,mean_rbfINminGZ)
 %Function places all for the validation or approximation section. comIN_RBF
 %is a 'n'x'p' matrix where 'n' is the number of observations (datapoints) and
 %'p' is the number of RBFs.  Each column is the value of the a respective
@@ -39,5 +39,6 @@ dist_T=tall(dist); %Use tall array for memory concerns
 comIN_RBF=exp(-((eps_long.^2).*(R_square))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 % comIN_RBF=((eps_long.^voltdimFlag)/(sqrt(pi^voltdimFlag))).*exp(-((eps_long.^2).*(R_square))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 % comIN_RBF=comIN_RBF-mean(comIN_RBF,1);
-
+vec_mean_rbfINminGZ=reshape(mean_rbfINminGZ',1,numel(mean_rbfINminGZ));
+comIN_RBF=comIN_RBF-vec_mean_rbfINminGZ;
 end

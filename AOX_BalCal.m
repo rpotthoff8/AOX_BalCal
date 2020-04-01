@@ -751,6 +751,7 @@ if FLAGS.balCal == 2
     eta=zeros(length(excessVec0(:,1)),loaddimFlag);
     eps=zeros(1,loaddimFlag);
     rbfINminGZ=zeros(length(excessVec0(:,1)),numBasis,loaddimFlag);
+    mean_rbfINminGZ=zeros(numBasis,loaddimFlag);
     rbfc_INminGZ=zeros(length(excessVec0(:,1)),loaddimFlag);
     epsHist=zeros(numBasis,loaddimFlag);
     centerIndexHist=zeros(numBasis,loaddimFlag);
@@ -865,7 +866,8 @@ if FLAGS.balCal == 2
                     %DEFINE RBF W/O COEFFFICIENT FOR MATRIX ('X') OF PREDICTOR VARIABLES
                     rbfINminGZ_temp=exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
                     %                     rbfINminGZ_temp=((eps(s)^voltdimFlag)/(sqrt(pi^voltdimFlag)))*exp(-((eps(s)^2)*(eta(:,s)))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
-                    %                     rbfINminGZ_temp=rbfINminGZ_temp-mean(rbfINminGZ_temp); %Bias is mean of RBF
+                    mean_rbfINminGZ_temp=mean(rbfINminGZ_temp);
+                    rbfINminGZ_temp=rbfINminGZ_temp-mean_rbfINminGZ_temp; %Bias is mean of RBF
                     
                     if FLAGS.VIF_selfTerm==1 %If self terminating based on VIF
                         comIN0_RBF_VIFtest(:,end)=rbfINminGZ_temp; %Define input matrix ('X') with new RBF, algebraic terms, and previous RBFs
@@ -893,6 +895,7 @@ if FLAGS.balCal == 2
                     
                 end %END loop for iterating until good VIF
                 rbfINminGZ(:,u,s)=rbfINminGZ_temp; %Store temp RBF
+                mean_rbfINminGZ(u,s)=mean_rbfINminGZ_temp; %Store temp RBF
             end
         end
         
@@ -984,7 +987,7 @@ if FLAGS.balCal == 2
         
         %Find and Store tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist(1:u,:),center_daHist(1:u,:,:),h_GRBF); %Calculate tares from series specific intercepts
+            [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist(1:u,:),center_daHist(1:u,:,:),h_GRBF,mean_rbfINminGZ); %Calculate tares from series specific intercepts
         else
             taresGRBF=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
         end
@@ -1031,7 +1034,7 @@ if FLAGS.balCal == 2
         %determine standard deviation of residuals for validation data
         if FLAGS.valid_selfTerm==1
             %Test on validation data
-            comINvalid_RBF(:,(u-1)*loaddimFlag+1:u*loaddimFlag)=create_comIN_RBF(dainputsvalid,epsHist(u,:),center_daHist(u,:,:),h_GRBF); %Generate comIN for RBFs
+            comINvalid_RBF(:,(u-1)*loaddimFlag+1:u*loaddimFlag)=create_comIN_RBF(dainputsvalid,epsHist(u,:),center_daHist(u,:,:),h_GRBF,mean_rbfINminGZ); %Generate comIN for RBFs
             comINvalid_algRBF=[comINvalid, comINvalid_RBF(:,1:u*loaddimFlag)]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
             
             aprxINminGZ2valid=comINvalid_algRBF*coeff_algRBFmodel; %find approximation with alg and RBF Coefficients
@@ -1251,7 +1254,7 @@ if FLAGS.balCal == 2
         
         %Find and Store tares
         if FLAGS.tare_intercept==1 %If tare loads were included in regression
-            [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist,center_daHist,h_GRBF); %Calculate tares from series specific intercepts
+            [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist,center_daHist,h_GRBF,mean_rbfINminGZ); %Calculate tares from series specific intercepts
         else
             taresGRBF=zeros(nseries0,loaddimFlag); %Else set to zero (no series intercepts)
         end
@@ -1347,7 +1350,7 @@ if FLAGS.balCal == 2
         %Initialize structure for unique outputs for section
         uniqueOut=struct();
         
-        comINvalid_RBF=create_comIN_RBF(dainputsvalid,epsHist,center_daHist,h_GRBF); %Generate comIN for RBFs
+        comINvalid_RBF=create_comIN_RBF(dainputsvalid,epsHist,center_daHist,h_GRBF,mean_rbfINminGZ); %Generate comIN for RBFs
         comINvalid_algRBF=[comINvalid, comINvalid_RBF]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
         
         aprxINminGZ2valid=comINvalid_algRBF*coeff_algRBFmodel; %find approximation with alg and RBF Coefficients
@@ -1487,7 +1490,7 @@ end
 
 
 
-function [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist,center_daHist,h_GRBF)
+function [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero,comIN_zero,epsHist,center_daHist,h_GRBF,mean_rbfINminGZ)
 %Function calculates tare loads for load model including RBFs. This is
 %accomplished by calculating all coefficients simultaneously including
 %series specific intercepts.  The tares are then extracted from the series
@@ -1516,7 +1519,7 @@ function [xcalib_RBF,taresGRBF]=RBF_tareCalc(xcalib_RBF,nterms_RBF,dainputs_zero
 %  y = Merit Value for success in RBF fitting residuals.  Object of optimization is to minimize y
 
 seriesShift = xcalib_RBF(nterms_RBF+1:end,:);
-comIN_zero_RBF=create_comIN_RBF(dainputs_zero,epsHist,center_daHist,h_GRBF); %Generate comIN for RBFs at zero voltage
+comIN_zero_RBF=create_comIN_RBF(dainputs_zero,epsHist,center_daHist,h_GRBF,mean_rbfINminGZ); %Generate comIN for RBFs at zero voltage
 comIN_zero_algRBF=[comIN_zero, comIN_zero_RBF]; %Combine comIN from algebraic terms and RBF terms to multiply by coefficients
 currentZero=comIN_zero_algRBF*xcalib_RBF(1:nterms_RBF,:); %Current load predicted for zero voltage without series shift
 realityShift=-currentZero; %Extract portion of each series shift that shifts to the reality of 0 voltage=0 voltage
