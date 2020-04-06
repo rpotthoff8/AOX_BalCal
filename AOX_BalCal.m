@@ -127,8 +127,8 @@ FLAGS.search_metric=out.search_metric; %Search metric for recommended math model
 sig_pct=out.sig_pct; %Percent confidence for designating terms as significant
 
 FLAGS.svd=0; %Flag for performing SVD for permitted math model
-FLAGS.sugEqnLeg=0; %Flag from performing search for legacy suggested equation
-FLAGS.sugEqnNew=0; %Flag from performing search for updated suggested equation
+FLAGS.sugEqnLeg=0; %Flag from performing search for legacy constrained (suggested) equation
+FLAGS.sugEqnNew=0; %Flag from performing search for updated constrained (suggested) equation
 FLAGS.back_recEqn=0; %Flag from performing search for recommended equation
 FLAGS.forward_recEqn=0; %Flag from performing search for recommended equation
 if out.AlgModel_opt>1
