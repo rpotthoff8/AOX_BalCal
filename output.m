@@ -328,12 +328,13 @@ end
 
 %% OUTPUT HISTOGRAM PLOTS
 if FLAGS.hist == 1
-    figure('Name',char(section),'NumberTitle','off','WindowState','maximized')
+    figure('Name',strcat(char(section)," Residual Histogram"),'NumberTitle','off','WindowState','maximized')
     for k0=1:length(targetRes(1,:))
         subplot(2,ceil(loaddimFlag/2),k0)
         binWidth = 0.25;
         edges = [-4.125:binWidth:4.125];
         h = histogram(targetRes(:,k0)/standardDev(k0,:),edges,'Normalization','probability');
+%         h = histogram(ANOVA(k0).t,edges,'Normalization','probability');
         centers = edges(1:end-1)+.125;
         values = h.Values*100;
         bar(centers,values,'barwidth',1)
@@ -344,6 +345,33 @@ if FLAGS.hist == 1
         plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
         hold off
         xlabel(['\Delta',strrep(loadlist{k0},'_','\_'),'/\sigma']);
+    end
+    
+    %Generate Normal Probability Plot
+    if contains(section,{'Calibration'}) && FLAGS.anova==1
+        figure('Name',strcat(char(section)," Residual Normal Probability Plot"),'NumberTitle','off','WindowState','maximized')
+        for k0=1:length(targetRes(1,:))
+            subplot(2,ceil(loaddimFlag/2),k0)
+            yax=norminv(([1:numpts]-0.5)/numpts);
+            scatter(sort(ANOVA(k0).t),yax,20,'+')
+            range=ceil(max(abs(ANOVA(k0).t)));
+            xlabel('Sample Quantiles');
+            ylabel('Theoretical Quantiles');
+            xlim([-range range]);
+            ylim([-range range]);
+            hold on
+            hline=refline(1,0);
+            hline.Color='g';
+            grid on;
+            
+            [H, pValue, W] = swtest(targetRes(:,k0)); 
+            NotNormConf=100*(1-pValue);
+            if NotNormConf<90
+                title('SW Non-Normal Confidence Level: <90%');
+            else
+            title(sprintf('SW Non-Normal Confidence Level: %0.2f%%',NotNormConf),'Color','r');
+            end
+        end
     end
 end
 %END SAME

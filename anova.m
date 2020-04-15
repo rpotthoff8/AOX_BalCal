@@ -208,6 +208,12 @@ PRESS = sum(e_p.^2);
 % PRESS R_sq
 R_sq_p = 1 - (PRESS/SST);
 
+%% Calculate R-Student (externally studentized residual) 
+%(Introduction to Linear Regression Analysis 5th Ed., Montgomery, Peck, Vining: pg 135)
+
+Si_2=((dof_e*MSE-(e.^2))./(1-diag(H)))/(dof_e-1);
+t=e./sqrt(Si_2.*(1-diag(H))); %R-student
+
 %% Save all the relevant variables to a structure to pass out of the function
 
 ANOVA.test     = 0;        % (to indicate that VIF < 4, so test term is not collinear)
@@ -233,6 +239,8 @@ end
 ANOVA.sig = sig;            %If term is significant
 
 ANOVA.y_hat_PI=y_hat_PI; %Prediction interval for new datapoints
+
+ANOVA.t=t; %R-Student
 %% EXPERIMENTAL
 % Saving variables to calculate prediction intervals live in approximation
 ANOVA.PI.T_cr = T_cr;
