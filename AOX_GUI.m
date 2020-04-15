@@ -176,7 +176,7 @@ switch get(get(handles.modelPanel,'SelectedObject'),'Tag')
     case 'custom'
         outStruct.model = 4;
         customPath = get(handles.customPath,'String');
-        outStruct.customMatrix = csvread(customPath,1,1);
+        outStruct.customMatrix = logical(csvread(customPath,1,1));
     case 'balanceType'
         outStruct.model=5;
         outStruct.balanceEqn=get(handles.balanceType_list,'Value');
