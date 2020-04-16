@@ -352,16 +352,18 @@ if FLAGS.hist == 1
         figure('Name',strcat(char(section)," Residual Normal Probability Plot"),'NumberTitle','off','WindowState','maximized')
         for k0=1:length(targetRes(1,:))
             subplot(2,ceil(loaddimFlag/2),k0)
-            yax=norminv(([1:numpts]-0.5)/numpts);
-            scatter(sort(ANOVA(k0).t),yax,20,'+')
-            range=ceil(max(abs(ANOVA(k0).t)));
-            xlabel('Sample Quantiles');
-            ylabel('Theoretical Quantiles');
-            xlim([-range range]);
-            ylim([-range range]);
-            hold on
-            hline=refline(1,0);
-            hline.Color='g';
+            qqplot(targetRes(:,k0)/standardDev(k0,:))
+            ylabel(['Quantiles of \Delta',strrep(loadlist{k0},'_','\_'),'/\sigma']);
+%             yax=norminv(([1:numpts]-0.5)/numpts);
+%             scatter(sort(ANOVA(k0).t),yax,20,'+')
+%             range=ceil(max(abs(ANOVA(k0).t)));
+%             xlabel('Sample Quantiles');
+%             ylabel('Theoretical Quantiles');
+%             xlim([-range range]);
+%             ylim([-range range]);
+%             hold on
+%             hline=refline(1,0);
+%             hline.Color='g';
             grid on;
             
             [H, pValue, W] = swtest(targetRes(:,k0)); 
