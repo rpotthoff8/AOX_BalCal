@@ -565,6 +565,9 @@ if out.model~=0 %If any algebraic terms included
         tareCheck(targetMatrix0,aprxINminGZ,series0,tares,FLAGS,targetRes,y_hat_PI,pointID0);
     end
     
+    %Perform Shapiro-Wilk Test on residuals
+    [SW_H,SW_pValue]= resid_SWtest(anova_pct, loaddimFlag, targetRes, FLAGS, loadlist);
+        
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, algebraic section
     section={'Calibration Algebraic'};
@@ -576,7 +579,8 @@ if out.model~=0 %If any algebraic terms included
         'loadunits',{loadunits(:)},...
         'voltunits',{voltunits(:)},...
         'description',description,...
-        'gageCapacities',gageCapacities);
+        'gageCapacities',gageCapacities,...
+        'SW_pValue',SW_pValue);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     
@@ -1098,6 +1102,7 @@ if FLAGS.balCal == 2
             for i=1:loaddimFlag
                 if period_change(u,i)>0 && self_Terminate(i)==0
                     fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
+                    fprintf(strcat('Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u),'\n'));
                     self_Terminate(i)=1;
                     if all(self_Terminate) %If all the channels have now been self-terminated
                         calib_PI_mean_Hist(u+1:end,:)=[];  %Trim storage variable
@@ -1296,7 +1301,7 @@ if FLAGS.balCal == 2
     end
     
     if FLAGS.tare_intercept==1 %Check for tare load estimate agreement
-        y_hat_PI2=zeros(size(targetRes));
+        y_hat_PI2=zeros(size(targetRes2));
         if FLAGS.anova==1 %Extract load PI from ANOVA structure
             for i=1:loaddimFlag
                 y_hat_PI2(:,i)=ANOVA_GRBF(i).y_hat_PI;
@@ -1304,6 +1309,9 @@ if FLAGS.balCal == 2
         end
         tareCheck(targetMatrix0,aprxINminGZ2,series0,taresGRBF,FLAGS,targetRes2,y_hat_PI2,pointID0);
     end
+    
+    %Perform Shapiro-Wilk Test on residuals
+    [SW_H2,SW_pValue2]= resid_SWtest(anova_pct, loaddimFlag, targetRes2, FLAGS, loadlist);
     
     %OUTPUT FUNCTION
     %Function creates all outputs for calibration, GRBF section
@@ -1320,7 +1328,8 @@ if FLAGS.balCal == 2
         'numBasis',max(final_RBFs_added),...
         'nterms',nterms+max(final_RBFs_added)*loaddimFlag,...
         'coeff_algRBFmodel',coeff_algRBFmodel,...
-        'coeff',coeff);
+        'coeff',coeff,...
+        'SW_pValue',SW_pValue2);
     uniqueOut = cell2struct([struct2cell(uniqueOut); struct2cell(newStruct)],...
         [fieldnames(uniqueOut); fieldnames(newStruct)],1);
     
@@ -1577,6 +1586,27 @@ if ~isempty(probTare_r) %If any problem tares found
 %     fprintf(probSeries_str); fprintf('\n');
     
     warning('Disagreement between calculated series intercept tare loads and tare load datapoints.  Check results.');
+    fprintf('\n');
 end
 end
 
+function [SW_H,SW_pValue]= resid_SWtest(anova_pct, loaddimFlag, targetRes, FLAGS, loadlist)
+%Perform Shapiro-Wilk Test on residuals
+if FLAGS.anova==1
+    SW_alpha=1-(anova_pct/100);
+else
+    SW_alpha=0.05;
+end
+SW_pValue=zeros(1,loaddimFlag);
+SW_H=zeros(1,loaddimFlag);
+for i=1:loaddimFlag
+    [SW_H(i), SW_pValue(i), W] = swtest(targetRes(:,i),SW_alpha);
+end
+if FLAGS.anova==1 && any(SW_H) %Display warning if ANOVA was performed
+    SW_channels=sprintf(' %s,', loadlist{logical(SW_H)});
+    SW_channels=SW_channels(1:end-1);
+    warningStr=strcat('Shapiro-Wilk test found non-normally distributed residuals for channels:',SW_channels, '. Hypothesis testing results and calculated intervals may be inaccurate. Recommend inspection of residual histograms and Q-Q plots.');
+    warning(warningStr);
+    fprintf('\n');
+end
+end
