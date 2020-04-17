@@ -328,6 +328,8 @@ end
 
 %% OUTPUT HISTOGRAM PLOTS
 if FLAGS.hist == 1
+    NotNormConf=100*(1-SW_pValue);
+   
     figure('Name',strcat(char(section)," Residual Histogram"),'NumberTitle','off','WindowState','maximized')
     for k0=1:length(targetRes(1,:))
         subplot(2,ceil(loaddimFlag/2),k0)
@@ -345,37 +347,46 @@ if FLAGS.hist == 1
         plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
         hold off
         xlabel(['\Delta',strrep(loadlist{k0},'_','\_'),'/\sigma']);
-    end
-    
-    %Generate Normal Probability Plot
-    if contains(section,{'Calibration'}) && FLAGS.anova==1
-        figure('Name',strcat(char(section)," Residual Normal Probability Plot"),'NumberTitle','off','WindowState','maximized')
-        for k0=1:length(targetRes(1,:))
-            subplot(2,ceil(loaddimFlag/2),k0)
-            qqplot(targetRes(:,k0)/standardDev(k0,:))
-            ylabel(['Quantiles of \Delta',strrep(loadlist{k0},'_','\_'),'/\sigma']);
-%             yax=norminv(([1:numpts]-0.5)/numpts);
-%             scatter(sort(ANOVA(k0).t),yax,20,'+')
-%             range=ceil(max(abs(ANOVA(k0).t)));
-%             xlabel('Sample Quantiles');
-%             ylabel('Theoretical Quantiles');
-%             xlim([-range range]);
-%             ylim([-range range]);
-%             hold on
-%             hline=refline(1,0);
-%             hline.Color='g';
-            grid on;
-            
-            [H, pValue, W] = swtest(targetRes(:,k0)); 
-            NotNormConf=100*(1-pValue);
-            if NotNormConf<90
+        if contains(section,{'Calibration'})
+            if NotNormConf(k0)<90
                 title('SW Non-Normal Confidence Level: <90%');
             else
-            title(sprintf('SW Non-Normal Confidence Level: %0.2f%%',NotNormConf),'Color','r');
+                title(sprintf('SW Non-Normal Confidence Level: %0.2f%%',NotNormConf(k0)),'Color','r');
             end
         end
     end
 end
+    
+%Generate Q-Q Plot
+if FLAGS.QQ == 1
+    NotNormConf=100*(1-SW_pValue);
+    
+    figure('Name',strcat(char(section)," Residual Q-Q Plot"),'NumberTitle','off','WindowState','maximized')
+    for k0=1:length(targetRes(1,:))
+        subplot(2,ceil(loaddimFlag/2),k0)
+        qqplot(targetRes(:,k0)/standardDev(k0,:))
+        ylabel(['Quantiles of \Delta',strrep(loadlist{k0},'_','\_'),'/\sigma']);
+        %             yax=norminv(([1:numpts]-0.5)/numpts);
+        %             scatter(sort(ANOVA(k0).t),yax,20,'+')
+        %             range=ceil(max(abs(ANOVA(k0).t)));
+        %             xlabel('Sample Quantiles');
+        %             ylabel('Theoretical Quantiles');
+        %             xlim([-range range]);
+        %             ylim([-range range]);
+        %             hold on
+        %             hline=refline(1,0);
+        %             hline.Color='g';
+        grid on;
+        if contains(section,{'Calibration'})
+            if NotNormConf(k0)<90
+                title('SW Non-Normal Confidence Level: <90%');
+            else
+                title(sprintf('SW Non-Normal Confidence Level: %0.2f%%',NotNormConf(k0)),'Color','r');
+            end
+        end
+    end
+end
+
 %END SAME
 
 %% Prints residual vs. input and calculates correlations
