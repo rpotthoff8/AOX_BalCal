@@ -1,4 +1,8 @@
 function [H, pValue, W] = swtest(x, alpha)
+% 17 APRIL 2020: JOHN POTTHOFF PROGRAM MODIFICATIONS: Edited program to
+% always use Shapiro-Wilk test, not Shapiro-Francia. Commented out
+% Shapiro-Francia if it is desired to be added back in
+
 %SWTEST Shapiro-Wilk parametric hypothesis test of composite normality.
 %   [H, pValue, SWstatistic] = SWTEST(X, ALPHA) performs the
 %   Shapiro-Wilk test to determine if the null hypothesis of
@@ -121,40 +125,42 @@ n       =   length(x);
 mtilde  =   norminv(((1:n)' - 3/8) / (n + 1/4));
 weights =   zeros(n,1); % Preallocate the weights.
 
+% START: Shapiro-Francia commented out
 % if kurtosis(x) > 3
-    if 0
-    % The Shapiro-Francia test is better for leptokurtic samples.
-    
-    weights =   1/sqrt(mtilde'*mtilde) * mtilde;
+% 
+%     % The Shapiro-Francia test is better for leptokurtic samples.
+%     
+%     weights =   1/sqrt(mtilde'*mtilde) * mtilde;
+% 
+%     %
+%     % The Shapiro-Francia statistic W' is calculated to avoid excessive
+%     % rounding errors for W' close to 1 (a potential problem in very
+%     % large samples).
+%     %
+% 
+%     W   =   (weights' * x)^2 / ((x - mean(x))' * (x - mean(x)));
+% 
+%     % Royston (1993a, p. 183):
+%     nu      =   log(n);
+%     u1      =   log(nu) - nu;
+%     u2      =   log(nu) + 2/nu;
+%     mu      =   -1.2725 + (1.0521 * u1);
+%     sigma   =   1.0308 - (0.26758 * u2);
+% 
+%     newSFstatistic  =   log(1 - W);
+% 
+%     %
+%     % Compute the normalized Shapiro-Francia statistic and its p-value.
+%     %
+% 
+%     NormalSFstatistic =   (newSFstatistic - mu) / sigma;
+%     
+%     % Computes the p-value, Royston (1993a, p. 183).
+%     pValue   =   1 - normcdf(NormalSFstatistic, 0, 1);
+%     
+% else
+% END: Shapiro-Francia commented out    
 
-    %
-    % The Shapiro-Francia statistic W' is calculated to avoid excessive
-    % rounding errors for W' close to 1 (a potential problem in very
-    % large samples).
-    %
-
-    W   =   (weights' * x)^2 / ((x - mean(x))' * (x - mean(x)));
-
-    % Royston (1993a, p. 183):
-    nu      =   log(n);
-    u1      =   log(nu) - nu;
-    u2      =   log(nu) + 2/nu;
-    mu      =   -1.2725 + (1.0521 * u1);
-    sigma   =   1.0308 - (0.26758 * u2);
-
-    newSFstatistic  =   log(1 - W);
-
-    %
-    % Compute the normalized Shapiro-Francia statistic and its p-value.
-    %
-
-    NormalSFstatistic =   (newSFstatistic - mu) / sigma;
-    
-    % Computes the p-value, Royston (1993a, p. 183).
-    pValue   =   1 - normcdf(NormalSFstatistic, 0, 1);
-    
-else
-    
     % The Shapiro-Wilk test is better for platykurtic samples.
 
     c    =   1/sqrt(mtilde'*mtilde) * mtilde;
@@ -254,7 +260,7 @@ else
         % Royston (1982a, p. 121)
     end
     
-end
+% end
 
 %
 % To maintain consistency with existing Statistics Toolbox hypothesis
