@@ -86,6 +86,7 @@ FLAGS.res = out.res;
 %
 %TO PRINT RESIDUAL HISTOGRAMS                               set FLAGS.hist = 1;
 FLAGS.hist = out.hist;
+FLAGS.QQ = out.QQ; %Print residual QQ plots
 %
 %TO SELECT Validation of the Model                          set FLAGS.balVal = 1;
 FLAGS.balVal = out.valid;

@@ -25,7 +25,7 @@ function varargout = AOX_GUI(varargin)
 
 % Edit the above text to modify the response to help AOX_GUI
 
-% Last Modified by GUIDE v2.5 20-Mar-2020 15:01:28
+% Last Modified by GUIDE v2.5 17-Apr-2020 15:07:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -161,6 +161,7 @@ outStruct.disp = get(handles.disp_FLAGcheck,'Value');
 outStruct.print = get(handles.print_FLAGcheck,'Value');
 outStruct.res = get(handles.res_FLAGcheck,'Value');
 outStruct.hist = get(handles.hist_FLAGcheck,'Value');
+outStruct.QQ = get(handles.QQ_FLAGcheck,'Value');
 outStruct.outlier = get(handles.outlier_FLAGcheck,'Value');
 outStruct.numSTD = str2num(get(handles.numSTD,'String'));
 %outStruct.loglog = get(handles.loglog_FLAGcheck,'Value');
@@ -2262,6 +2263,7 @@ default.disp = get(handles.disp_FLAGcheck,'Value');
 default.print = get(handles.print_FLAGcheck,'Value');
 default.res = get(handles.res_FLAGcheck,'Value');
 default.hist = get(handles.hist_FLAGcheck,'Value');
+default.QQ = get(handles.QQ_FLAGcheck,'Value');
 default.outlier = get(handles.outlier_FLAGcheck,'Value');
 default.numSTD = get(handles.numSTD,'String');
 default.zeroed = get(handles.zeroed_FLAGcheck,'Value');
@@ -2379,6 +2381,7 @@ if exist(fullfileName,'file')
         set(handles.print_FLAGcheck,'Value',default.print);
         set(handles.res_FLAGcheck,'Value',default.res);
         set(handles.hist_FLAGcheck,'Value',default.hist);
+        set(handles.QQ_FLAGcheck,'Value',default.QQ);
         set(handles.outlier_FLAGcheck,'Value',default.outlier);
         set(handles.numSTD,'String',default.numSTD);
         set(handles.zeroed_FLAGcheck,'Value',default.zeroed);
@@ -2897,3 +2900,12 @@ function RBF_VIF_thresh_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in QQ_FLAGcheck.
+function QQ_FLAGcheck_Callback(hObject, eventdata, handles)
+% hObject    handle to QQ_FLAGcheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of QQ_FLAGcheck

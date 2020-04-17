@@ -326,7 +326,7 @@ if FLAGS.res == 1
     end
 end
 
-%% OUTPUT HISTOGRAM PLOTS
+%% OUTPUT RESIDUAL HISTOGRAM PLOTS
 if FLAGS.hist == 1
     NotNormConf=100*(1-SW_pValue);
    
@@ -344,7 +344,7 @@ if FLAGS.hist == 1
         xlim([-4 4]);
         ylim([0 50]);
         hold on
-        plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+        plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r','LineWidth',2)
         hold off
         xlabel(['\Delta',strrep(loadlist{k0},'_','\_'),'/\sigma']);
         if contains(section,{'Calibration'})
@@ -357,7 +357,7 @@ if FLAGS.hist == 1
     end
 end
     
-%Generate Q-Q Plot
+%% OUTPUT RESIDUAL QQ PLOTS
 if FLAGS.QQ == 1
     NotNormConf=100*(1-SW_pValue);
     
