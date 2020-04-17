@@ -1070,7 +1070,7 @@ if FLAGS.balCal == 2
             %the last n+1 iterations
             for i=1:loaddimFlag
                 if period_change(u,i)>0 && self_Terminate(i)==0
-                    fprintf(strcat('\n Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u)));
+                    fprintf(strcat('Channel'," ", string(i), ' Reached validation period change termination criteria, # RBF=',string(u),'\n'));
                     self_Terminate(i)=1;
                 end
             end
@@ -1101,12 +1101,8 @@ if FLAGS.balCal == 2
             %the last n+1 iterations
             for i=1:loaddimFlag
                 if period_change(u,i)>0 && self_Terminate(i)==0
-                    fprintf(strcat('\n Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u)));
                     fprintf(strcat('Channel'," ", string(i), ' Reached Prediction Interval period change termination criteria, # RBF=',string(u),'\n'));
                     self_Terminate(i)=1;
-                    if all(self_Terminate) %If all the channels have now been self-terminated
-                        calib_PI_mean_Hist(u+1:end,:)=[];  %Trim storage variable
-                    end
                 end
             end
         end
@@ -1134,11 +1130,8 @@ if FLAGS.balCal == 2
             %the last n+1 iterations
             for i=1:loaddimFlag
                 if period_change(u,i)>0 && self_Terminate(i)==0
-                    fprintf(strcat('\n Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u)));
+                    fprintf(strcat('Channel'," ", string(i), ' Reached PRESS period change termination criteria, # RBF=',string(u),'\n'));
                     self_Terminate(i)=1;
-                    if all(self_Terminate) %If all the channels have now been self-terminated
-                        PRESS_Hist(u+1:end,:)=[];  %Trim storage variable
-                    end
                 end
             end
         end
@@ -1155,6 +1148,16 @@ if FLAGS.balCal == 2
             center_daHist(u+1:end,:,:)=[];
             resSquareHist(u+1:end,:)=[];
             resStdHist(u+1:end,:)=[];
+            
+            if FLAGS.valid_selfTerm==1
+                resRMSHistvalid(u+1:end,:)=[]; %Trim storage variable
+            end
+            if (FLAGS.PI_selfTerm==1 || FLAGS.VIF_selfTerm==1)
+                calib_PI_mean_Hist(u+1:end,:)=[];  %Trim storage variable
+            end
+            if FLAGS.PRESS_selfTerm==1
+                PRESS_Hist(u+1:end,:)=[];  %Trim storage variable
+            end        
             fprintf('\n');
             break %Exit loop placing RBFs
         end
