@@ -326,14 +326,17 @@ if FLAGS.res == 1
     end
 end
 
-%% OUTPUT HISTOGRAM PLOTS
+%% OUTPUT RESIDUAL HISTOGRAM PLOTS
 if FLAGS.hist == 1
-    figure('Name',char(section),'NumberTitle','off','WindowState','maximized')
+    NotNormConf=100*(1-SW_pValue);
+   
+    figure('Name',strcat(char(section)," Residual Histogram"),'NumberTitle','off','WindowState','maximized')
     for k0=1:length(targetRes(1,:))
         subplot(2,ceil(loaddimFlag/2),k0)
         binWidth = 0.25;
         edges = [-4.125:binWidth:4.125];
         h = histogram(targetRes(:,k0)/standardDev(k0,:),edges,'Normalization','probability');
+%         h = histogram(ANOVA(k0).t,edges,'Normalization','probability');
         centers = edges(1:end-1)+.125;
         values = h.Values*100;
         bar(centers,values,'barwidth',1)
@@ -341,11 +344,49 @@ if FLAGS.hist == 1
         xlim([-4 4]);
         ylim([0 50]);
         hold on
-        plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r')
+        plot(linspace(-4,4,100),binWidth*100*normpdf(linspace(-4,4,100),0,1),'r','LineWidth',2)
         hold off
         xlabel(['\Delta',strrep(loadlist{k0},'_','\_'),'/\sigma']);
+        if contains(section,{'Calibration'})
+            if NotNormConf(k0)<90
+                title('SW Non-Normal Confidence Level: <90%');
+            else
+                title(sprintf('SW Non-Normal Confidence Level: %0.2f%%',NotNormConf(k0)),'Color','r');
+            end
+        end
     end
 end
+    
+%% OUTPUT RESIDUAL QQ PLOTS
+if FLAGS.QQ == 1
+    NotNormConf=100*(1-SW_pValue);
+    
+    figure('Name',strcat(char(section)," Residual Q-Q Plot"),'NumberTitle','off','WindowState','maximized')
+    for k0=1:length(targetRes(1,:))
+        subplot(2,ceil(loaddimFlag/2),k0)
+        qqplot(targetRes(:,k0)/standardDev(k0,:))
+        ylabel(['Quantiles of \Delta',strrep(loadlist{k0},'_','\_'),'/\sigma']);
+        %             yax=norminv(([1:numpts]-0.5)/numpts);
+        %             scatter(sort(ANOVA(k0).t),yax,20,'+')
+        %             range=ceil(max(abs(ANOVA(k0).t)));
+        %             xlabel('Sample Quantiles');
+        %             ylabel('Theoretical Quantiles');
+        %             xlim([-range range]);
+        %             ylim([-range range]);
+        %             hold on
+        %             hline=refline(1,0);
+        %             hline.Color='g';
+        grid on;
+        if contains(section,{'Calibration'})
+            if NotNormConf(k0)<90
+                title('SW Non-Normal Confidence Level: <90%');
+            else
+                title(sprintf('SW Non-Normal Confidence Level: %0.2f%%',NotNormConf(k0)),'Color','r');
+            end
+        end
+    end
+end
+
 %END SAME
 
 %% Prints residual vs. input and calculates correlations
