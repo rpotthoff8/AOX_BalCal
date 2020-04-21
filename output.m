@@ -328,7 +328,9 @@ end
 
 %% OUTPUT RESIDUAL HISTOGRAM PLOTS
 if FLAGS.hist == 1
-    NotNormConf=100*(1-SW_pValue);
+    if contains(section,{'Calibration'})
+        NotNormConf=100*(1-SW_pValue);
+    end
    
     figure('Name',strcat(char(section)," Residual Histogram"),'NumberTitle','off','WindowState','maximized')
     for k0=1:length(targetRes(1,:))
@@ -359,7 +361,9 @@ end
     
 %% OUTPUT RESIDUAL QQ PLOTS
 if FLAGS.QQ == 1
-    NotNormConf=100*(1-SW_pValue);
+    if contains(section,{'Calibration'})
+        NotNormConf=100*(1-SW_pValue);
+    end
     
     figure('Name',strcat(char(section)," Residual Q-Q Plot"),'NumberTitle','off','WindowState','maximized')
     for k0=1:length(targetRes(1,:))
