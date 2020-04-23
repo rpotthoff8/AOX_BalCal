@@ -33,8 +33,9 @@ dist=zeros(size(dainputs,1),size(center_da_long,1),size(dainputs,2));
 for i=1:size(dainputs,2)
     dist(:,:,i)=center_da_long(:,i)'-dainputs(:,i); %solve distance in each dimension, Eqn 16 from Javier's notes
 end
-dist_T=tall(dist); %Use tall array for memory concerns
-[~,R_square]=evalc('gather(sum(dist.^2,3));'); %Eqn 17 from Javier's notes: squared distance between each point
+% dist_T=tall(dist); %Use tall array for memory concerns
+% [~,R_square]=evalc('gather(sum(dist_T.^2,3));'); %Eqn 17 from Javier's notes: squared distance between each point
+R_square=sum(dist.^2,3);%Eqn 17 from Javier's notes: squared distance between each point
 
 comIN_RBF=exp(-((eps_long.^2).*(R_square))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22
 % comIN_RBF=((eps_long.^voltdimFlag)/(sqrt(pi^voltdimFlag))).*exp(-((eps_long.^2).*(R_square))/h_GRBF^2); %From 'Iterated Approximate Moving Least Squares Approximation', Fasshauer and Zhang, Equation 22

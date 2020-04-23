@@ -764,20 +764,22 @@ if FLAGS.balCal == 2
     center_daHist=zeros(numBasis,voltdimFlag,loaddimFlag);
     resSquareHist=zeros(numBasis,loaddimFlag);
     resStdHist=zeros(numBasis,loaddimFlag);
-    dist=zeros(size(dainputs0,1),size(dainputs0,1),size(dainputs0,2));    
+    dist=zeros(size(dainputs0,1),size(dainputs0,1),size(dainputs0,2));
     for i=1:size(dainputs0,2)
         dist(:,:,i)=dainputs0(:,i)'-dainputs0(:,i); %solve distance between each datapoint in each dimension, Eqn 16 from Javier's notes
-
+        
     end
-    dist_T=tall(dist); %use tall array for memory concerns
-    R_square=gather(sum(dist.^2,3)); %Eqn 17 from Javier's notes: squared distance between each point
+%     dist_T=tall(dist); %use tall array for memory concerns
+%     %     R_square=gather(sum(dist_T.^2,3)); %Eqn 17 from Javier's notes: squared distance between each point
+%     [~,R_square]=evalc('gather(sum(dist_T.^2,3));'); %Eqn 17 from Javier's notes: squared distance between each point
+    R_square=sum(dist.^2,3);
     
     R_square_find=R_square; %Save copy of distance matrix
     R_square_find(R_square_find==0)=NaN; %Eliminate zero values (on diagonal)
-%     min_R_square=min(R_square_find); %Find distance to closest point
+    %     min_R_square=min(R_square_find); %Find distance to closest point
     %Set limits on width (shape factor)
     h_GRBF=sqrt(max(min(R_square_find))); %Point spacing parameter
-    clear dist R_square_find %For memory considerations
+    clear dist R_square_find dist_T %For memory considerations
     
 %     max_mult=5; %CHANGE
 %     maxPer=ceil(max_mult*numBasis/size(dainputs0,1)); %Max number of RBFs that can be placed at any 1 location: max_mult* each point's true 'share' or RBFs
