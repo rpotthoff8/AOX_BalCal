@@ -60,9 +60,9 @@ if noVIF_FLAG==0
 %     VIF_dl=vif_dl(X(:,2:end))';
     
     if any(VIF>=10)
-        warning('VIF calculation indicates strong multicollinearity. Analysis of Variance results cannot be trusted.')
+        warning('VIF calculation indicates strong multicollinearity. Analysis of Variance results are unreliable.')
     elseif any(VIF>=4)
-        warning('VIF calculation indicates some multicollinearity. Analysis of Variance results may be inaccurate.')
+        warning('VIF calculation indicates some multicollinearity. Analysis of Variance results may be unreliable.')
     end
 else
 %     VIF={'VIF NOT CALCULATED'};
