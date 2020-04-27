@@ -4,6 +4,7 @@
 !CustomEquationMatrixTemplate.csv
 *.txt
 *.pdf
+!AOX_BalCal User Guide.pdf
 *.mat
 *.lhs
 *.xlsx
