@@ -37,3 +37,13 @@
 #########################
 # Word temporary
 ~$*.doc*
+
+# Include standalone distribution files #
+#########################
+!AOX_standalone
+!AOX_BalCal_standalone
+!AOX_approx_standalone
+!for_redistribution
+!for_redistribution_files_only
+!splash.png
+!readme.txt
