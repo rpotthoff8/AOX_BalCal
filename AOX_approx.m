@@ -22,6 +22,9 @@ clearvars;
 close all;
 fprintf('Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh, Javier Villarreal, and John Potthoff.  All Rights Reserved.\n')
 
+%Add path for subfolder of functions
+addpath(genpath('AOX_RequiredSupportFiles'))
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       USER INPUT SECTION
 %Run GUI

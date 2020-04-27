@@ -44,6 +44,8 @@ function varargout = Cal_Val_dataSplitter_GUI(varargin)
 % Edit the above text to modify the response to help Cal_Val_dataSplitter_GUI
 
 % Last Modified by GUIDE v2.5 18-Jan-2020 17:40:37
+%Add path for subfolder of functions
+addpath(genpath('AOX_RequiredSupportFiles'))
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;

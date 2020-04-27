@@ -25,8 +25,15 @@
 # Prevent subfolders #
 ######################
 */
+!AOX_RequiredSupportFiles
 
 # Random Mac Files #
 ####################
 *.DS_Store
 *.split
+
+
+# Microsoft Office Temporary files #
+#########################
+# Word temporary
+~$*.doc*
