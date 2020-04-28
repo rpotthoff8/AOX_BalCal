@@ -2820,7 +2820,7 @@ if handles.bal_mode.Value==1 %Change GUI for balance Calibration
     handles.a32.Visible='On';
     %Model pannel options
     handles.intercept_pop.String={'Series Specific Intercept Terms (Tare loads)','Global Intercept Term','No Intercept Term'};
-    handles.intercept_pop.Value=handles.intercept_pop.Value+1;
+    handles.intercept_pop.Value=1;
     handles.SVDZero_text.String="SVD 'Zero' Threshold (% Capacity)";
     %Output pannel options
     handles.excel_FLAGcheck.String='Print Load and Coefficient csv Files';
