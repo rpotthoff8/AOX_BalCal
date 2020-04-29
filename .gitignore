@@ -48,3 +48,27 @@
 !for_redistribution_files_only
 !splash.png
 !readme.txt
+
+# Include example files #
+#########################
+!AOX_ExampleFiles
+!AOX_ExampleFiles_readme.txt
+!AOX_ExampleFiles/Artificial Data Tares (Cheat Sheet).xlsx
+
+!AOX_ExampleFiles/LargeArtificial
+!AOX_ExampleFiles/LargeArtificial/LargeArtificial_runSettings.ini
+!AOX_ExampleFiles/LargeArtificial/MC60E-LargeArtificial-2018.cal
+!AOX_ExampleFiles/LargeArtificial/MC60E-LargeArtificial-2018.csv
+!AOX_ExampleFiles/LargeArtificial/MC60E-LargeArtificial-2018_cal_rand.cal
+!AOX_ExampleFiles/LargeArtificial/MC60E-LargeArtificial-2018_cal_rand.csv
+!AOX_ExampleFiles/LargeArtificial/MC60E-LargeArtificial-2018_val_rand.csv
+!AOX_ExampleFiles/LargeArtificial/MC60E-LargeArtificial-2018_val_rand.val
+
+!AOX_ExampleFiles/LargeArtificial-NoisyPerfect
+!AOX_ExampleFiles/LargeArtificial-NoisyPerfect/LargeArtificial-NoisyPerfect_runSettings.ini
+!AOX_ExampleFiles/LargeArtificial-NoisyPerfect/MC60E-LargeArtificial-NoisyPerfect-2018.cal
+!AOX_ExampleFiles/LargeArtificial-NoisyPerfect/MC60E-LargeArtificial-NoisyPerfect-2018.csv
+!AOX_ExampleFiles/LargeArtificial-NoisyPerfect/MC60E-LargeArtificial-NoisyPerfect-2018_cal_rand.cal
+!AOX_ExampleFiles/LargeArtificial-NoisyPerfect/MC60E-LargeArtificial-NoisyPerfect-2018_cal_rand.csv
+!AOX_ExampleFiles/LargeArtificial-NoisyPerfect/MC60E-LargeArtificial-NoisyPerfect-2018_val_rand.csv
+!AOX_ExampleFiles/LargeArtificial-NoisyPerfect/MC60E-LargeArtificial-NoisyPerfect-2018_val_rand.val
