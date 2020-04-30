@@ -1,5 +1,5 @@
 <deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
-  <configuration file="C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_Approx_standalone.prj" location="C:\Users\Robbie\Documents\GitHub\AOX_BalCal" name="AOX_Approx_standalone" target="target.ezdeploy.standalone" target-name="Application Compiler">
+  <configuration file="C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_standalone\AOX_Approx_standalone.prj" location="C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_standalone" name="AOX_Approx_standalone" target="target.ezdeploy.standalone" target-name="Application Compiler">
     <param.appname>AOX_Approx</param.appname>
     <param.icon />
     <param.icons />
@@ -36,7 +36,12 @@
     <param.native.matlab>false</param.native.matlab>
     <param.checkbox>false</param.checkbox>
     <param.example />
-    <param.help.text />
+    <param.help.text>Syntax 
+	  -? 
+	 
+ Input Arguments 
+	 -?  print help on how to use the application 
+	 input arguments</param.help.text>
     <unset>
       <param.icon />
       <param.icons />
@@ -67,32 +72,33 @@
       <param.native.matlab />
       <param.checkbox />
       <param.example />
-      <param.help.text />
     </unset>
     <fileset.main>
-      <file>${PROJECT_ROOT}\AOX_Approx.m</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_Approx.m</file>
     </fileset.main>
     <fileset.resources />
     <fileset.package />
     <fileset.depfun>
-      <file>${PROJECT_ROOT}\AOX_approx_funct.m</file>
-      <file>${PROJECT_ROOT}\AOX_Approx_GUI.fig</file>
-      <file>${PROJECT_ROOT}\AOX_Approx_GUI.m</file>
-      <file>${PROJECT_ROOT}\balCal_algEqns.m</file>
-      <file>${PROJECT_ROOT}\calc_alg_PI.m</file>
-      <file>${PROJECT_ROOT}\nasa.png</file>
-      <file>${PROJECT_ROOT}\place_GRBF.m</file>
-      <file>${PROJECT_ROOT}\print_approxcsv.m</file>
-      <file>${PROJECT_ROOT}\rice.png</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\AOX_approx_funct.m</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\AOX_Approx_GUI.fig</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\AOX_Approx_GUI.m</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\balCal_algEqns.m</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\calc_PI.m</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\create_comIN_RBF.m</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\customMatrix_labels.m</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\load_and_PI_file_output.m</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\nasa.png</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\print_approxcsv.m</file>
+      <file>C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_RequiredSupportFiles\rice.png</file>
     </fileset.depfun>
     <build-deliverables>
-      <file location="${PROJECT_ROOT}\AOX_Approx_standalone\for_testing" name="readme.txt" optional="true">C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_Approx_standalone\for_testing\readme.txt</file>
-      <file location="${PROJECT_ROOT}\AOX_Approx_standalone\for_testing" name="splash.png" optional="false">C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_Approx_standalone\for_testing\splash.png</file>
-      <file location="${PROJECT_ROOT}\AOX_Approx_standalone\for_testing" name="AOX_Approx.exe" optional="false">C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_Approx_standalone\for_testing\AOX_Approx.exe</file>
+      <file location="${PROJECT_ROOT}\AOX_Approx_standalone\for_testing" name="splash.png" optional="false">C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_standalone\AOX_Approx_standalone\for_testing\splash.png</file>
+      <file location="${PROJECT_ROOT}\AOX_Approx_standalone\for_testing" name="readme.txt" optional="true">C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_standalone\AOX_Approx_standalone\for_testing\readme.txt</file>
+      <file location="${PROJECT_ROOT}\AOX_Approx_standalone\for_testing" name="AOX_Approx.exe" optional="false">C:\Users\Robbie\Documents\GitHub\AOX_BalCal\AOX_standalone\AOX_Approx_standalone\for_testing\AOX_Approx.exe</file>
     </build-deliverables>
     <workflow />
     <matlab>
-      <root>C:\Program Files\MATLAB\R2018b</root>
+      <root>C:\Program Files\MATLAB\R2019b</root>
       <toolboxes>
         <toolbox name="neuralnetwork" />
       </toolboxes>

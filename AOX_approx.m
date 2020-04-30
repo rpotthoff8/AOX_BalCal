@@ -1,4 +1,4 @@
-% Standalone AOX_approx program
+% Standalone AOX_Approx program
 % Copyright 2019 Andrew Meade, Ali Arya Mokhtarzadeh, Javier Villarreal and John Potthoff.  All Rights Reserved.
 %
 % Required files to run:

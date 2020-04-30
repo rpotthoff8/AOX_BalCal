@@ -1,7 +1,7 @@
 ******* AOX EXAMPLE FILES README *******
 ******* 29 April 2020, JRP
 
-This folder contains example data files to begin using AOX_BalCal and AOX_approx. 
+This folder contains example data files to begin using AOX_BalCal and AOX_Approx. 
 
 Two versions of artificial data are provided in individual folders.
 The 'LargeArtificial' folder contains artificial data that was constructed mapping loads to voltages. 
